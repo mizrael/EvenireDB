@@ -25,7 +25,7 @@ internal struct RawEventHeader
         // TODO: avoid BitConverter
 
         // version
-        Array.Copy(VersionBytes.V1, 0, buffer, VERSION_POS, VersionBytes.V1.Length);
+        Array.Copy(BitConverter.GetBytes(this.Version), 0, buffer, VERSION_POS, sizeof(int));
 
         // event index
         Array.Copy(BitConverter.GetBytes(this.EventIndex), 0, buffer, EVENTINDEX_POS, sizeof(long));
