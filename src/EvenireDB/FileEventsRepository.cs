@@ -120,6 +120,8 @@ internal class FileEventsRepository : IDisposable
                 maxPayloadSize = tmp;
         }
 
+        var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.HEADER_SIZE);
+
         for (int i = 0; i < eventsCount; i++)
         {
             var @event = events.ElementAt(i);
@@ -132,12 +134,15 @@ internal class FileEventsRepository : IDisposable
                 EventDataLength = @event.Data.Length,
                 Version = 1
             };
-
-            await header.SerializeAsync(stream, cancellationToken).ConfigureAwait(false);
+            header.Fill(headerBuffer);
+            await stream.WriteAsync(headerBuffer, 0, RawEventHeader.HEADER_SIZE, cancellationToken)
+                        .ConfigureAwait(false);
 
             await stream.WriteAsync(eventType, cancellationToken).ConfigureAwait(false);
             await stream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);
         }
+
+        ArrayPool<byte>.Shared.Return(headerBuffer);
 
         await stream.FlushAsync().ConfigureAwait(false);
     }
