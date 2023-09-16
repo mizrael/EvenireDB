@@ -41,6 +41,7 @@ namespace EvenireDB.Tests
             using (var sut = new FileEventsRepository(dataFolder))
             {
                 await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
+
                 var events = await sut.ReadAsync(aggregateId).ConfigureAwait(false);
                 events.Should().NotBeNullOrEmpty()
                       .And.BeEquivalentTo(expectedEvents);                

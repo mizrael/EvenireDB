@@ -1,4 +1,6 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
 
-BenchmarkRunner.Run<FileEventsRepositoryBenckmarks>();
+var config = ManualConfig.Create(DefaultConfig.Instance)
+                          .WithOptions(ConfigOptions.DisableOptimizationsValidator);
+BenchmarkRunner.Run<FileEventsRepositoryBenckmarks>(config);

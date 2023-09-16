@@ -12,15 +12,6 @@ internal class FileEventsRepository : IDisposable
     private readonly Dictionary<Guid, Stream> _aggregateWriteStreams = new();
     private readonly Dictionary<string, byte[]> _eventTypes = new ();
 
-    private const int _baseHeaderLength =
-        sizeof(int) + // version
-        sizeof(long) + // event index
-        sizeof(int) + // event type length
-        sizeof(int) // event data length
-    ;
-
-    private const int ReadBufferLength = 0x1000;
-
     public FileEventsRepository(string basePath)
     {
         if (string.IsNullOrWhiteSpace(basePath))
@@ -97,35 +88,19 @@ internal class FileEventsRepository : IDisposable
     {
         var stream = GetAggregateWriteStream(aggregateId);
 
-        await WriteAsyncCore(events, stream, cancellationToken).ConfigureAwait(false);        
-    }
-
-    private async Task WriteAsyncCore(IEnumerable<Event> events, Stream stream, CancellationToken cancellationToken)
-    {
         var eventsCount = events.Count();
-
-        long maxPayloadSize = int.MinValue;
-        for (int i = 0; i < eventsCount; i++)
-        {
-            var @event = events.ElementAt(i);
-
-            if (!_eventTypes.TryGetValue(@event.Type, out byte[] value))
-            {
-                value = Encoding.UTF8.GetBytes(@event.Type);
-                _eventTypes.Add(@event.Type, value);
-            }
-
-            long tmp = @event.Data.LongLength + value.Length + _baseHeaderLength;
-            if (maxPayloadSize < tmp)
-                maxPayloadSize = tmp;
-        }
 
         var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.HEADER_SIZE);
 
         for (int i = 0; i < eventsCount; i++)
         {
             var @event = events.ElementAt(i);
-            var eventType = _eventTypes[@event.Type];
+
+            if (!_eventTypes.TryGetValue(@event.Type, out byte[] eventType))
+            {
+                eventType = Encoding.UTF8.GetBytes(@event.Type);
+                _eventTypes.Add(@event.Type, eventType);
+            }
 
             var header = new RawEventHeader
             {
@@ -143,6 +118,57 @@ internal class FileEventsRepository : IDisposable
         }
 
         ArrayPool<byte>.Shared.Return(headerBuffer);
+
+        await stream.FlushAsync().ConfigureAwait(false);
+    }
+
+    public async Task WriteSingleBufferAsync(Guid aggregateId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
+    {
+        var stream = GetAggregateWriteStream(aggregateId);
+
+        var eventsCount = events.Count();
+
+        int maxPayloadSize = int.MinValue;
+        for (int i = 0; i < eventsCount; i++)
+        {
+            var @event = events.ElementAt(i);
+
+            if (!_eventTypes.TryGetValue(@event.Type, out byte[] eventType))
+            {
+                eventType = Encoding.UTF8.GetBytes(@event.Type);
+                _eventTypes.Add(@event.Type, eventType);
+            }
+
+            int tmp = @event.Data.Length + eventType.Length + RawEventHeader.HEADER_SIZE;
+            if (maxPayloadSize < tmp)
+                maxPayloadSize = tmp;
+        }
+
+        var buffer = ArrayPool<byte>.Shared.Rent(maxPayloadSize);
+
+        for (int i = 0; i < eventsCount; i++)
+        {
+            var @event = events.ElementAt(i);
+            var eventType = _eventTypes[@event.Type];
+
+            var header = new RawEventHeader
+            {
+                EventIndex = @event.Index,
+                EventTypeNameLength = eventType.Length,
+                EventDataLength = @event.Data.Length,
+                Version = 1
+            };
+            header.Fill(buffer);
+
+            Array.Copy(eventType, 0, buffer, RawEventHeader.HEADER_SIZE, eventType.Length);
+            Array.Copy(@event.Data, 0, buffer, RawEventHeader.HEADER_SIZE + eventType.Length, @event.Data.Length);
+
+            var bytesToWrite = RawEventHeader.HEADER_SIZE + eventType.Length + @event.Data.Length;
+            await stream.WriteAsync(buffer, 0, bytesToWrite, cancellationToken)
+                        .ConfigureAwait(false);
+        }
+
+        ArrayPool<byte>.Shared.Return(buffer);
 
         await stream.FlushAsync().ConfigureAwait(false);
     }
