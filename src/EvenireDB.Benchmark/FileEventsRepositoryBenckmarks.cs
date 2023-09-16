@@ -2,7 +2,7 @@
 
 public class FileEventsRepositoryBenckmarks
 {
-    private readonly static byte[] _data = Enumerable.Repeat((byte)42, 1000).ToArray();
+    private readonly static byte[] _data = Enumerable.Repeat((byte)42, 100).ToArray();
 
     private string dataPath = string.Empty;
 
@@ -40,6 +40,5 @@ public class FileEventsRepositoryBenckmarks
         yield return BuildEvents(1_000);
         yield return BuildEvents(10_000);
         yield return BuildEvents(100_000);
-        yield return BuildEvents(1_000_000);
     }
 }

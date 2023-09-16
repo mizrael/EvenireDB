@@ -2,10 +2,10 @@
 using System.Runtime.CompilerServices;
 using System.Text;
 
-[assembly: InternalsVisibleTo("EvenireDB.Console")]
+[assembly: InternalsVisibleTo("EvenireDB.Benchmark")]
 [assembly: InternalsVisibleTo("EvenireDB.Tests")]
 
-internal class FileEventsRepository : IDisposable
+public class FileEventsRepository : IDisposable
 {
     private bool _disposedValue = false;
     private readonly string _basePath;

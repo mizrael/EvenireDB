@@ -1,0 +1,1 @@
+﻿public record EventDTO(string Type, byte[] Data, long Index);

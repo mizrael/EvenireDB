@@ -3,11 +3,13 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.7.34031.279
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Console", "EvenireDB.Console\EvenireDB.Console.csproj", "{D591B457-A0E5-4ABA-B4BB-6B8F83567895}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB", "EvenireDB\EvenireDB.csproj", "{2CFDFE71-3723-46BC-BD1F-494CE3DCE935}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Tests", "..\tests\EvenireDB.Tests\EvenireDB.Tests.csproj", "{0CE5609B-4935-46F0-8EDD-90AB69BFD58D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvenireDB.Benchmark", "EvenireDB.Benchmark\EvenireDB.Benchmark.csproj", "{3C02C130-1AA5-41FD-A55E-598CD2748CDE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvenireDB.Server", "EvenireDB.Server\EvenireDB.Server.csproj", "{0437DD06-3EE1-44B2-9867-D11570658B67}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,10 +17,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{D591B457-A0E5-4ABA-B4BB-6B8F83567895}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D591B457-A0E5-4ABA-B4BB-6B8F83567895}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D591B457-A0E5-4ABA-B4BB-6B8F83567895}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D591B457-A0E5-4ABA-B4BB-6B8F83567895}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2CFDFE71-3723-46BC-BD1F-494CE3DCE935}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2CFDFE71-3723-46BC-BD1F-494CE3DCE935}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2CFDFE71-3723-46BC-BD1F-494CE3DCE935}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -27,6 +25,14 @@ Global
 		{0CE5609B-4935-46F0-8EDD-90AB69BFD58D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0CE5609B-4935-46F0-8EDD-90AB69BFD58D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0CE5609B-4935-46F0-8EDD-90AB69BFD58D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C02C130-1AA5-41FD-A55E-598CD2748CDE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C02C130-1AA5-41FD-A55E-598CD2748CDE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C02C130-1AA5-41FD-A55E-598CD2748CDE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C02C130-1AA5-41FD-A55E-598CD2748CDE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0437DD06-3EE1-44B2-9867-D11570658B67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0437DD06-3EE1-44B2-9867-D11570658B67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0437DD06-3EE1-44B2-9867-D11570658B67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0437DD06-3EE1-44B2-9867-D11570658B67}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

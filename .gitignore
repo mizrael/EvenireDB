@@ -4,3 +4,4 @@ release/
 obj/
 .vs/
 BenchmarkDotNet.Artifacts/
+.DS_Store
