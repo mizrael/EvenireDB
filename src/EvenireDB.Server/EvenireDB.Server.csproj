@@ -10,4 +10,8 @@
     <PackageReference Include="Asp.Versioning.Http" Version="7.1.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\EvenireDB\EvenireDB.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -18,13 +18,13 @@ namespace EvenireDB.Tests
             var events = BuildEvents(eventsCount);
 
             var aggregateId = Guid.NewGuid();
-            var dataFolder = _fixture.CreateAggregateDataFolder(aggregateId);
-            using (var sut = new FileEventsRepository(dataFolder))
+            var config = _fixture.CreateRepoConfig(aggregateId);
+            using (var sut = new FileEventsRepository(config))
             {
                 await sut.WriteAsync(aggregateId, events).ConfigureAwait(false);
             }
 
-            var eventsFilePath = Path.Combine(dataFolder, aggregateId + ".dat");
+            var eventsFilePath = Path.Combine(config.BasePath, aggregateId + ".dat");
             var bytes = File.ReadAllBytes(eventsFilePath);
             Assert.Equal(expectedFileSize, bytes.Length);            
         }
@@ -37,7 +37,7 @@ namespace EvenireDB.Tests
             var expectedEvents = BuildEvents(eventsCount);
 
             var aggregateId = Guid.NewGuid();
-            var dataFolder = _fixture.CreateAggregateDataFolder(aggregateId);
+            var dataFolder = _fixture.CreateRepoConfig(aggregateId);
             using (var sut = new FileEventsRepository(dataFolder))
             {
                 await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);

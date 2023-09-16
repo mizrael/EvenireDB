@@ -5,21 +5,22 @@ using System.Text;
 [assembly: InternalsVisibleTo("EvenireDB.Benchmark")]
 [assembly: InternalsVisibleTo("EvenireDB.Tests")]
 
-public class FileEventsRepository : IDisposable
+public record FileEventsRepositoryConfig(string BasePath, int MaxPageSize = 100);
+
+public class FileEventsRepository : IDisposable, IEventsRepository
 {
     private bool _disposedValue = false;
-    private readonly string _basePath;
+    
     private readonly Dictionary<Guid, Stream> _aggregateWriteStreams = new();
-    private readonly Dictionary<string, byte[]> _eventTypes = new ();
+    private readonly Dictionary<string, byte[]> _eventTypes = new();
+    private readonly FileEventsRepositoryConfig _config;
 
-    public FileEventsRepository(string basePath)
+    public FileEventsRepository(FileEventsRepositoryConfig config)
     {
-        if (string.IsNullOrWhiteSpace(basePath))
-        {
-            throw new ArgumentException($"'{nameof(basePath)}' cannot be null or whitespace.", nameof(basePath));
-        }
+        _config = config ?? throw new ArgumentNullException(nameof(config));
 
-        _basePath = basePath;
+        if (!Directory.Exists(_config.BasePath))
+            Directory.CreateDirectory(config.BasePath);
     }
 
     private Stream GetAggregateWriteStream(Guid aggregateId)
@@ -35,18 +36,18 @@ public class FileEventsRepository : IDisposable
     }
 
     private string GetAggregateFilePath(Guid aggregateId)
-    => Path.Combine(_basePath, aggregateId.ToString() + ".dat");
+    => Path.Combine(_config.BasePath, aggregateId.ToString() + ".dat");
 
     public async Task<IEnumerable<Event>> ReadAsync(Guid aggregateId, CancellationToken cancellationToken = default)
     {
         string aggregatePath = GetAggregateFilePath(aggregateId);
-        if(!File.Exists(aggregatePath)) 
+        if (!File.Exists(aggregatePath))
             return Enumerable.Empty<Event>();
 
         var results = new List<Event>();
 
         var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.HEADER_SIZE);
-        
+
         using var stream = new FileStream(aggregatePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
         while (true)
@@ -55,7 +56,7 @@ public class FileEventsRepository : IDisposable
                                         .ConfigureAwait(false);
             if (bytesRead == 0)
                 break;
-            
+
             var header = new RawEventHeader();
             RawEventHeader.Parse(headerBuffer, ref header);
 
@@ -67,11 +68,11 @@ public class FileEventsRepository : IDisposable
             // have to create a span to ensure that we're parsing the right buffer size
             // as ArrayPool might return a buffer with size the closest pow(2)
             var eventTypeName = Encoding.UTF8.GetString(eventTypeNameBuff.AsSpan(0, header.EventTypeNameLength));
-            
+
             ArrayPool<byte>.Shared.Return(eventTypeNameBuff);
-            
+
             var eventData = new byte[header.EventDataLength];
-            
+
             await stream.ReadAsync(eventData, 0, header.EventDataLength, cancellationToken)
                                   .ConfigureAwait(false);
 
@@ -122,6 +123,7 @@ public class FileEventsRepository : IDisposable
         await stream.FlushAsync().ConfigureAwait(false);
     }
 
+    //TODO: benchmark vs WriteAsync
     public async Task WriteSingleBufferAsync(Guid aggregateId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
     {
         var stream = GetAggregateWriteStream(aggregateId);
@@ -188,7 +190,7 @@ public class FileEventsRepository : IDisposable
                 }
                 _aggregateWriteStreams.Clear();
             }
-            
+
             _disposedValue = true;
         }
     }
@@ -199,6 +201,6 @@ public class FileEventsRepository : IDisposable
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
-    
+
     #endregion Disposable
 }

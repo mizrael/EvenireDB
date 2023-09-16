@@ -3,20 +3,21 @@
     public class DataFixture : IAsyncLifetime
     {
         private const string BaseDataPath = "./data/";
-        private readonly List<string> _aggregates = new();
+        private readonly List<FileEventsRepositoryConfig> _configs = new();
 
-        public string CreateAggregateDataFolder(Guid aggregateId)
+        public FileEventsRepositoryConfig CreateRepoConfig(Guid aggregateId)
         {
             var path = Path.Combine(BaseDataPath, aggregateId.ToString());
             Directory.CreateDirectory(path);
-            _aggregates.Add(path);
-            return path; 
+            var config = new FileEventsRepositoryConfig(path);
+            _configs.Add(config);
+            return config; 
         }
 
         public Task DisposeAsync()
         {
-            foreach(var path in _aggregates)
-                Directory.Delete(path, true);
+            foreach(var config in _configs)
+                Directory.Delete(config.BasePath, true);
             return Task.CompletedTask;
         }
 

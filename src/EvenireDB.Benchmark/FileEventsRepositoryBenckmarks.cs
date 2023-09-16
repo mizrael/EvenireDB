@@ -4,7 +4,7 @@ public class FileEventsRepositoryBenckmarks
 {
     private readonly static byte[] _data = Enumerable.Repeat((byte)42, 100).ToArray();
 
-    private string dataPath = string.Empty;
+    private FileEventsRepositoryConfig _repoConfig;
 
     private Event[] BuildEvents(int count)
         => Enumerable.Range(0, count).Select(i => new Event("lorem", _data, i)).ToArray();
@@ -13,17 +13,19 @@ public class FileEventsRepositoryBenckmarks
     public void Setup()
     {
         var basePath = AppContext.BaseDirectory;
-        dataPath = Path.Combine(basePath, "data");
+        var dataPath = Path.Combine(basePath, "data");
 
         if(!Directory.Exists(dataPath))
             Directory.CreateDirectory(dataPath);
+
+        _repoConfig = new FileEventsRepositoryConfig(dataPath);
     }
 
     [Benchmark(Baseline = true)]
     [ArgumentsSource(nameof(Data))]    
     public async Task WriteAsync_Baseline(Event[] events)
     {
-        using var sut = new FileEventsRepository(dataPath);
+        using var sut = new FileEventsRepository(_repoConfig);
         await sut.WriteAsync(Guid.NewGuid(), events);
     }
 
@@ -31,7 +33,7 @@ public class FileEventsRepositoryBenckmarks
     [ArgumentsSource(nameof(Data))]    
     public async Task WriteSingleBufferAsync(Event[] events)
     {
-        using var sut = new FileEventsRepository(dataPath);
+        using var sut = new FileEventsRepository(_repoConfig);
         await sut.WriteAsync(Guid.NewGuid(), events);
     }
 
