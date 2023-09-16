@@ -1,8 +1,5 @@
-﻿using System;
-using System.Buffers;
+﻿using System.Buffers;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 [assembly: InternalsVisibleTo("EvenireDB.Console")]
@@ -13,7 +10,7 @@ internal class FileEventsRepository : IDisposable
     private bool _disposedValue = false;
     private readonly string _basePath;
     private readonly Dictionary<Guid, Stream> _aggregateWriteStreams = new();
-    private readonly Dictionary<string, SerializedString> _eventTypes = new ();
+    private readonly Dictionary<string, byte[]> _eventTypes = new ();
 
     private const int _baseHeaderLength =
         sizeof(int) + // version
@@ -112,14 +109,9 @@ internal class FileEventsRepository : IDisposable
         {
             var @event = events.ElementAt(i);
 
-            if (!_eventTypes.TryGetValue(@event.Type, out SerializedString value))
+            if (!_eventTypes.TryGetValue(@event.Type, out byte[] value))
             {
-                var typeBytes = Encoding.UTF8.GetBytes(@event.Type);
-                value = new SerializedString()
-                {
-                    Bytes = typeBytes,
-                    Length = typeBytes.Length
-                };
+                value = Encoding.UTF8.GetBytes(@event.Type);
                 _eventTypes.Add(@event.Type, value);
             }
 
@@ -143,7 +135,7 @@ internal class FileEventsRepository : IDisposable
 
             await header.SerializeAsync(stream, cancellationToken).ConfigureAwait(false);
 
-            await stream.WriteAsync(eventType.Bytes, cancellationToken).ConfigureAwait(false);
+            await stream.WriteAsync(eventType, cancellationToken).ConfigureAwait(false);
             await stream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);
         }
 
