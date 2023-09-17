@@ -1,13 +1,16 @@
-﻿public static class EventsDTOExtensions
+﻿namespace EvenireDB.Server.DTO
 {
-    public static Event[] ToModels(this EventDTO[] dtos)
+    public static class EventsDTOExtensions
     {
-        int count = dtos.Length;
-        var results = new Event[count];          
-        for(int  i = 0; i < count; i++)
+        public static Event[] ToModels(this EventDTO[] dtos)
         {
-            results[i] = dtos[i].ToModel();
+            int count = dtos.Length;
+            var results = new Event[count];
+            for (int i = 0; i < count; i++)
+            {
+                results[i] = dtos[i].ToModel();
+            }
+            return results;
         }
-        return results;
     }
 }
