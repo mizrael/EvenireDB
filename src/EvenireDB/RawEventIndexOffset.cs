@@ -1,4 +1,6 @@
-﻿internal struct RawEventIndexOffset
+﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+
+internal struct RawEventIndexOffset
 {
     public long EventIndex;
     public long Offset;
@@ -21,4 +23,7 @@
         // offset
         Array.Copy(BitConverter.GetBytes(this.Offset), 0, buffer, OFFSET_POS, sizeof(long));
     }
+
+    public static long ParseOffset(byte[] data)
+    => BitConverter.ToInt64(data, OFFSET_POS);
 }

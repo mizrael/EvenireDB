@@ -37,15 +37,14 @@ namespace EvenireDB.Tests
             var expectedEvents = BuildEvents(eventsCount);
 
             var aggregateId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(aggregateId);
-            using (var sut = new FileEventsRepository(config))
+            var dataFolder = _fixture.CreateRepoConfig(aggregateId);
+            using (var sut = new FileEventsRepository(dataFolder))
             {
                 await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
 
-                var events = await sut.ReadAsync(aggregateId, offset: 42).ConfigureAwait(false);
+                var events = await sut.ReadAsync(aggregateId).ConfigureAwait(false);
                 events.Should().NotBeNullOrEmpty()
-                      .And.HaveCount(100);
-                events.ElementAt(0).Index.Should().Be(42);
+                      .And.BeEquivalentTo(expectedEvents);
             }
         }
 
@@ -55,14 +54,15 @@ namespace EvenireDB.Tests
             var expectedEvents = BuildEvents(142);
 
             var aggregateId = Guid.NewGuid();
-            var dataFolder = _fixture.CreateRepoConfig(aggregateId);
-            using (var sut = new FileEventsRepository(dataFolder))
+            var config = _fixture.CreateRepoConfig(aggregateId);
+            using (var sut = new FileEventsRepository(config))
             {
                 await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
 
-                var events = await sut.ReadAsync(aggregateId).ConfigureAwait(false);
+                var events = await sut.ReadAsync(aggregateId, offset: 42).ConfigureAwait(false);
                 events.Should().NotBeNullOrEmpty()
-                      .And.BeEquivalentTo(expectedEvents);
+                      .And.HaveCount(100);
+                events.ElementAt(0).Index.Should().Be(42);
             }
         }
 

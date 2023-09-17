@@ -1,6 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-
-internal struct RawEventHeader
+﻿internal struct RawEventHeader
 {
     public long EventIndex;
     public int EventTypeNameLength; 
@@ -35,5 +33,5 @@ internal struct RawEventHeader
         header.EventIndex = BitConverter.ToInt64(data, EVENTINDEX_POS);
         header.EventTypeNameLength = BitConverter.ToInt32(data, EVENTTYPENAME_POS);
         header.EventDataLength = BitConverter.ToInt32(data, EVENTDATALENGTH_POS);
-    }
+    }    
 }

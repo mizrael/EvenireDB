@@ -1,14 +1,17 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Threading;
 
 [assembly: InternalsVisibleTo("EvenireDB.Benchmark")]
 [assembly: InternalsVisibleTo("EvenireDB.Tests")]
 
 public record FileEventsRepositoryConfig(string BasePath, int MaxPageSize = 100);
 
-//TODO: add versioning on events file
+//TODO: consider add versioning on events file
+//TODO: consider adding write locks
 public class FileEventsRepository : IDisposable, IEventsRepository
 {
     private bool _disposedValue = false;
@@ -45,18 +48,40 @@ public class FileEventsRepository : IDisposable, IEventsRepository
     private string GetAggregateFilePath(Guid aggregateId, string type = "")
     => Path.Combine(_config.BasePath, $"{aggregateId}{type}.dat");
 
+    private async Task<long> GetEventStreamOffsetAsync(Guid aggregateId, int offset, CancellationToken cancellationToken)
+    {
+        if (offset < 1) 
+            return 0;
+
+        string offsetIndexPath = GetAggregateFilePath(aggregateId, "_offsets");
+        using var stream = new FileStream(offsetIndexPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        stream.Position = RawEventIndexOffset.SIZE * offset;
+
+        var indexOffsetBuffer = ArrayPool<byte>.Shared.Rent(RawEventIndexOffset.SIZE);
+
+        await stream.ReadAsync(indexOffsetBuffer, 0, RawEventIndexOffset.SIZE, cancellationToken)
+                    .ConfigureAwait(false);
+
+        var streamOffset = RawEventIndexOffset.ParseOffset(indexOffsetBuffer);
+
+        ArrayPool<byte>.Shared.Return(indexOffsetBuffer);
+
+        return streamOffset;
+    }
+
     public async Task<IEnumerable<Event>> ReadAsync(Guid aggregateId, int offset = 0, CancellationToken cancellationToken = default)
     {
-        string aggregatePath = GetAggregateFilePath(aggregateId);
-        if (!File.Exists(aggregatePath))
+        string mainStreamPath = GetAggregateFilePath(aggregateId);
+        if (!File.Exists(mainStreamPath))
             return Enumerable.Empty<Event>();
 
         var results = new List<Event>();
 
         var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
 
-        using var stream = new FileStream(aggregatePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-
+        using var stream = new FileStream(mainStreamPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        stream.Position = await GetEventStreamOffsetAsync(aggregateId, offset, cancellationToken); 
+        
         while (true)
         {
             var bytesRead = await stream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
