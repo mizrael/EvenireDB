@@ -45,6 +45,9 @@ namespace EvenireDB.Tests
                 var events = await sut.ReadAsync(aggregateId).ConfigureAwait(false);
                 events.Should().NotBeNullOrEmpty()
                       .And.BeEquivalentTo(expectedEvents);
+
+                for(int i=0; i<eventsCount; i++)
+                    events.ElementAt(i).Index.Should().Be(i);
             }
         }
 
@@ -63,6 +66,23 @@ namespace EvenireDB.Tests
                 events.Should().NotBeNullOrEmpty()
                       .And.HaveCount(100);
                 events.ElementAt(0).Index.Should().Be(42);
+            }
+        }
+
+        [Fact]
+        public async Task ReadAsync_should_read_only_page_size_events()
+        {
+            var expectedEvents = BuildEvents(142);
+
+            var aggregateId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(aggregateId);
+            using (var sut = new FileEventsRepository(config))
+            {
+                await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
+
+                var events = await sut.ReadAsync(aggregateId, offset: 0).ConfigureAwait(false);
+                events.Should().NotBeNullOrEmpty()
+                      .And.HaveCount(100);                
             }
         }
 

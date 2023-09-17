@@ -84,6 +84,9 @@ public class FileEventsRepository : IDisposable, IEventsRepository
         
         while (true)
         {
+            if (results.Count >= _config.MaxPageSize)
+                break;
+
             var bytesRead = await stream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
                                         .ConfigureAwait(false);
             if (bytesRead == 0)
