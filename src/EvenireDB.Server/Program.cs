@@ -9,6 +9,7 @@ builder.Services
         var dataPath = Path.Combine(AppContext.BaseDirectory, "data");
         return new FileEventsRepositoryConfig(dataPath);
     })
+    .AddSingleton<IEventsProcessor, EventsProcessor>()
     .AddSingleton<IEventsRepository, FileEventsRepository>();
 
 var app = builder.Build();
