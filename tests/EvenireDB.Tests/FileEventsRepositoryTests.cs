@@ -11,8 +11,8 @@ namespace EvenireDB.Tests
         }
 
         [Theory]
-        [InlineData(1, 1025)]
-        [InlineData(10, 10250)]
+        [InlineData(1, 1021)]
+        [InlineData(10, 10210)]
         public async Task WriteAsync_should_write_events(int eventsCount, int expectedFileSize)
         {
             var events = BuildEvents(eventsCount);
