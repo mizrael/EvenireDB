@@ -1,4 +1,4 @@
-﻿using System.Buffers;
+﻿using System.Runtime.CompilerServices;
 
 internal struct RawEventHeader
 {
@@ -6,7 +6,7 @@ internal struct RawEventHeader
     public int EventTypeNameLength; 
     public int EventDataLength;    
 
-    public const int HEADER_SIZE =        
+    public const int SIZE =        
         sizeof(long) + // index
         sizeof(int) + // type name length
         sizeof(int) // data length
@@ -16,11 +16,9 @@ internal struct RawEventHeader
     private const int EVENTTYPENAME_POS = EVENTINDEX_POS + sizeof(long);
     private const int EVENTDATALENGTH_POS = EVENTTYPENAME_POS + sizeof(int);
 
-    public readonly void Fill(byte[] buffer)
+    public readonly void CopyTo(byte[] buffer)
     {
-        // TODO: benchmark other methods
         // TODO: avoid BitConverter
-
         
         // event index
         Array.Copy(BitConverter.GetBytes(this.EventIndex), 0, buffer, EVENTINDEX_POS, sizeof(long));

@@ -13,7 +13,7 @@ public class FileEventsRepository : IDisposable, IEventsRepository
 {
     private bool _disposedValue = false;
     
-    private readonly ConcurrentDictionary<Guid, Stream> _aggregateWriteStreams = new();
+    private readonly ConcurrentDictionary<Guid, EventWriteStreams> _aggregateWriteStreams = new();
     private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
     private readonly FileEventsRepositoryConfig _config;
 
@@ -25,21 +25,27 @@ public class FileEventsRepository : IDisposable, IEventsRepository
             Directory.CreateDirectory(config.BasePath);
     }
 
-    private Stream GetAggregateWriteStream(Guid aggregateId)
+    private EventWriteStreams GetAggregateWriteStream(Guid aggregateId)
     {
         var stream = _aggregateWriteStreams.GetOrAdd(aggregateId, _ =>
         {
-            string aggregatePath = GetAggregateFilePath(aggregateId);
-            return new FileStream(aggregatePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);           
+            string mainStreamPath = GetAggregateFilePath(aggregateId);
+            string offsetIndexPath = GetAggregateFilePath(aggregateId, "_offsets");
+
+            return new EventWriteStreams()
+            {
+                Main = new FileStream(mainStreamPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read),
+                IndexOffset = new FileStream(offsetIndexPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read),
+            };
         });
 
         return stream;
     }
 
-    private string GetAggregateFilePath(Guid aggregateId)
-    => Path.Combine(_config.BasePath, aggregateId.ToString() + ".dat");
+    private string GetAggregateFilePath(Guid aggregateId, string type = "")
+    => Path.Combine(_config.BasePath, $"{aggregateId}{type}.dat");
 
-    public async Task<IEnumerable<Event>> ReadAsync(Guid aggregateId, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Event>> ReadAsync(Guid aggregateId, int offset = 0, CancellationToken cancellationToken = default)
     {
         string aggregatePath = GetAggregateFilePath(aggregateId);
         if (!File.Exists(aggregatePath))
@@ -47,13 +53,13 @@ public class FileEventsRepository : IDisposable, IEventsRepository
 
         var results = new List<Event>();
 
-        var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.HEADER_SIZE);
+        var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
 
         using var stream = new FileStream(aggregatePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
         while (true)
         {
-            var bytesRead = await stream.ReadAsync(headerBuffer, 0, RawEventHeader.HEADER_SIZE, cancellationToken)
+            var bytesRead = await stream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
                                         .ConfigureAwait(false);
             if (bytesRead == 0)
                 break;
@@ -88,17 +94,27 @@ public class FileEventsRepository : IDisposable, IEventsRepository
 
     public async Task WriteAsync(Guid aggregateId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
     {
-        var stream = GetAggregateWriteStream(aggregateId);
+        var streams = GetAggregateWriteStream(aggregateId);
 
         var eventsCount = events.Count();
 
-        var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.HEADER_SIZE);
+        var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
+        var indexOffsetBuffer = ArrayPool<byte>.Shared.Rent(RawEventIndexOffset.SIZE);
 
         for (int i = 0; i < eventsCount; i++)
         {
             var @event = events.ElementAt(i);
+            
+            var indexOffset = new RawEventIndexOffset
+            {
+                EventIndex = @event.Index,
+                Offset = streams.Main.Position
+            };
+            indexOffset.CopyTo(indexOffsetBuffer);
+            await streams.IndexOffset.WriteAsync(indexOffsetBuffer, 0, RawEventIndexOffset.SIZE, cancellationToken)
+                        .ConfigureAwait(false);
 
-            var eventType = _eventTypes.GetOrAdd(@event.Type, _ => Encoding.UTF8.GetBytes(@event.Type));
+            var eventType = _eventTypes.GetOrAdd(@event.Type, _ => Encoding.UTF8.GetBytes(@event.Type));            
 
             var header = new RawEventHeader
             {
@@ -106,17 +122,19 @@ public class FileEventsRepository : IDisposable, IEventsRepository
                 EventTypeNameLength = eventType.Length,
                 EventDataLength = @event.Data.Length,
             };
-            header.Fill(headerBuffer);
-            await stream.WriteAsync(headerBuffer, 0, RawEventHeader.HEADER_SIZE, cancellationToken)
+            header.CopyTo(headerBuffer);
+            await streams.Main.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
                         .ConfigureAwait(false);
 
-            await stream.WriteAsync(eventType, cancellationToken).ConfigureAwait(false);
-            await stream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);
+            await streams.Main.WriteAsync(eventType, cancellationToken).ConfigureAwait(false);
+            await streams.Main.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);            
         }
 
         ArrayPool<byte>.Shared.Return(headerBuffer);
+        ArrayPool<byte>.Shared.Return(indexOffsetBuffer);
 
-        await stream.FlushAsync().ConfigureAwait(false);
+        await streams.Main.FlushAsync().ConfigureAwait(false);
+        await streams.IndexOffset.FlushAsync().ConfigureAwait(false);
     }
 
     #region Disposable
@@ -129,9 +147,13 @@ public class FileEventsRepository : IDisposable, IEventsRepository
             {
                 foreach (var kv in _aggregateWriteStreams)
                 {
-                    kv.Value.Close();
-                    kv.Value.Dispose();
+                    kv.Value.Main.Close();
+                    kv.Value.Main.Dispose();
+
+                    kv.Value.IndexOffset.Close();
+                    kv.Value.IndexOffset.Dispose();
                 }
+
                 _aggregateWriteStreams.Clear();
             }
 
