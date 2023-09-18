@@ -1,22 +1,24 @@
 ﻿using EvenireDB.Server;
-using EvenireDB.Server.DTO;
 using System.Threading.Channels;
 
 public class IncomingEventsSubscriber : BackgroundService
 {
     private readonly ChannelReader<IncomingEventsGroup> _reader;
     private readonly IEventsRepository _repo;
+    private readonly ILogger<IncomingEventsSubscriber> _logger;
 
-    public IncomingEventsSubscriber(ChannelReader<IncomingEventsGroup> reader, IEventsRepository repo)
+    public IncomingEventsSubscriber(ChannelReader<IncomingEventsGroup> reader, IEventsRepository repo, ILogger<IncomingEventsSubscriber> logger)
     {
         _reader = reader ?? throw new ArgumentNullException(nameof(reader));
         _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         await Task.Factory.StartNew(async () =>
         {
+            // TODO: handle exceptions, otherwise the reader will fail
             await this.ExecuteAsyncCore(cancellationToken).ConfigureAwait(false);
         }, cancellationToken);
     }
@@ -27,8 +29,20 @@ public class IncomingEventsSubscriber : BackgroundService
         {
             while (_reader.TryRead(out IncomingEventsGroup group))
             {
-                await _repo.WriteAsync(group.AggregateId, group.Events, cancellationToken)
+                try
+                {
+                    await _repo.WriteAsync(group.AggregateId, group.Events, cancellationToken)
                            .ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "an error has occurred while persisting events group for aggregate {AggregateId}: {Error}",
+                        group.AggregateId,
+                        ex.Message);
+                }
+                
             }
         }
     }

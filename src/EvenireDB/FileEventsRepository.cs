@@ -14,6 +14,7 @@ public class FileEventsRepository : IDisposable, IEventsRepository
 {
     private bool _disposedValue = false;
     
+    // TODO: this should be a LRU-cache
     private readonly ConcurrentDictionary<Guid, EventWriteStreams> _aggregateWriteStreams = new();
     private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
     private readonly FileEventsRepositoryConfig _config;
