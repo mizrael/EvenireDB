@@ -1,12 +1,12 @@
 ﻿using EvenireDB.Server.DTO;
 using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes
 {
     public class EventsV1EndpointTests:IClassFixture<ServerFixture>
     {
+        private readonly static byte[] _defaultEventData = new byte[] { 0x42 };
         private readonly ServerFixture _serverFixture;
 
         public EventsV1EndpointTests(ServerFixture serverFixture)
@@ -53,8 +53,12 @@ namespace EvenireDB.Server.Tests.Routes
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
-            var response = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", null);
-            response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+            var nullPayloadResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", null);
+            nullPayloadResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+
+            var dtos = BuildEventsDTOs(10, null);
+            var nullDataResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", dtos);
+            nullDataResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
         }
 
         [Fact]
@@ -62,7 +66,7 @@ namespace EvenireDB.Server.Tests.Routes
         {
             var aggregateId = Guid.NewGuid();
 
-            var dtos = BuildEventsDTOs(10);
+            var dtos = BuildEventsDTOs(10, _defaultEventData);
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
@@ -70,10 +74,26 @@ namespace EvenireDB.Server.Tests.Routes
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
         }
 
-        private Event[] BuildEvents(int count)
-            => Enumerable.Range(0, count).Select(i => new Event("lorem", new byte[] { 0x42 }, i)).ToArray();
+        [Fact]
+        public async Task Post_should_create_events()
+        {
+            var aggregateId = Guid.NewGuid();
 
-        private EventDTO[] BuildEventsDTOs(int count)
-           => Enumerable.Range(0, count).Select(i => new EventDTO("lorem", new byte[] { 0x42 }, i)).ToArray();
+            var dtos = BuildEventsDTOs(10, _defaultEventData);
+
+            await using var application = _serverFixture.CreateServer();
+            using var client = application.CreateClient();
+            await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", dtos);
+
+            var response = await client.GetAsync($"/api/v1/events/{aggregateId}");            
+            var fetchedEvents = await response.Content.ReadFromJsonAsync<EventDTO[]>();
+            fetchedEvents.Should().BeEquivalentTo(dtos);
+        }
+
+        private Event[] BuildEvents(int count)
+            => Enumerable.Range(0, count).Select(i => new Event("lorem", _defaultEventData, i)).ToArray();
+
+        private EventDTO[] BuildEventsDTOs(int count, byte[] data)
+           => Enumerable.Range(0, count).Select(i => new EventDTO("lorem", data, i)).ToArray();
     }
 }

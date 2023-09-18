@@ -1,20 +1,29 @@
+using EvenireDB.Server;
 using EvenireDB.Server.Routes;
-using EvenireDB.Server.Services;
+using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHealthChecks();
 builder.Services.AddApiVersioning();
 
+var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelOptions
+{
+    SingleWriter = false,
+    SingleReader = false,
+    AllowSynchronousContinuations = true
+});
+
 builder.Services
-    .AddSingleton<FileEventsRepositoryConfig>(_ =>
+    .AddSingleton(channel.Writer)
+    .AddSingleton(channel.Reader)
+    .AddSingleton(_ =>
     {
         // TODO: from config. default to this when config is empty
         var dataPath = Path.Combine(AppContext.BaseDirectory, "data");
         return new FileEventsRepositoryConfig(dataPath);
-    })    
+    })
     .AddSingleton<IEventsRepository, FileEventsRepository>()
-    .AddSingleton(EventsProcessorConfig.Default)
-    .AddSingleton<IEventsProcessor, EventsProcessor>();
+    .AddHostedService<IncomingEventsSubscriber>();
 
 var app = builder.Build();
 

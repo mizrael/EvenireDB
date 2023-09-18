@@ -1,6 +1,6 @@
 ﻿using EvenireDB.Server.DTO;
-using EvenireDB.Server.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Threading.Channels;
 
 namespace EvenireDB.Server.Routes
 {
@@ -28,15 +28,30 @@ namespace EvenireDB.Server.Routes
             return events.Select(@event => EventDTO.FromModel(@event));
         }
 
-        private static IResult SaveAggregateEvents(
-           [FromServices] IEventsProcessor repo,
+        private static async Task<IResult> SaveAggregateEvents(
+           [FromServices] ChannelWriter<IncomingEventsGroup> writer,
            Guid aggregateId,
            [FromBody] EventDTO[] dtos)
         {
             if (dtos is null || dtos.Length == 0)
                 return Results.BadRequest();
 
-            repo.Enqueue(aggregateId, dtos);
+            Event[] events;
+
+            try
+            {
+                events = dtos.ToModels();
+            }
+            catch
+            {
+                // TODO: build proper response
+                return Results.BadRequest();
+            }
+           
+            var group = new IncomingEventsGroup(aggregateId, events);
+
+            await writer.WriteAsync(group)
+                        .ConfigureAwait(false);
 
             return Results.AcceptedAtRoute(nameof(GetEventsByAggregate), new { aggregateId });
         }
