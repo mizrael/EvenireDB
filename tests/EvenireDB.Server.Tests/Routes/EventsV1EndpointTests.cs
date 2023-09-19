@@ -47,7 +47,7 @@ namespace EvenireDB.Server.Tests.Routes
         }
 
         [Fact]
-        public async Task Post_should_return_bad_request_when_input_invalid()
+        public async Task Post_should_return_bad_request_when_input_null()
         {
             var aggregateId = Guid.NewGuid();
 
@@ -55,6 +55,15 @@ namespace EvenireDB.Server.Tests.Routes
             using var client = application.CreateClient();
             var nullPayloadResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", null);
             nullPayloadResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
+        public async Task Post_should_return_bad_request_when_input_invalid()
+        {
+            var aggregateId = Guid.NewGuid();
+
+            await using var application = _serverFixture.CreateServer();
+            using var client = application.CreateClient();
 
             var dtos = BuildEventsDTOs(10, null);
             var nullDataResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", dtos);
@@ -91,9 +100,9 @@ namespace EvenireDB.Server.Tests.Routes
         }
 
         private Event[] BuildEvents(int count)
-            => Enumerable.Range(0, count).Select(i => new Event("lorem", _defaultEventData, i)).ToArray();
+            => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _defaultEventData)).ToArray();
 
         private EventDTO[] BuildEventsDTOs(int count, byte[] data)
-           => Enumerable.Range(0, count).Select(i => new EventDTO("lorem", data, i)).ToArray();
+           => Enumerable.Range(0, count).Select(i => new EventDTO(Guid.NewGuid(), "lorem", data)).ToArray();
     }
 }
