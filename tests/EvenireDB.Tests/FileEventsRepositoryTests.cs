@@ -1,8 +1,9 @@
+using System.Linq;
+
 namespace EvenireDB.Tests
 {
     public class FileEventsRepositoryTests : IClassFixture<DataFixture>
     {
-        private readonly static byte[] _defaultEventData = new byte[] { 0x42 };
         private readonly DataFixture _fixture;
 
         public FileEventsRepositoryTests(DataFixture fixture)
@@ -15,7 +16,7 @@ namespace EvenireDB.Tests
         [InlineData(10, 10)]
         public async Task WriteAsync_should_write_events(int eventsCount, int expectedFileSize)
         {
-            var events = BuildEvents(eventsCount);
+            var events = BuildEvents(eventsCount, new byte[] {0x42});
 
             var streamId = Guid.NewGuid();
             var config = _fixture.CreateRepoConfig(streamId);
@@ -84,7 +85,15 @@ namespace EvenireDB.Tests
             }
         }
 
-        private Event[] BuildEvents(int count)
-            => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _defaultEventData)).ToArray();
+        private static Event[] BuildEvents(int count, byte[]? data = null)
+            => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", data ?? GenerateRandomData())).ToArray();
+
+        private static byte[] GenerateRandomData()
+        {
+            var length = Random.Shared.Next(10, 1000);
+            var data = new byte[length];
+            Random.Shared.NextBytes(data);
+            return data;
+        }
     }
 }
