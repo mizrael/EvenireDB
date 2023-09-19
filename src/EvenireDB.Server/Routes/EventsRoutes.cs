@@ -1,6 +1,5 @@
 ﻿using EvenireDB.Server.DTO;
 using Microsoft.AspNetCore.Mvc;
-using System.Threading.Channels;
 
 namespace EvenireDB.Server.Routes
 {
@@ -17,19 +16,19 @@ namespace EvenireDB.Server.Routes
             return app;
         }
 
-        private static async Task<IEnumerable<EventDTO>> GetEvents(
-            [FromServices] IEventsRepository repo,
+        private static IEnumerable<EventDTO> GetEvents(
+            [FromServices] EventsProvider provider,
             Guid streamId,
-            [FromQuery(Name = "offset")] int offset = 0)
+            [FromQuery(Name = "skip")] int skip = 0)
         {
-            var events = await repo.ReadAsync(streamId, offset).ConfigureAwait(false);
+            var events = provider.GetPage(streamId, skip);
             if (events is null)
                 return Enumerable.Empty<EventDTO>();
             return events.Select(@event => EventDTO.FromModel(@event));
         }
 
-        private static async Task<IResult> SaveEvents(
-           [FromServices] ChannelWriter<IncomingEventsGroup> writer,
+        private static IResult SaveEvents(
+           [FromServices] EventsProvider provider,
            Guid streamId,
            [FromBody] EventDTO[] dtos)
         {
@@ -47,13 +46,10 @@ namespace EvenireDB.Server.Routes
                 // TODO: build proper response
                 return Results.BadRequest();
             }
-           
-            var group = new IncomingEventsGroup(streamId, events);
 
-            await writer.WriteAsync(group)
-                        .ConfigureAwait(false);
+            provider.Append(streamId, events);
 
             return Results.AcceptedAtRoute(nameof(GetEvents), new { streamId });
         }
-    }
+    }    
 }

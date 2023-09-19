@@ -13,9 +13,9 @@ namespace EvenireDB.Server.Tests
             repo.WhenForAnyArgs(r => r.WriteAsync(Arg.Any<Guid>(), null, default))
                 .Throw<Exception>();
 
-            var logger = Substitute.For<ILogger<IncomingEventsSubscriber>>();
+            var logger = Substitute.For<ILogger<IncomingEventsPersistenceWorker>>();
 
-            var sut = new IncomingEventsSubscriber(channel.Reader, repo, logger);
+            var sut = new IncomingEventsPersistenceWorker(channel.Reader, repo, logger);
 
             await sut.StartAsync(default);
 

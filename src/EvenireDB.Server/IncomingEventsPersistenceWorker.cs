@@ -1,13 +1,13 @@
 ﻿using EvenireDB.Server;
 using System.Threading.Channels;
 
-public class IncomingEventsSubscriber : BackgroundService
+public class IncomingEventsPersistenceWorker : BackgroundService
 {
     private readonly ChannelReader<IncomingEventsGroup> _reader;
     private readonly IEventsRepository _repo;
-    private readonly ILogger<IncomingEventsSubscriber> _logger;
+    private readonly ILogger<IncomingEventsPersistenceWorker> _logger;
 
-    public IncomingEventsSubscriber(ChannelReader<IncomingEventsGroup> reader, IEventsRepository repo, ILogger<IncomingEventsSubscriber> logger)
+    public IncomingEventsPersistenceWorker(ChannelReader<IncomingEventsGroup> reader, IEventsRepository repo, ILogger<IncomingEventsPersistenceWorker> logger)
     {
         _reader = reader ?? throw new ArgumentNullException(nameof(reader));
         _repo = repo ?? throw new ArgumentNullException(nameof(repo));

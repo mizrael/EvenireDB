@@ -1,7 +1,5 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
-using System.IO;
-using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -14,14 +12,13 @@ public record FileEventsRepositoryConfig(string BasePath, int MaxPageSize = 100)
 //TODO: consider adding write locks to handle concurrency
 //TODO: make sure event IDs are unique in a stream
 
-public class FileEventsRepository : IDisposable, IEventsRepository
-{
-    private bool _disposedValue = false;
-    
-    // TODO: this should be a LRU-cache
-    private readonly ConcurrentDictionary<Guid, EventWriteStreams> _aggregateWriteStreams = new();
+public class FileEventsRepository : IEventsRepository
+{    
     private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
     private readonly FileEventsRepositoryConfig _config;
+
+    private const string DataFileSuffix = "_data";
+    private const string HeadersFileSuffix = "_headers";
 
     public FileEventsRepository(FileEventsRepositoryConfig config)
     {
@@ -29,23 +26,6 @@ public class FileEventsRepository : IDisposable, IEventsRepository
 
         if (!Directory.Exists(_config.BasePath))
             Directory.CreateDirectory(config.BasePath);
-    }
-
-    private EventWriteStreams GetEventsStream(Guid streamId)
-    {
-        var stream = _aggregateWriteStreams.GetOrAdd(streamId, _ =>
-        {
-            string dataPath = GetStreamPath(streamId, "_data");
-            string headersPath = GetStreamPath(streamId, "_headers");
-
-            return new EventWriteStreams()
-            {
-                Data = new FileStream(dataPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read),
-                Headers = new FileStream(headersPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read),
-            };
-        });
-
-        return stream;
     }
 
     private string GetStreamPath(Guid streamId, string type)
@@ -56,8 +36,8 @@ public class FileEventsRepository : IDisposable, IEventsRepository
         if (skip < 0)
             throw new ArgumentOutOfRangeException(nameof(skip));
 
-        string headersPath = GetStreamPath(streamId, "_headers");
-        string dataPath = GetStreamPath(streamId, "_data");
+        string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
+        string dataPath = GetStreamPath(streamId, DataFileSuffix);
         if (!File.Exists(headersPath) || !File.Exists(dataPath))
             return Enumerable.Empty<Event>();
 
@@ -125,7 +105,11 @@ public class FileEventsRepository : IDisposable, IEventsRepository
 
     public async Task WriteAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
     {
-        var streams = GetEventsStream(streamId);
+        string dataPath = GetStreamPath(streamId, DataFileSuffix);        
+        using var dataStream = new FileStream(dataPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+
+        string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
+        using var headersStream = new FileStream(headersPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
 
         var eventsCount = events.Count();
 
@@ -146,53 +130,20 @@ public class FileEventsRepository : IDisposable, IEventsRepository
             {
                 EventId = @event.Id,
                 EventType = eventType,
-                DataPosition = streams.Data.Position,
+                DataPosition = dataStream.Position,
                 EventDataLength = @event.Data.Length,
                 EventTypeLength = (short)@event.Type.Length,
             };
             header.CopyTo(headerBuffer);
-            await streams.Headers.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
+            await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
                                  .ConfigureAwait(false);
 
-            await streams.Data.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);            
+            await dataStream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);            
         }
 
         ArrayPool<byte>.Shared.Return(headerBuffer);        
 
-        await streams.Data.FlushAsync().ConfigureAwait(false);
-        await streams.Headers.FlushAsync().ConfigureAwait(false);
+        await dataStream.FlushAsync().ConfigureAwait(false);
+        await headersStream.FlushAsync().ConfigureAwait(false);
     }
-
-    #region Disposable
-
-    protected virtual void Dispose(bool disposing)
-    {
-        if (!_disposedValue)
-        {
-            if (disposing)
-            {
-                foreach (var kv in _aggregateWriteStreams)
-                {
-                    kv.Value.Data.Close();
-                    kv.Value.Data.Dispose();
-
-                    kv.Value.Headers.Close();
-                    kv.Value.Headers.Dispose();
-                }
-
-                _aggregateWriteStreams.Clear();
-            }
-
-            _disposedValue = true;
-        }
-    }
-
-    public void Dispose()
-    {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-        Dispose(disposing: true);
-        GC.SuppressFinalize(this);
-    }
-
-    #endregion Disposable
 }
