@@ -1,5 +1,7 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
+using System.IO;
+using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -33,93 +35,90 @@ public class FileEventsRepository : IDisposable, IEventsRepository
     {
         var stream = _aggregateWriteStreams.GetOrAdd(streamId, _ =>
         {
-            string mainStreamPath = GetStreamPath(streamId);
-            string offsetIndexPath = GetStreamPath(streamId, "_offsets");
+            string dataPath = GetStreamPath(streamId, "_data");
+            string headersPath = GetStreamPath(streamId, "_headers");
 
             return new EventWriteStreams()
             {
-                Main = new FileStream(mainStreamPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read),
-                OffsetIndex = new FileStream(offsetIndexPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read),
+                Data = new FileStream(dataPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read),
+                Headers = new FileStream(headersPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read),
             };
         });
 
         return stream;
     }
 
-    private string GetStreamPath(Guid streamId, string type = "")
+    private string GetStreamPath(Guid streamId, string type)
     => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
-
-    private async Task<RawEventOffsetIndex> GetEventIndex(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
-    {
-        if (skip < 0) 
-            throw new ArgumentOutOfRangeException(nameof(skip));
-
-        string offsetIndexPath = GetStreamPath(streamId, "_offsets");
-        using var stream = new FileStream(offsetIndexPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        stream.Position = RawEventOffsetIndex.SIZE * skip;
-
-        var indexOffsetBuffer = ArrayPool<byte>.Shared.Rent(RawEventOffsetIndex.SIZE);
-
-        await stream.ReadAsync(indexOffsetBuffer, 0, RawEventOffsetIndex.SIZE, cancellationToken)
-                    .ConfigureAwait(false);
-
-        var index = new RawEventOffsetIndex();
-        RawEventOffsetIndex.Parse(indexOffsetBuffer, ref index);
-
-        ArrayPool<byte>.Shared.Return(indexOffsetBuffer);
-
-        return index;
-    }
 
     public async Task<IEnumerable<Event>> ReadAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
     {
-        string mainStreamPath = GetStreamPath(streamId);
-        if (!File.Exists(mainStreamPath))
+        if (skip < 0)
+            throw new ArgumentOutOfRangeException(nameof(skip));
+
+        string headersPath = GetStreamPath(streamId, "_headers");
+        string dataPath = GetStreamPath(streamId, "_data");
+        if (!File.Exists(headersPath) || !File.Exists(dataPath))
             return Enumerable.Empty<Event>();
 
-        var results = new List<Event>();
-
-        var index = await GetEventIndex(streamId, skip, cancellationToken).ConfigureAwait(false); 
+        // first, read all the headers, which are stored sequentially
+        // this will allow later on pulling the data for all the events in one go
         
-        var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);        
+        var headers = new List<RawEventHeader>();
 
-        using var stream = new FileStream(mainStreamPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        stream.Position = index.MainStreamPosition;
+        var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
+
+        using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        headersStream.Position = RawEventHeader.SIZE * skip;
+
+        int dataBufferSize = 0; // TODO: this should probably be a long, but it would then require chunking from the data stream
 
         while (true)
         {
-            if (results.Count >= _config.MaxPageSize)
+            if (headers.Count >= _config.MaxPageSize)
                 break;
 
-            var bytesRead = await stream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
-                                        .ConfigureAwait(false);
+            var bytesRead = await headersStream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
+                                               .ConfigureAwait(false);
             if (bytesRead == 0)
                 break;
 
             var header = new RawEventHeader();
             RawEventHeader.Parse(headerBuffer, ref header);
+            headers.Add(header);
 
-            var eventTypeNameBuff = ArrayPool<byte>.Shared.Rent(header.EventTypeNameLength);
-
-            await stream.ReadAsync(eventTypeNameBuff, 0, header.EventTypeNameLength, cancellationToken)
-                        .ConfigureAwait(false);
-
-            // have to create a span to ensure that we're parsing the right buffer size
-            // as ArrayPool might return a buffer with size the closest pow(2)
-            var eventTypeName = Encoding.UTF8.GetString(eventTypeNameBuff.AsSpan(0, header.EventTypeNameLength));
-
-            ArrayPool<byte>.Shared.Return(eventTypeNameBuff);
-
-            var eventData = new byte[header.EventDataLength];
-
-            await stream.ReadAsync(eventData, 0, header.EventDataLength, cancellationToken)
-                                  .ConfigureAwait(false);
-
-            var @event = new Event(header.EventId, eventTypeName, eventData);
-            results.Add(@event);
+            dataBufferSize += header.EventDataLength;
         }
 
         ArrayPool<byte>.Shared.Return(headerBuffer);
+
+        // now we read the data for all the events in a single buffer
+        // so that we can parse it directly, avoiding accessing the file any longer
+
+        var results = new List<Event>();
+        using var dataStream = new FileStream(dataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+        dataStream.Position = headers[0].DataPosition;
+
+        var dataBuffer = ArrayPool<byte>.Shared.Rent(dataBufferSize);
+        await dataStream.ReadAsync(dataBuffer, 0, dataBufferSize, cancellationToken)
+                        .ConfigureAwait(false);
+
+        for (int i = 0; i < headers.Count; i++)
+        {
+            // have to create a span to ensure that we're parsing the right buffer size
+            // as ArrayPool might return a buffer with size the closest pow(2)
+            var eventTypeName = Encoding.UTF8.GetString(headers[i].EventType, 0, headers[i].EventTypeLength);
+
+            // when paging, we need to take into account the position of the first block of data
+            var eventData = new byte[headers[i].EventDataLength];
+            long srcOffset = headers[i].DataPosition - headers[0].DataPosition; 
+            Array.Copy(dataBuffer, srcOffset, eventData, 0, headers[i].EventDataLength);
+
+            var @event = new Event(headers[i].EventId, eventTypeName, eventData);
+            results.Add(@event);
+        }
+
+        ArrayPool<byte>.Shared.Return(dataBuffer);
 
         return results;
     }
@@ -131,43 +130,37 @@ public class FileEventsRepository : IDisposable, IEventsRepository
         var eventsCount = events.Count();
 
         var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
-        var indexOffsetBuffer = ArrayPool<byte>.Shared.Rent(RawEventOffsetIndex.SIZE);
-
+        
         for (int i = 0; i < eventsCount; i++)
         {
             var @event = events.ElementAt(i);
             
-            var indexOffset = new RawEventOffsetIndex
-            {
-                EventId = @event.Id,
-                MainStreamPosition = streams.Main.Position,
-                EventDataSize = @event.Data.Length,
-            };
-            indexOffset.CopyTo(indexOffsetBuffer);
-            await streams.OffsetIndex.WriteAsync(indexOffsetBuffer, 0, RawEventOffsetIndex.SIZE, cancellationToken)
-                        .ConfigureAwait(false);
-
-            var eventType = _eventTypes.GetOrAdd(@event.Type, _ => Encoding.UTF8.GetBytes(@event.Type));            
+            var eventType = _eventTypes.GetOrAdd(@event.Type, _ => {
+                var src = Encoding.UTF8.GetBytes(@event.Type); 
+                var dest = new byte[Constants.MAX_EVENT_TYPE_LENGTH];                
+                Array.Copy(src, dest, src.Length);
+                return dest;
+            });            
 
             var header = new RawEventHeader
             {
                 EventId = @event.Id,
-                EventTypeNameLength = eventType.Length,
+                EventType = eventType,
+                DataPosition = streams.Data.Position,
                 EventDataLength = @event.Data.Length,
+                EventTypeLength = (short)@event.Type.Length,
             };
             header.CopyTo(headerBuffer);
-            await streams.Main.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
-                              .ConfigureAwait(false);
+            await streams.Headers.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
+                                 .ConfigureAwait(false);
 
-            await streams.Main.WriteAsync(eventType, cancellationToken).ConfigureAwait(false);
-            await streams.Main.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);            
+            await streams.Data.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);            
         }
 
-        ArrayPool<byte>.Shared.Return(headerBuffer);
-        ArrayPool<byte>.Shared.Return(indexOffsetBuffer);
+        ArrayPool<byte>.Shared.Return(headerBuffer);        
 
-        await streams.Main.FlushAsync().ConfigureAwait(false);
-        await streams.OffsetIndex.FlushAsync().ConfigureAwait(false);
+        await streams.Data.FlushAsync().ConfigureAwait(false);
+        await streams.Headers.FlushAsync().ConfigureAwait(false);
     }
 
     #region Disposable
@@ -180,11 +173,11 @@ public class FileEventsRepository : IDisposable, IEventsRepository
             {
                 foreach (var kv in _aggregateWriteStreams)
                 {
-                    kv.Value.Main.Close();
-                    kv.Value.Main.Dispose();
+                    kv.Value.Data.Close();
+                    kv.Value.Data.Dispose();
 
-                    kv.Value.OffsetIndex.Close();
-                    kv.Value.OffsetIndex.Dispose();
+                    kv.Value.Headers.Close();
+                    kv.Value.Headers.Dispose();
                 }
 
                 _aggregateWriteStreams.Clear();

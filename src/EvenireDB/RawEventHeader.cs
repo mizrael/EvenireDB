@@ -1,37 +1,51 @@
 ﻿internal struct RawEventHeader
 {
     public Guid EventId;
-    public int EventTypeNameLength; 
+    public long DataPosition;
+    public byte[] EventType;
+    public short EventTypeLength;
     public int EventDataLength;    
 
     public const int SIZE =
         TypeSizes.GUID + // index
-        sizeof(int) + // type name length
+        sizeof(long) + // offset in the main stream
+        Constants.MAX_EVENT_TYPE_LENGTH + // type name
+        sizeof(short) + // type name length
         sizeof(int) // data length
     ;
 
-    private const int EVENTID_POS = 0;
-    private const int EVENTTYPENAME_POS = EVENTID_POS + TypeSizes.GUID;
-    private const int EVENTDATALENGTH_POS = EVENTTYPENAME_POS + sizeof(int);
+    private const int EVENT_ID_POS = 0;
+    private const int OFFSET_POS = EVENT_ID_POS + TypeSizes.GUID;
+    private const int EVENT_TYPE_NAME_POS = OFFSET_POS + sizeof(long);
+    private const int EVENT_TYPE_NAME_LENGTH_POS = EVENT_TYPE_NAME_POS + Constants.MAX_EVENT_TYPE_LENGTH;
+    private const int EVENT_DATA_LENGTH_POS = EVENT_TYPE_NAME_LENGTH_POS + sizeof(short);
 
     public readonly void CopyTo(byte[] buffer)
     {
         // TODO: avoid BitConverter
         
         // event index
-        Array.Copy(this.EventId.ToByteArray(), 0, buffer, EVENTID_POS, TypeSizes.GUID);
+        Array.Copy(this.EventId.ToByteArray(), 0, buffer, EVENT_ID_POS, TypeSizes.GUID);
 
+        // offset in the main stream
+        Array.Copy(BitConverter.GetBytes(this.DataPosition), 0, buffer, OFFSET_POS, sizeof(long));
+
+        // event type
+        Array.Copy(this.EventType, 0, buffer, EVENT_TYPE_NAME_POS, Constants.MAX_EVENT_TYPE_LENGTH);
+        
         // event type length
-        Array.Copy(BitConverter.GetBytes(this.EventTypeNameLength), 0, buffer, EVENTTYPENAME_POS, sizeof(int));
+        Array.Copy(BitConverter.GetBytes(this.EventTypeLength), 0, buffer, EVENT_TYPE_NAME_LENGTH_POS, sizeof(short));
 
         // event data length
-        Array.Copy(BitConverter.GetBytes(this.EventDataLength), 0, buffer, EVENTDATALENGTH_POS, sizeof(int));
+        Array.Copy(BitConverter.GetBytes(this.EventDataLength), 0, buffer, EVENT_DATA_LENGTH_POS, sizeof(int));
     }
 
     public static void Parse(byte[] data, ref RawEventHeader header)
     {
-        header.EventId = new Guid(data.AsSpan(EVENTID_POS, TypeSizes.GUID));
-        header.EventTypeNameLength = BitConverter.ToInt32(data, EVENTTYPENAME_POS);
-        header.EventDataLength = BitConverter.ToInt32(data, EVENTDATALENGTH_POS);
+        header.EventId = new Guid(data.AsSpan(EVENT_ID_POS, TypeSizes.GUID));
+        header.DataPosition = BitConverter.ToInt32(data, OFFSET_POS);
+        header.EventType = data.AsSpan(EVENT_TYPE_NAME_POS, Constants.MAX_EVENT_TYPE_LENGTH).ToArray();
+        header.EventTypeLength = BitConverter.ToInt16(data, EVENT_TYPE_NAME_LENGTH_POS);
+        header.EventDataLength = BitConverter.ToInt32(data, EVENT_DATA_LENGTH_POS);
     }    
 }

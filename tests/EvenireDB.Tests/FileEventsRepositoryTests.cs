@@ -11,20 +11,20 @@ namespace EvenireDB.Tests
         }
 
         [Theory]
-        [InlineData(1, 30)]
-        [InlineData(10, 300)]
+        [InlineData(1, 1)]
+        [InlineData(10, 10)]
         public async Task WriteAsync_should_write_events(int eventsCount, int expectedFileSize)
         {
             var events = BuildEvents(eventsCount);
 
-            var aggregateId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(aggregateId);
+            var streamId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(streamId);
             using (var sut = new FileEventsRepository(config))
             {
-                await sut.WriteAsync(aggregateId, events).ConfigureAwait(false);
+                await sut.WriteAsync(streamId, events).ConfigureAwait(false);
             }
 
-            var eventsFilePath = Path.Combine(config.BasePath, aggregateId + ".dat");
+            var eventsFilePath = Path.Combine(config.BasePath, streamId + "_data.dat");
             var bytes = File.ReadAllBytes(eventsFilePath);
             Assert.Equal(expectedFileSize, bytes.Length);            
         }

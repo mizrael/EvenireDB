@@ -1,5 +1,5 @@
 ﻿internal struct EventWriteStreams
 {
-    public FileStream Main;
-    public FileStream OffsetIndex;
+    public FileStream Data;
+    public FileStream Headers;
 }
