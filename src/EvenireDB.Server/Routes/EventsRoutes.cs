@@ -16,12 +16,12 @@ namespace EvenireDB.Server.Routes
             return app;
         }
 
-        private static IEnumerable<EventDTO> GetEvents(
+        private static async ValueTask<IEnumerable<EventDTO>> GetEvents(
             [FromServices] EventsProvider provider,
             Guid streamId,
             [FromQuery(Name = "skip")] int skip = 0)
         {
-            var events = provider.GetPage(streamId, skip);
+            var events = await provider.GetPageAsync(streamId, skip).ConfigureAwait(false);
             if (events is null)
                 return Enumerable.Empty<EventDTO>();
             return events.Select(@event => EventDTO.FromModel(@event));
@@ -47,7 +47,7 @@ namespace EvenireDB.Server.Routes
                 return Results.BadRequest();
             }
 
-            provider.Append(streamId, events);
+            provider.AppendAsync(streamId, events);
 
             return Results.AcceptedAtRoute(nameof(GetEvents), new { streamId });
         }

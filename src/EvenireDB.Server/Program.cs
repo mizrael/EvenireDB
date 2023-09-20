@@ -15,7 +15,7 @@ var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelO
 
 builder.Services
     .AddMemoryCache()
-    .AddSingleton(new EventsProviderConfig(100))
+    .AddSingleton(EventsProviderConfig.Default)
     .AddSingleton<EventsProvider>()
     .AddSingleton(channel.Writer)
     .AddSingleton(channel.Reader)

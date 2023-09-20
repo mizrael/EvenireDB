@@ -35,8 +35,8 @@ namespace EvenireDB.Server.Tests.Routes
             await using var application = _serverFixture.CreateServer();
 
             var expectedEvents = this.BuildEvents(10);
-            var repo = application.Services.GetService<EventsProvider>();
-            repo.Append(streamId, expectedEvents);
+            var provider = application.Services.GetService<EventsProvider>();
+            provider.AppendAsync(streamId, expectedEvents);
 
             using var client = application.CreateClient();
             var response = await client.GetAsync($"/api/v1/events/{streamId}");
