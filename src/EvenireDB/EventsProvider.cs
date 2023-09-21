@@ -98,26 +98,9 @@ namespace EvenireDB
             CachedEvents entry = await EnsureCachedEventsAsync(streamId, key, cancellationToken).ConfigureAwait(false);
 
             entry.Semaphore.Wait(cancellationToken);
-
             try
             {
-                if (entry.Events.Count > 0)
-                {
-                    var existingEventIds = new HashSet<Guid>(entry.Events.Count);
-                    for (int i = 0; i != entry.Events.Count; i++)
-                        existingEventIds.Add(entry.Events[i].Id);
-
-                    foreach (var newEvent in incomingEvents)
-                    {
-                        if (entry.Events.Contains(newEvent))
-                            throw new ArgumentOutOfRangeException(nameof(newEvent), $"event id '{newEvent.Id}' is duplicated.");
-                        existingEventIds.Add(newEvent.Id);
-                    }
-                }
-
-                entry.Events.AddRange(incomingEvents);
-
-                _cache.Set(key, entry);
+                AddIncomingToCache(incomingEvents, key, entry);
 
                 var group = new IncomingEventsGroup(streamId, incomingEvents);
                 _writer.TryWrite(group); //TODO: error checking
@@ -126,6 +109,27 @@ namespace EvenireDB
             {
                 entry.Semaphore.Release();
             }
+        }
+
+        private void AddIncomingToCache(IEnumerable<Event> incomingEvents, string key, CachedEvents entry)
+        {
+            if (entry.Events.Count > 0)
+            {
+                var existingEventIds = new HashSet<Guid>(entry.Events.Count);
+                for (int i = 0; i != entry.Events.Count; i++)
+                    existingEventIds.Add(entry.Events[i].Id);
+
+                foreach (var newEvent in incomingEvents)
+                {
+                    if (entry.Events.Contains(newEvent))
+                        throw new ArgumentOutOfRangeException(nameof(newEvent), $"event id '{newEvent.Id}' is duplicated.");
+                    existingEventIds.Add(newEvent.Id);
+                }
+            }
+
+            entry.Events.AddRange(incomingEvents);
+
+            _cache.Set(key, entry);
         }
     }
 }
