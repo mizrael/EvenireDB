@@ -8,6 +8,7 @@ namespace EvenireDB
         public readonly static EventsProviderConfig Default = new(TimeSpan.FromHours(4), 100);
     }
 
+    // TODO: logging
     public class EventsProvider
     {
         private readonly IMemoryCache _cache;
@@ -80,11 +81,13 @@ namespace EvenireDB
             if (entry.Events == null || entry.Events.Count == 0 || entry.Events.Count < skip)
                 return Enumerable.Empty<Event>();
 
-            var results = new List<Event>(_config.MaxPageSize);
             var end = Math.Min(skip + _config.MaxPageSize, entry.Events.Count);
+            var count = end - skip;
+            var results = new Event[count];
+            var j = 0;            
             for (var i = skip; i < end; i++)
-                results.Add(entry.Events[i]);
-
+                results[j++] = entry.Events[i];
+            
             return results;
         }
 
@@ -113,23 +116,25 @@ namespace EvenireDB
 
         private void AddIncomingToCache(IEnumerable<Event> incomingEvents, string key, CachedEvents entry)
         {
-            if (entry.Events.Count > 0)
-            {
-                var existingEventIds = new HashSet<Guid>(entry.Events.Count);
-                for (int i = 0; i != entry.Events.Count; i++)
-                    existingEventIds.Add(entry.Events[i].Id);
-
-                foreach (var newEvent in incomingEvents)
-                {
-                    if (entry.Events.Contains(newEvent))
-                        throw new ArgumentOutOfRangeException(nameof(newEvent), $"event id '{newEvent.Id}' is duplicated.");
-                    existingEventIds.Add(newEvent.Id);
-                }
-            }
+            if (entry.Events.Count > 0)            
+                EnsureUniqueness(incomingEvents, entry);            
 
             entry.Events.AddRange(incomingEvents);
+            _cache.Set(key, entry, _config.CacheDuration);
+        }
 
-            _cache.Set(key, entry);
+        private static void EnsureUniqueness(IEnumerable<Event> incomingEvents, CachedEvents entry)
+        {
+            var existingEventIds = new HashSet<Guid>(entry.Events.Count);
+            for (int i = 0; i != entry.Events.Count; i++)
+                existingEventIds.Add(entry.Events[i].Id);
+
+            foreach (var newEvent in incomingEvents)
+            {
+                if (entry.Events.Contains(newEvent))
+                    throw new ArgumentOutOfRangeException(nameof(newEvent), $"event id '{newEvent.Id}' is duplicated.");
+                existingEventIds.Add(newEvent.Id);
+            }
         }
     }
 }
