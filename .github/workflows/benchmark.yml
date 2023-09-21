@@ -1,0 +1,25 @@
+name: .NET
+
+on:
+  push:
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 7.0.x
+    
+    - name: Build
+      run: |
+        cd ./src        
+        dotnet build -c Release
+        cd ./EvenireDB.Benchmark/bin/Release/net7.0
+        dotnet EvenireDB.Benchmark.dll
+        

@@ -7,7 +7,7 @@ public class FileEventsRepositoryBenckmarks
     private FileEventsRepositoryConfig _repoConfig;
 
     private Event[] BuildEvents(int count)
-        => Enumerable.Range(0, count).Select(i => new Event("lorem", _data, i)).ToArray();
+        => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _data)).ToArray();
 
     [GlobalSetup]
     public void Setup()
@@ -25,15 +25,7 @@ public class FileEventsRepositoryBenckmarks
     [ArgumentsSource(nameof(Data))]    
     public async Task WriteAsync_Baseline(Event[] events)
     {
-        using var sut = new FileEventsRepository(_repoConfig);
-        await sut.WriteAsync(Guid.NewGuid(), events);
-    }
-
-    [Benchmark]
-    [ArgumentsSource(nameof(Data))]    
-    public async Task WriteSingleBufferAsync(Event[] events)
-    {
-        using var sut = new FileEventsRepository(_repoConfig);
+        var sut = new FileEventsRepository(_repoConfig);
         await sut.WriteAsync(Guid.NewGuid(), events);
     }
 
