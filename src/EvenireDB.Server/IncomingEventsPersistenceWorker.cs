@@ -1,4 +1,4 @@
-﻿using EvenireDB.Server;
+﻿using EvenireDB;
 using System.Threading.Channels;
 
 public class IncomingEventsPersistenceWorker : BackgroundService

@@ -1,4 +1,4 @@
-using EvenireDB.Server;
+using EvenireDB;
 using EvenireDB.Server.Routes;
 using System.Threading.Channels;
 

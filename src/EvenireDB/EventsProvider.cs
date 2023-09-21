@@ -1,26 +1,24 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using System.Threading;
 using System.Threading.Channels;
 
-namespace EvenireDB.Server
+namespace EvenireDB
 {
     public record EventsProviderConfig(TimeSpan CacheDuration, int MaxPageSize)
     {
         public readonly static EventsProviderConfig Default = new(TimeSpan.FromHours(4), 100);
     }
 
-    // TODO: repopulate cache on app restart
     public class EventsProvider
     {
-        internal record CachedEvents(List<Event> Events, SemaphoreSlim Semaphore);
-
         private readonly IMemoryCache _cache;
         private readonly EventsProviderConfig _config;
         private readonly ChannelWriter<IncomingEventsGroup> _writer;
         private readonly IEventsRepository _repo;
         private readonly static SemaphoreSlim _lock = new(1,1);
 
-        public EventsProvider(IMemoryCache cache, EventsProviderConfig config, ChannelWriter<IncomingEventsGroup> writer, IEventsRepository repo)
+        internal record CachedEvents(List<Event> Events, SemaphoreSlim Semaphore);
+
+        public EventsProvider(EventsProviderConfig config, IEventsRepository repo, IMemoryCache cache, ChannelWriter<IncomingEventsGroup> writer)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -79,7 +77,7 @@ namespace EvenireDB.Server
             
             CachedEvents entry = await EnsureCachedEventsAsync(streamId, key, cancellationToken).ConfigureAwait(false);
 
-            if (entry.Events == null || entry.Events.Count < skip)
+            if (entry.Events == null || entry.Events.Count == 0 || entry.Events.Count < skip)
                 return Enumerable.Empty<Event>();
 
             var results = new List<Event>(_config.MaxPageSize);
