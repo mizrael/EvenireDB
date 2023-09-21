@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes
 {
-    public class EventsV1EndpointTests:IClassFixture<ServerFixture>
+    public class EventsV1EndpointTests : IClassFixture<ServerFixture>
     {
         private readonly static byte[] _defaultEventData = new byte[] { 0x42 };
         private readonly ServerFixture _serverFixture;
@@ -36,7 +36,7 @@ namespace EvenireDB.Server.Tests.Routes
 
             var expectedEvents = this.BuildEvents(10);
             var provider = application.Services.GetService<EventsProvider>();
-            provider.AppendAsync(streamId, expectedEvents);
+            await provider.AppendAsync(streamId, expectedEvents);
 
             using var client = application.CreateClient();
             var response = await client.GetAsync($"/api/v1/events/{streamId}");

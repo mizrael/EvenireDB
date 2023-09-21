@@ -27,7 +27,7 @@ namespace EvenireDB.Server.Routes
             return events.Select(@event => EventDTO.FromModel(@event));
         }
 
-        private static IResult SaveEvents(
+        private static async ValueTask<IResult> SaveEvents(
            [FromServices] EventsProvider provider,
            Guid streamId,
            [FromBody] EventDTO[] dtos)
@@ -47,7 +47,7 @@ namespace EvenireDB.Server.Routes
                 return Results.BadRequest();
             }
 
-            provider.AppendAsync(streamId, events);
+            await provider.AppendAsync(streamId, events);
 
             return Results.AcceptedAtRoute(nameof(GetEvents), new { streamId });
         }

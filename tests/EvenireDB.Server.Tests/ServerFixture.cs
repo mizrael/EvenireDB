@@ -1,4 +1,4 @@
-﻿namespace EvenireDB.Server.Tests.Routes
+﻿namespace EvenireDB.Server.Tests
 {
     public class ServerFixture : IAsyncLifetime
     {
@@ -18,9 +18,9 @@
         {
             Directory.Delete("./data", true);
 
-            foreach (var instance in _instances) 
+            foreach (var instance in _instances)
                 await instance.DisposeAsync();
-            _instances.Clear();            
+            _instances.Clear();
         }
     }
 }
