@@ -1,5 +1,8 @@
 name: .NET
 
+on:
+  push:
+
 jobs:
   build:
 
