@@ -42,5 +42,24 @@ namespace EvenireDB.Tests
             var events = await sut.GetPageAsync(streamId);
             events.Should().NotBeNullOrEmpty();
         }
+
+        [Fact]
+        public async Task AppendAsync_should_throw_when_events_duplicated()
+        {
+            var streamId = Guid.NewGuid();
+
+            var expectedEvents = Enumerable.Range(0, 242)
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToArray();
+
+            var repo = Substitute.For<IEventsRepository>();
+            var cache = new MemoryCache(new MemoryCacheOptions());
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+            await sut.AppendAsync(streamId, expectedEvents);
+            var ex = await Assert.ThrowsAsync<DuplicatedEventException>(async () => await sut.AppendAsync(streamId, new[] { expectedEvents[0] }));
+            ex.StreamId.Should().Be(streamId);
+            ex.Event.Should().Be(expectedEvents[0]);    
+        }
     }
 }

@@ -9,6 +9,8 @@ namespace EvenireDB
     }
 
     // TODO: logging
+    // TODO: append to a transaction log
+    // TODO: consider dumping to disk when memory consumption is approaching a threshold (check IMemoryCache.GetCurrentStatistics() )
     public class EventsProvider
     {
         private readonly IMemoryCache _cache;
@@ -87,14 +89,17 @@ namespace EvenireDB
             var j = 0;            
             for (var i = skip; i < end; i++)
                 results[j++] = entry.Events[i];
-            
+            entry.Events.Except(results);
             return results;
         }
 
         public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> incomingEvents, CancellationToken cancellationToken = default)
         {
-            if (incomingEvents is null || !incomingEvents.Any())
+            if (incomingEvents is null)
                 throw new ArgumentNullException(nameof(incomingEvents));
+
+            if (!incomingEvents.Any())
+                return;
 
             var key = streamId.ToString();
 
@@ -103,6 +108,9 @@ namespace EvenireDB
             entry.Semaphore.Wait(cancellationToken);
             try
             {
+                if (entry.Events.Count > 0)
+                    EnsureUniqueness(streamId, incomingEvents, entry);
+
                 AddIncomingToCache(incomingEvents, key, entry);
 
                 var group = new IncomingEventsGroup(streamId, incomingEvents);
@@ -116,14 +124,11 @@ namespace EvenireDB
 
         private void AddIncomingToCache(IEnumerable<Event> incomingEvents, string key, CachedEvents entry)
         {
-            if (entry.Events.Count > 0)            
-                EnsureUniqueness(incomingEvents, entry);            
-
             entry.Events.AddRange(incomingEvents);
             _cache.Set(key, entry, _config.CacheDuration);
         }
 
-        private static void EnsureUniqueness(IEnumerable<Event> incomingEvents, CachedEvents entry)
+        private static void EnsureUniqueness(Guid streamId, IEnumerable<Event> incomingEvents, CachedEvents entry)
         {
             var existingEventIds = new HashSet<Guid>(entry.Events.Count);
             for (int i = 0; i != entry.Events.Count; i++)
@@ -132,7 +137,7 @@ namespace EvenireDB
             foreach (var newEvent in incomingEvents)
             {
                 if (entry.Events.Contains(newEvent))
-                    throw new ArgumentOutOfRangeException(nameof(newEvent), $"event id '{newEvent.Id}' is duplicated.");
+                    throw new DuplicatedEventException(streamId: streamId, @event: newEvent);
                 existingEventIds.Add(newEvent.Id);
             }
         }
