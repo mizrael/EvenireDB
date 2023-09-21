@@ -23,6 +23,6 @@ jobs:
     
     - name: Run benchmark
       run: |
-        cd ./EvenireDB.Benchmark/bin/Release/net7.0
+        cd ./src/EvenireDB.Benchmark/bin/Release/net7.0
         dotnet EvenireDB.Benchmark.dll
         
