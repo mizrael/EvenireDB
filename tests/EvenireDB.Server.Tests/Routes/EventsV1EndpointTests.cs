@@ -23,23 +23,23 @@ namespace EvenireDB.Server.Tests.Routes
             var response = await client.GetAsync($"/api/v1/events/{Guid.NewGuid()}");
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
-            var events = await response.Content.ReadFromJsonAsync<EvenireDB.Server.DTO.EventDTO[]>();
+            var events = await response.Content.ReadFromJsonAsync<EventDTO[]>();
             events.Should().NotBeNull().And.BeEmpty();  
         }
 
         [Fact]
         public async Task Get_Archive_should_return_events_for_aggregate()
         {
-            var aggregateId = Guid.NewGuid();
+            var streamId = Guid.NewGuid();
 
             await using var application = _serverFixture.CreateServer();
 
             var expectedEvents = this.BuildEvents(10);
-            var repo = application.Services.GetService<IEventsRepository>();
-            await repo.WriteAsync(aggregateId, expectedEvents);
+            var provider = application.Services.GetService<EventsProvider>();
+            provider.AppendAsync(streamId, expectedEvents);
 
             using var client = application.CreateClient();
-            var response = await client.GetAsync($"/api/v1/events/{aggregateId}");
+            var response = await client.GetAsync($"/api/v1/events/{streamId}");
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
             var events = await response.Content.ReadFromJsonAsync<DTO.EventDTO[]>();
@@ -49,52 +49,52 @@ namespace EvenireDB.Server.Tests.Routes
         [Fact]
         public async Task Post_should_return_bad_request_when_input_null()
         {
-            var aggregateId = Guid.NewGuid();
+            var streamId = Guid.NewGuid();
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
-            var nullPayloadResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", null);
+            var nullPayloadResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", null);
             nullPayloadResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
         }
 
         [Fact]
         public async Task Post_should_return_bad_request_when_input_invalid()
         {
-            var aggregateId = Guid.NewGuid();
+            var streamId = Guid.NewGuid();
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
 
             var dtos = BuildEventsDTOs(10, null);
-            var nullDataResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", dtos);
+            var nullDataResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
             nullDataResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
         }
 
         [Fact]
         public async Task Post_should_return_accepted_when_input_valid()
         {
-            var aggregateId = Guid.NewGuid();
+            var streamId = Guid.NewGuid();
 
             var dtos = BuildEventsDTOs(10, _defaultEventData);
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
-            var response = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", dtos);
+            var response = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
         }
 
         [Fact]
         public async Task Post_should_create_events()
         {
-            var aggregateId = Guid.NewGuid();
+            var streamId = Guid.NewGuid();
 
             var dtos = BuildEventsDTOs(10, _defaultEventData);
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
-            await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{aggregateId}", dtos);
+            await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
 
-            var response = await client.GetAsync($"/api/v1/events/{aggregateId}");            
+            var response = await client.GetAsync($"/api/v1/events/{streamId}");            
             var fetchedEvents = await response.Content.ReadFromJsonAsync<EventDTO[]>();
             fetchedEvents.Should().BeEquivalentTo(dtos);
         }

@@ -1,4 +1,4 @@
-using EvenireDB.Server;
+using EvenireDB;
 using EvenireDB.Server.Routes;
 using System.Threading.Channels;
 
@@ -14,6 +14,9 @@ var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelO
 });
 
 builder.Services
+    .AddMemoryCache()
+    .AddSingleton(EventsProviderConfig.Default)
+    .AddSingleton<EventsProvider>()
     .AddSingleton(channel.Writer)
     .AddSingleton(channel.Reader)
     .AddSingleton(_ =>
@@ -23,7 +26,7 @@ builder.Services
         return new FileEventsRepositoryConfig(dataPath);
     })
     .AddSingleton<IEventsRepository, FileEventsRepository>()
-    .AddHostedService<IncomingEventsSubscriber>();
+    .AddHostedService<IncomingEventsPersistenceWorker>();
 
 var app = builder.Build();
 
