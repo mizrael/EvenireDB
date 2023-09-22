@@ -27,7 +27,7 @@ public class IncomingEventsPersistenceWorker : BackgroundService
     {
         while (!cancellationToken.IsCancellationRequested || await _reader.WaitToReadAsync(cancellationToken))
         {
-            while (_reader.TryRead(out IncomingEventsGroup group))
+            while (_reader.TryRead(out IncomingEventsGroup? group) && group is not null)
             {
                 try
                 {
