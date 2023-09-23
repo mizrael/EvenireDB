@@ -5,6 +5,9 @@ using System.Threading.Channels;
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHealthChecks();
 builder.Services.AddApiVersioning();
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = ctx =>
+            ctx.ProblemDetails.Extensions.Add("nodeId", Environment.MachineName));
 
 var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelOptions
 {
@@ -29,9 +32,9 @@ builder.Services
     .AddHostedService<IncomingEventsPersistenceWorker>();
 
 var app = builder.Build();
-
+app.UseExceptionHandler(exceptionHandlerApp
+    => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
 app.MapHealthChecks("/healthz");
-
 app.MapGet("/", () => "EvenireDB Server is running!");
 app.MapEventsRoutes();
 

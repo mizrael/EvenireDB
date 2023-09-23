@@ -93,13 +93,13 @@ namespace EvenireDB
             return results;
         }
 
-        public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> incomingEvents, CancellationToken cancellationToken = default)
+        public async ValueTask<IOperationResult> AppendAsync(Guid streamId, IEnumerable<Event> incomingEvents, CancellationToken cancellationToken = default)
         {
             if (incomingEvents is null)
                 throw new ArgumentNullException(nameof(incomingEvents));
 
             if (!incomingEvents.Any())
-                return;
+                return new SuccessResult();
 
             var key = streamId.ToString();
 
@@ -108,8 +108,9 @@ namespace EvenireDB
             entry.Semaphore.Wait(cancellationToken);
             try
             {
-                if (entry.Events.Count > 0)
-                    EnsureUniqueness(streamId, incomingEvents, entry);
+                if (entry.Events.Count > 0 &&
+                    HasDuplicateEvent(incomingEvents, entry, out var duplicate))
+                    return FailureResult.DuplicateEvent(duplicate);
 
                 AddIncomingToCache(incomingEvents, key, entry);
 
@@ -120,6 +121,8 @@ namespace EvenireDB
             {
                 entry.Semaphore.Release();
             }
+
+            return new SuccessResult();
         }
 
         private void AddIncomingToCache(IEnumerable<Event> incomingEvents, string key, CachedEvents entry)
@@ -128,18 +131,26 @@ namespace EvenireDB
             _cache.Set(key, entry, _config.CacheDuration);
         }
 
-        private static void EnsureUniqueness(Guid streamId, IEnumerable<Event> incomingEvents, CachedEvents entry)
+        private static bool HasDuplicateEvent(IEnumerable<Event> incomingEvents, CachedEvents entry, out Event? duplicate)
         {
+            duplicate = null;
+
             var existingEventIds = new HashSet<Guid>(entry.Events.Count);
             for (int i = 0; i != entry.Events.Count; i++)
                 existingEventIds.Add(entry.Events[i].Id);
 
             foreach (var newEvent in incomingEvents)
             {
-                if (entry.Events.Contains(newEvent))
-                    throw new DuplicatedEventException(streamId: streamId, @event: newEvent);
+                if (existingEventIds.Contains(newEvent.Id))
+                {
+                    duplicate = newEvent;
+                    return true;
+                }
+
                 existingEventIds.Add(newEvent.Id);
             }
+
+            return false;
         }
     }
 }

@@ -71,6 +71,22 @@ namespace EvenireDB.Server.Tests.Routes
         }
 
         [Fact]
+        public async Task Post_should_return_conflict_when_input_already_in_stream()
+        {
+            var streamId = Guid.NewGuid();
+
+            await using var application = _serverFixture.CreateServer();
+            using var client = application.CreateClient();
+
+            var dtos = BuildEventsDTOs(10, _defaultEventData);
+            var firstResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
+            firstResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
+
+            var errorResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
+            errorResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Conflict);
+        }
+
+        [Fact]
         public async Task Post_should_return_accepted_when_input_valid()
         {
             var streamId = Guid.NewGuid();
@@ -102,7 +118,7 @@ namespace EvenireDB.Server.Tests.Routes
         private Event[] BuildEvents(int count)
             => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _defaultEventData)).ToArray();
 
-        private EventDTO[] BuildEventsDTOs(int count, byte[] data)
+        private EventDTO[] BuildEventsDTOs(int count, byte[]? data)
            => Enumerable.Range(0, count).Select(i => new EventDTO(Guid.NewGuid(), "lorem", data)).ToArray();
     }
 }

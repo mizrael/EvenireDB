@@ -30,7 +30,7 @@ namespace EvenireDB.Server.Routes
         private static async ValueTask<IResult> SaveEvents(
            [FromServices] EventsProvider provider,
            Guid streamId,
-           [FromBody] EventDTO[] dtos)
+           [FromBody] EventDTO[]? dtos)
         {
             if (dtos is null || dtos.Length == 0)
                 return Results.BadRequest();
@@ -47,9 +47,13 @@ namespace EvenireDB.Server.Routes
                 return Results.BadRequest();
             }
 
-            await provider.AppendAsync(streamId, events);
-
-            return Results.AcceptedAtRoute(nameof(GetEvents), new { streamId });
+            var result = await provider.AppendAsync(streamId, events);
+            return result switch
+            {
+                FailureResult { Code: FailureResult.ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),
+                FailureResult => Results.StatusCode(500),
+                _ => Results.AcceptedAtRoute(nameof(GetEvents), new { streamId })
+            };
         }
     }    
 }

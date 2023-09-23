@@ -27,7 +27,15 @@ namespace EvenireDB.Client
         {
             var response = await _httpClient.PostAsJsonAsync($"/api/v1/events/{streamId}", events, cancellationToken)
                                             .ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
+            if (response.IsSuccessStatusCode)
+                return;
+            
+            var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+            throw response.StatusCode switch
+            {
+                System.Net.HttpStatusCode.Conflict => new DuplicatedEventException(streamId, responseBody),
+                _ => new ClientException(ErrorCodes.Unknown, responseBody)
+            };
         }
     }
 }
