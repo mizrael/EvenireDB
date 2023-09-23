@@ -16,12 +16,15 @@ var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelO
     AllowSynchronousContinuations = true
 });
 
+// TODO: parse config
+
 builder.Services
     .AddMemoryCache()
     .AddSingleton(EventsProviderConfig.Default)
     .AddSingleton<EventsProvider>()
     .AddSingleton(channel.Writer)
     .AddSingleton(channel.Reader)
+    .AddSingleton<EventMapper>(ctx => new EventMapper(500_000))
     .AddSingleton(_ =>
     {
         // TODO: from config. default to this when config is empty

@@ -71,6 +71,18 @@ namespace EvenireDB.Server.Tests.Routes
         }
 
         [Fact]
+        public async Task Post_should_return_bad_request_when_input_too_big()
+        {
+            var streamId = Guid.NewGuid();
+
+            await using var application = _serverFixture.CreateServer();
+            using var client = application.CreateClient();
+            var dtos = BuildEventsDTOs(1, new byte[500_001]); //TODO: from config
+            var nullDataResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
+            nullDataResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
         public async Task Post_should_return_conflict_when_input_already_in_stream()
         {
             var streamId = Guid.NewGuid();

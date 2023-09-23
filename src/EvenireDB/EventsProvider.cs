@@ -3,11 +3,6 @@ using System.Threading.Channels;
 
 namespace EvenireDB
 {
-    public record EventsProviderConfig(TimeSpan CacheDuration, int MaxPageSize)
-    {
-        public readonly static EventsProviderConfig Default = new(TimeSpan.FromHours(4), 100);
-    }
-
     // TODO: logging
     // TODO: append to a transaction log
     // TODO: consider dumping to disk when memory consumption is approaching a threshold (check IMemoryCache.GetCurrentStatistics() )

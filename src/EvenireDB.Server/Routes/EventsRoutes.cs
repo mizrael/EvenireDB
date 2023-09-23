@@ -22,24 +22,22 @@ namespace EvenireDB.Server.Routes
             [FromQuery(Name = "skip")] int skip = 0)
         {
             var events = await provider.GetPageAsync(streamId, skip).ConfigureAwait(false);
-            if (events is null)
-                return Enumerable.Empty<EventDTO>();
-            return events.Select(@event => EventDTO.FromModel(@event));
+            return (events is null) ?
+                Array.Empty<EventDTO>() :
+                events.Select(@event => EventDTO.FromModel(@event));
         }
 
         private static async ValueTask<IResult> SaveEvents(
-           [FromServices] EventsProvider provider,
-           Guid streamId,
-           [FromBody] EventDTO[]? dtos)
+            [FromServices] EventMapper mapper,
+            [FromServices] EventsProvider provider,
+            Guid streamId,
+            [FromBody] EventDTO[]? dtos)
         {
-            if (dtos is null || dtos.Length == 0)
-                return Results.BadRequest();
-
             Event[] events;
 
             try
             {
-                events = dtos.ToModels();
+                events = mapper.ToModels(dtos);
             }
             catch
             {
