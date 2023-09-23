@@ -4,10 +4,13 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	<Optimize>true</Optimize>
   </PropertyGroup>
 
-  <ItemGroup>
+	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+		<Optimize>true</Optimize>
+	</PropertyGroup>
+
+	<ItemGroup>
     <PackageReference Include="Asp.Versioning.Http" Version="7.1.0" />
 	<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
   </ItemGroup>

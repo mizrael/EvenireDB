@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes
 {
-    public class EventsV1EndpointTests:IClassFixture<ServerFixture>
+    public class EventsV1EndpointTests : IClassFixture<ServerFixture>
     {
         private readonly static byte[] _defaultEventData = new byte[] { 0x42 };
         private readonly ServerFixture _serverFixture;
@@ -36,7 +36,7 @@ namespace EvenireDB.Server.Tests.Routes
 
             var expectedEvents = this.BuildEvents(10);
             var provider = application.Services.GetService<EventsProvider>();
-            provider.AppendAsync(streamId, expectedEvents);
+            await provider.AppendAsync(streamId, expectedEvents);
 
             using var client = application.CreateClient();
             var response = await client.GetAsync($"/api/v1/events/{streamId}");
@@ -71,6 +71,22 @@ namespace EvenireDB.Server.Tests.Routes
         }
 
         [Fact]
+        public async Task Post_should_return_conflict_when_input_already_in_stream()
+        {
+            var streamId = Guid.NewGuid();
+
+            await using var application = _serverFixture.CreateServer();
+            using var client = application.CreateClient();
+
+            var dtos = BuildEventsDTOs(10, _defaultEventData);
+            var firstResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
+            firstResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
+
+            var errorResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
+            errorResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Conflict);
+        }
+
+        [Fact]
         public async Task Post_should_return_accepted_when_input_valid()
         {
             var streamId = Guid.NewGuid();
@@ -102,7 +118,7 @@ namespace EvenireDB.Server.Tests.Routes
         private Event[] BuildEvents(int count)
             => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _defaultEventData)).ToArray();
 
-        private EventDTO[] BuildEventsDTOs(int count, byte[] data)
+        private EventDTO[] BuildEventsDTOs(int count, byte[]? data)
            => Enumerable.Range(0, count).Select(i => new EventDTO(Guid.NewGuid(), "lorem", data)).ToArray();
     }
 }

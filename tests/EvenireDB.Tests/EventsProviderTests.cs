@@ -44,7 +44,7 @@ namespace EvenireDB.Tests
         }
 
         [Fact]
-        public async Task AppendAsync_should_throw_when_events_duplicated()
+        public async Task AppendAsync_should_fail_when_events_duplicated()
         {
             var streamId = Guid.NewGuid();
 
@@ -57,9 +57,30 @@ namespace EvenireDB.Tests
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
             await sut.AppendAsync(streamId, expectedEvents);
-            var ex = await Assert.ThrowsAsync<DuplicatedEventException>(async () => await sut.AppendAsync(streamId, new[] { expectedEvents[0] }));
-            ex.StreamId.Should().Be(streamId);
-            ex.Event.Should().Be(expectedEvents[0]);    
+            var result = await sut.AppendAsync(streamId, new[] { expectedEvents[0] });
+            result.Should().BeOfType<FailureResult>();
+
+            var failure = (FailureResult)result;
+            failure.Code.Should().Be(FailureResult.ErrorCodes.DuplicateEvent);
+            failure.Message.Should().Contain(expectedEvents[0].Id.ToString());  
         }
-    }
+
+        [Fact]
+        public async Task AppendAsync_should_succeed_when_events_valid()
+        {
+            var streamId = Guid.NewGuid();
+
+            var expectedEvents = Enumerable.Range(0, 242)
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToArray();
+
+            var repo = Substitute.For<IEventsRepository>();
+            var cache = new MemoryCache(new MemoryCacheOptions());
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+            
+            var result = await sut.AppendAsync(streamId, expectedEvents);
+            result.Should().BeOfType<SuccessResult>();
+        }
+        }
 }
