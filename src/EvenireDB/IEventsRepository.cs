@@ -1,5 +1,8 @@
-﻿public interface IEventsRepository
+﻿namespace EvenireDB
 {
-    Task<IEnumerable<Event>> ReadAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default);
-    Task WriteAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default);
+    public interface IEventsRepository
+    {
+        ValueTask<IEnumerable<IEvent>> ReadAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default);
+        ValueTask WriteAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default);
+    }
 }

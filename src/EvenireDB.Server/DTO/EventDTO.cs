@@ -2,7 +2,7 @@
 {
     public record EventDTO(Guid Id, string Type, byte[] Data)
     {
-        public static EventDTO FromModel(Event @event)
+        public static EventDTO FromModel(IEvent @event)
         => new EventDTO(@event.Id, @event.Type, @event.Data);
     }
 }

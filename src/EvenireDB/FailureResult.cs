@@ -11,7 +11,7 @@
         public string Message { get; } = string.Empty;
         public int Code { get; } = ErrorCodes.Unknown;
 
-        public static FailureResult DuplicateEvent(Event? @event)
+        public static FailureResult DuplicateEvent(IEvent? @event)
             => new FailureResult(
                 ErrorCodes.DuplicateEvent,
                 (@event is null) ? "one of the incoming events is duplicate." :

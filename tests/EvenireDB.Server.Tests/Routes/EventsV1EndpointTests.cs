@@ -15,7 +15,7 @@ namespace EvenireDB.Server.Tests.Routes
         }
 
         [Fact]
-        public async Task Get_Archive_should_be_empty_when_no_events_available_for_aggregate()
+        public async Task Get_Archive_should_be_empty_when_no_events_available_for_stream()
         {
             await using var application = _serverFixture.CreateServer();
 
@@ -25,25 +25,6 @@ namespace EvenireDB.Server.Tests.Routes
 
             var events = await response.Content.ReadFromJsonAsync<EventDTO[]>();
             events.Should().NotBeNull().And.BeEmpty();  
-        }
-
-        [Fact]
-        public async Task Get_Archive_should_return_events_for_aggregate()
-        {
-            var streamId = Guid.NewGuid();
-
-            await using var application = _serverFixture.CreateServer();
-
-            var expectedEvents = this.BuildEvents(10);
-            var provider = application.Services.GetService<EventsProvider>();
-            await provider.AppendAsync(streamId, expectedEvents);
-
-            using var client = application.CreateClient();
-            var response = await client.GetAsync($"/api/v1/events/{streamId}");
-            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
-
-            var events = await response.Content.ReadFromJsonAsync<DTO.EventDTO[]>();
-            events.Should().BeEquivalentTo(expectedEvents);
         }
 
         [Fact]
@@ -78,8 +59,8 @@ namespace EvenireDB.Server.Tests.Routes
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
             var dtos = BuildEventsDTOs(1, new byte[500_001]); //TODO: from config
-            var nullDataResponse = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
-            nullDataResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+            var response = await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
         }
 
         [Fact]
@@ -126,9 +107,6 @@ namespace EvenireDB.Server.Tests.Routes
             var fetchedEvents = await response.Content.ReadFromJsonAsync<EventDTO[]>();
             fetchedEvents.Should().BeEquivalentTo(dtos);
         }
-
-        private Event[] BuildEvents(int count)
-            => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _defaultEventData)).ToArray();
 
         private EventDTO[] BuildEventsDTOs(int count, byte[]? data)
            => Enumerable.Range(0, count).Select(i => new EventDTO(Guid.NewGuid(), "lorem", data)).ToArray();

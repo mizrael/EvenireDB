@@ -24,8 +24,9 @@ public class EventsProviderBenckmarks
         if (!Directory.Exists(dataPath))
             Directory.CreateDirectory(dataPath);
 
+        var factory = new EventFactory(500_000);
         var repoConfig = new FileEventsRepositoryConfig(dataPath);
-        var repo = new FileEventsRepository(repoConfig);
+        var repo = new FileEventsRepository(repoConfig, factory);
 
         var options = new MemoryCacheOptions();
         var cache = new MemoryCache(options);
@@ -34,7 +35,7 @@ public class EventsProviderBenckmarks
 
         _sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-        var events = Enumerable.Range(0, this.EventsCount).Select(i => new Event(Guid.NewGuid(), "lorem", _data)).ToArray();
+        var events = Enumerable.Range(0, this.EventsCount).Select(i => factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
         Task.WaitAll(_sut.AppendAsync(_streamId, events).AsTask());
     }
 

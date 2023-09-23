@@ -24,7 +24,8 @@ builder.Services
     .AddSingleton<EventsProvider>()
     .AddSingleton(channel.Writer)
     .AddSingleton(channel.Reader)
-    .AddSingleton<EventMapper>(ctx => new EventMapper(500_000))
+    .AddSingleton<IEventFactory>(ctx => new EventFactory(500_000))
+    .AddSingleton<EventMapper>()
     .AddSingleton(_ =>
     {
         // TODO: from config. default to this when config is empty

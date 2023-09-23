@@ -28,14 +28,14 @@ namespace EvenireDB.Tests
                 .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
                 .ToArray();
 
-            var repo = Substitute.For<IEventsRepository>();           
+            var repo = Substitute.For<IEventsRepository>();
             repo.ReadAsync(streamId, 0, Arg.Any<CancellationToken>())
                 .Returns(expectedEvents.Take(100));
             repo.ReadAsync(streamId, 1, Arg.Any<CancellationToken>())
                 .Returns(expectedEvents.Skip(100).Take(100));
 
             var cache = Substitute.For<IMemoryCache>();
-            
+
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
@@ -62,7 +62,7 @@ namespace EvenireDB.Tests
 
             var failure = (FailureResult)result;
             failure.Code.Should().Be(FailureResult.ErrorCodes.DuplicateEvent);
-            failure.Message.Should().Contain(expectedEvents[0].Id.ToString());  
+            failure.Message.Should().Contain(expectedEvents[0].Id.ToString());
         }
 
         [Fact]
@@ -78,9 +78,9 @@ namespace EvenireDB.Tests
             var cache = new MemoryCache(new MemoryCacheOptions());
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
-            
+
             var result = await sut.AppendAsync(streamId, expectedEvents);
             result.Should().BeOfType<SuccessResult>();
         }
-        }
+    }
 }
