@@ -14,7 +14,7 @@ jobs:
       with:
         dotnet-version: 7.0.x
     
-    - name: Build
+    - name: Build and test
       run: |
         cd ./src
         dotnet restore 
