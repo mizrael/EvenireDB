@@ -1,5 +1,6 @@
 using EvenireDB;
 using EvenireDB.Server.Routes;
+using Microsoft.Extensions.Options;
 using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,10 @@ builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = ctx =>
             ctx.ProblemDetails.Extensions.Add("nodeId", Environment.MachineName));
 
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+                     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+                     .AddEnvironmentVariables();
+
 var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelOptions
 {
     SingleWriter = false,
@@ -16,19 +21,36 @@ var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelO
     AllowSynchronousContinuations = true
 });
 
-// TODO: parse config
-
 builder.Services
     .AddMemoryCache()
-    .AddSingleton(EventsProviderConfig.Default)
+    .Configure<ServerConfig>(builder.Configuration.GetSection("Server"))
+    .AddSingleton(ctx =>
+    {
+        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
+        return new EventsProviderConfig(serverConfig.CacheDuration, serverConfig.MaxPageSize);
+    })
     .AddSingleton<EventsProvider>()
     .AddSingleton(channel.Writer)
     .AddSingleton(channel.Reader)
-    .AddSingleton<EventMapper>(ctx => new EventMapper(500_000))
-    .AddSingleton(_ =>
+    .AddSingleton<IEventFactory>(ctx =>
     {
-        // TODO: from config. default to this when config is empty
-        var dataPath = Path.Combine(AppContext.BaseDirectory, "data");
+        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
+        return new EventFactory(serverConfig.MaxEventDataSize);
+    })
+    .AddSingleton<EventMapper>()
+    .AddSingleton(ctx =>
+    {
+        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
+
+        var dataPath = serverConfig.DataFolder;
+        if (string.IsNullOrWhiteSpace(dataPath))
+            dataPath = Path.Combine(AppContext.BaseDirectory, "data");
+        else
+        {
+            if (!Path.IsPathFullyQualified(dataPath))
+                dataPath = Path.Combine(AppContext.BaseDirectory, dataPath);
+        }
+
         return new FileEventsRepositoryConfig(dataPath);
     })
     .AddSingleton<IEventsRepository, FileEventsRepository>()

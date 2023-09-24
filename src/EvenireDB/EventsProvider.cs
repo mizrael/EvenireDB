@@ -14,7 +14,7 @@ namespace EvenireDB
         private readonly IEventsRepository _repo;
         private readonly static SemaphoreSlim _lock = new(1,1);
 
-        internal record CachedEvents(List<Event> Events, SemaphoreSlim Semaphore);
+        internal record CachedEvents(List<IEvent> Events, SemaphoreSlim Semaphore);
 
         public EventsProvider(EventsProviderConfig config, IEventsRepository repo, IMemoryCache cache, ChannelWriter<IncomingEventsGroup> writer)
         {
@@ -24,10 +24,10 @@ namespace EvenireDB
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
         }
 
-        private async ValueTask<List<Event>> ReadAllPersistedAsync(Guid streamId, CancellationToken cancellationToken = default)
+        private async ValueTask<List<IEvent>> ReadAllPersistedAsync(Guid streamId, CancellationToken cancellationToken = default)
         {
-            List<Event> results = new();
-            IEnumerable<Event> tmpEvents;
+            List<IEvent> results = new();
+            IEnumerable<IEvent> tmpEvents;
             int skip = 0;
             while (true)
             {
@@ -66,7 +66,7 @@ namespace EvenireDB
             return entry;
         }
 
-        public async ValueTask<IEnumerable<Event>> GetPageAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
+        public async ValueTask<IEnumerable<IEvent>> GetPageAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
         {
             if (skip < 0)
                 throw new ArgumentOutOfRangeException(nameof(skip));
@@ -76,11 +76,11 @@ namespace EvenireDB
             CachedEvents entry = await EnsureCachedEventsAsync(streamId, key, cancellationToken).ConfigureAwait(false);
 
             if (entry.Events == null || entry.Events.Count == 0 || entry.Events.Count < skip)
-                return Enumerable.Empty<Event>();
+                return Enumerable.Empty<IEvent>();
 
             var end = Math.Min(skip + _config.MaxPageSize, entry.Events.Count);
             var count = end - skip;
-            var results = new Event[count];
+            var results = new IEvent[count];
             var j = 0;            
             for (var i = skip; i < end; i++)
                 results[j++] = entry.Events[i];
@@ -88,7 +88,7 @@ namespace EvenireDB
             return results;
         }
 
-        public async ValueTask<IOperationResult> AppendAsync(Guid streamId, IEnumerable<Event> incomingEvents, CancellationToken cancellationToken = default)
+        public async ValueTask<IOperationResult> AppendAsync(Guid streamId, IEnumerable<IEvent> incomingEvents, CancellationToken cancellationToken = default)
         {
             if (incomingEvents is null)
                 throw new ArgumentNullException(nameof(incomingEvents));
@@ -120,13 +120,13 @@ namespace EvenireDB
             return new SuccessResult();
         }
 
-        private void AddIncomingToCache(IEnumerable<Event> incomingEvents, string key, CachedEvents entry)
+        private void AddIncomingToCache(IEnumerable<IEvent> incomingEvents, string key, CachedEvents entry)
         {
             entry.Events.AddRange(incomingEvents);
             _cache.Set(key, entry, _config.CacheDuration);
         }
 
-        private static bool HasDuplicateEvent(IEnumerable<Event> incomingEvents, CachedEvents entry, out Event? duplicate)
+        private static bool HasDuplicateEvent(IEnumerable<IEvent> incomingEvents, CachedEvents entry, out IEvent? duplicate)
         {
             duplicate = null;
 

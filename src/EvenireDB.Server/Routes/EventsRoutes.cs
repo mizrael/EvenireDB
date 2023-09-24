@@ -33,7 +33,7 @@ namespace EvenireDB.Server.Routes
             Guid streamId,
             [FromBody] EventDTO[]? dtos)
         {
-            Event[] events;
+            IEvent[] events;
 
             try
             {

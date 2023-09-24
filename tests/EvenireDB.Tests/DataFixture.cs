@@ -4,6 +4,7 @@
     {
         private const string BaseDataPath = "./data/";
         private readonly List<FileEventsRepositoryConfig> _configs = new();
+        private readonly IEventFactory _factory = new EventFactory(1000);
 
         public FileEventsRepositoryConfig CreateRepoConfig(Guid aggregateId)
         {
@@ -26,6 +27,18 @@
             if (!Directory.Exists(BaseDataPath))
                 Directory.CreateDirectory(BaseDataPath);
             return Task.CompletedTask;
+        }
+
+
+        public IEvent[] BuildEvents(int count, byte[]? data = null)
+            => Enumerable.Range(0, count).Select(i => _factory.Create(Guid.NewGuid(), "lorem", data ?? GenerateRandomData())).ToArray();
+
+        private static byte[] GenerateRandomData()
+        {
+            var length = Random.Shared.Next(10, 1000);
+            var data = new byte[length];
+            Random.Shared.NextBytes(data);
+            return data;
         }
     }
 }

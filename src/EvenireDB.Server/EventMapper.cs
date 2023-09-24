@@ -1,22 +1,23 @@
 using EvenireDB.Server.DTO;
+using EvenireDB;
 
 public class EventMapper
 {
-    private readonly int _maxEventDataSize;
+    private readonly IEventFactory _factory;
 
-    public EventMapper(int maxEventDataSize)
+    public EventMapper(IEventFactory factory)
     {
-        _maxEventDataSize = maxEventDataSize;
+        _factory = factory ?? throw new ArgumentNullException(nameof(factory));
     }
 
-    public Event[] ToModels(EventDTO[] dtos)
+    public IEvent[] ToModels(EventDTO[] dtos)
     {
         if (dtos is null)
             throw new ArgumentNullException(nameof(dtos));
         if (dtos.Length == 0)
-            return Array.Empty<Event>();
+            return Array.Empty<IEvent>();
 
-        var events = new Event[dtos.Length];
+        var events = new IEvent[dtos.Length];
         for (int i = 0; i < dtos.Length; i++)
         {
             events[i] = ToModel(dtos[i]);
@@ -24,14 +25,10 @@ public class EventMapper
         return events;
     }
 
-    public Event ToModel(EventDTO dto)
+    public IEvent ToModel(EventDTO dto)
     {
-        if (dto is null)
-            throw new ArgumentNullException(nameof(dto));
-        if (dto.Data is null)
-            throw new ArgumentNullException(nameof(dto.Data));
-        if(dto.Data.Length > _maxEventDataSize)
-            throw new ArgumentOutOfRangeException(nameof(dto.Data), $"Event data size exceeds the maximum allowed size of {_maxEventDataSize} bytes.");
-        return new Event(dto.Id, dto.Type, dto.Data);
+        ArgumentNullException.ThrowIfNull(dto, nameof(dto));
+
+        return _factory.Create(dto.Id, dto.Type, dto.Data);
     }
 }

@@ -1,13 +1,15 @@
 ﻿using BenchmarkDotNet.Attributes;
+using EvenireDB;
 
 public class FileEventsRepositoryBenckmarks
 {
     private readonly static byte[] _data = Enumerable.Repeat((byte)42, 100).ToArray();
 
     private FileEventsRepositoryConfig _repoConfig;
+    private IEventFactory _factory;
 
-    private Event[] BuildEvents(int count)
-        => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _data)).ToArray();
+    private IEvent[] BuildEvents(int count)
+        => Enumerable.Range(0, count).Select(i => _factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
 
     [GlobalSetup]
     public void Setup()
@@ -18,18 +20,19 @@ public class FileEventsRepositoryBenckmarks
         if(!Directory.Exists(dataPath))
             Directory.CreateDirectory(dataPath);
 
+        _factory = new EventFactory(500_000);
         _repoConfig = new FileEventsRepositoryConfig(dataPath);
     }
 
     [Benchmark(Baseline = true)]
     [ArgumentsSource(nameof(Data))]    
-    public async Task WriteAsync_Baseline(Event[] events)
+    public async Task WriteAsync_Baseline(IEvent[] events)
     {
-        var sut = new FileEventsRepository(_repoConfig);
+        var sut = new FileEventsRepository(_repoConfig, _factory);
         await sut.WriteAsync(Guid.NewGuid(), events);
     }
 
-    public IEnumerable<Event[]> Data()
+    public IEnumerable<IEvent[]> Data()
     {
         yield return BuildEvents(1_000);
         yield return BuildEvents(10_000);
