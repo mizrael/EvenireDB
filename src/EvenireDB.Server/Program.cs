@@ -63,7 +63,14 @@ app.MapHealthChecks("/healthz");
 app.MapGet("/", () => "EvenireDB Server is running!");
 app.MapEventsRoutes();
 
-app.Run();
+string? listenUrl = null;
+if(!app.Environment.IsDevelopment())
+{
+    var serverConfig = app.Services.GetRequiredService<IOptions<ServerConfig>>().Value;
+    listenUrl = $"http://*:{serverConfig.Port}";
+}
+
+app.Run(listenUrl);
 
 public partial class Program
 { }

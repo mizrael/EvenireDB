@@ -1,0 +1,10 @@
+version: '3.4'
+
+services:  
+  eveniredb:
+    image: eveniredb:latest
+    restart: always    
+    ports:
+      - 16281:16281
+    volumes:
+      - './volumes/eveniredb/data/:/data'

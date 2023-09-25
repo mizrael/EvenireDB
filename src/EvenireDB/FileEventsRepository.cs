@@ -76,6 +76,10 @@ namespace EvenireDB
 
             ArrayPool<byte>.Shared.Return(headerBuffer);
 
+            // we exit early if no headers found
+            if(headers.Count == 0)
+                return Array.Empty<Event>();
+
             // now we read the data for all the events in a single buffer
             // so that we can parse it directly, avoiding accessing the file any longer
 

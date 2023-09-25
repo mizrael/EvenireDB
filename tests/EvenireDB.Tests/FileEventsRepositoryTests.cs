@@ -75,5 +75,20 @@ namespace EvenireDB.Tests
             events.Should().NotBeNullOrEmpty()
                   .And.HaveCount(100);
         }
+
+        [Fact]
+        public async Task ReadAsync_should_return_empty_collection_when_skip_to_high()
+        {
+            var expectedEvents = _fixture.BuildEvents(10);
+
+            var aggregateId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(aggregateId);
+            var sut = new FileEventsRepository(config, new EventFactory(1000));
+            await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
+
+            var events = await sut.ReadAsync(aggregateId, skip: 11).ConfigureAwait(false);
+            events.Should().NotBeNull()
+                  .And.BeEmpty();
+        }
     }
 }

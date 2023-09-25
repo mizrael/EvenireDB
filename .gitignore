@@ -4,4 +4,6 @@ release/
 obj/
 .vs/
 BenchmarkDotNet.Artifacts/
+publish/
 .DS_Store
+volumes/
