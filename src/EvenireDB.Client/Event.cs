@@ -1,4 +1,6 @@
-﻿namespace EvenireDB.Client
+﻿using System.Text.Json;
+
+namespace EvenireDB.Client
 {
     public record Event
     {
@@ -21,5 +23,13 @@
         public Guid Id { get; }
         public string Type { get; }
         public byte[] Data { get; }
+
+        public static Event Create<T>(T payload, string type = "")
+        {
+            if (string.IsNullOrWhiteSpace(type))
+                type = typeof(T).Name;
+            var bytes = JsonSerializer.SerializeToUtf8Bytes<T>(payload);
+            return new Event(Guid.NewGuid(), type, bytes);
+        }
     }
 }
