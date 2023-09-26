@@ -27,20 +27,60 @@ namespace EvenireDB.Tests
         }
 
         [Theory]
+        [InlineData(10, 10, 100)]
+        public async Task WriteAsync_should_append_events(int batchesCount, int eventsPerBatch, int expectedFileSize)
+        {
+            var batches = Enumerable.Range(0, batchesCount)
+                .Select(b => _fixture.BuildEvents(eventsPerBatch, new byte[] { 0x42 }))
+                .ToArray();
+
+            var streamId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(streamId);
+            var sut = new FileEventsRepository(config, new EventFactory(1000));
+            foreach(var events in batches)
+                await sut.WriteAsync(streamId, events).ConfigureAwait(false);
+
+            var eventsFilePath = Path.Combine(config.BasePath, streamId + "_data.dat");
+            var bytes = File.ReadAllBytes(eventsFilePath);
+            Assert.Equal(expectedFileSize, bytes.Length);
+        }
+
+        [Theory]
         [InlineData(1)]
         [InlineData(10)]
         public async Task ReadAsync_should_read_events(int eventsCount)
         {
             var expectedEvents = _fixture.BuildEvents(eventsCount);
 
-            var aggregateId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(aggregateId);
+            var streamId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(streamId);
             var sut = new FileEventsRepository(config, new EventFactory(1000));
-            await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
+            await sut.WriteAsync(streamId, expectedEvents).ConfigureAwait(false);
 
-            var events = await sut.ReadAsync(aggregateId).ConfigureAwait(false);
+            var events = await sut.ReadAsync(streamId).ConfigureAwait(false);
             events.Should().NotBeNullOrEmpty()
                   .And.BeEquivalentTo(expectedEvents);
+        }
+
+        [Theory]
+        [InlineData(10, 10, 100)]
+        public async Task ReadAsync_should_read_subsequent_events(int batchesCount, int eventsPerBatch, int expectedFileSize)
+        {
+            var batches = Enumerable.Range(0, batchesCount)
+                .Select(b => _fixture.BuildEvents(eventsPerBatch, new byte[] { 0x42 }))
+                .ToArray();
+
+            var streamId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(streamId);
+            var sut = new FileEventsRepository(config, new EventFactory(1000));
+            foreach (var events in batches)
+                await sut.WriteAsync(streamId, events).ConfigureAwait(false);
+
+            var expectedEvents = batches.SelectMany(e => e).ToArray();
+
+            var loadedEvents = await sut.ReadAsync(streamId).ConfigureAwait(false);
+            loadedEvents.Should().NotBeNullOrEmpty()
+                         .And.BeEquivalentTo(expectedEvents);
         }
 
         [Fact]
@@ -49,13 +89,13 @@ namespace EvenireDB.Tests
             var expectedEvents = _fixture.BuildEvents(142);
             var expectedEvent = expectedEvents.Skip(42).First();
 
-            var aggregateId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(aggregateId);
+            var streamId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(streamId);
             var sut = new FileEventsRepository(config, new EventFactory(1000));
 
-            await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
+            await sut.WriteAsync(streamId, expectedEvents).ConfigureAwait(false);
 
-            var events = await sut.ReadAsync(aggregateId, skip: 42).ConfigureAwait(false);
+            var events = await sut.ReadAsync(streamId, skip: 42).ConfigureAwait(false);
             events.Should().NotBeNullOrEmpty()
                   .And.HaveCount(100);
             events.ElementAt(0).Id.Should().Be(expectedEvent.Id);
@@ -66,12 +106,12 @@ namespace EvenireDB.Tests
         {
             var expectedEvents = _fixture.BuildEvents(142);
 
-            var aggregateId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(aggregateId);
+            var streamId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(streamId);
             var sut = new FileEventsRepository(config, new EventFactory(1000));
-            await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
+            await sut.WriteAsync(streamId, expectedEvents).ConfigureAwait(false);
 
-            var events = await sut.ReadAsync(aggregateId, skip: 0).ConfigureAwait(false);
+            var events = await sut.ReadAsync(streamId, skip: 0).ConfigureAwait(false);
             events.Should().NotBeNullOrEmpty()
                   .And.HaveCount(100);
         }
@@ -81,12 +121,12 @@ namespace EvenireDB.Tests
         {
             var expectedEvents = _fixture.BuildEvents(10);
 
-            var aggregateId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(aggregateId);
+            var streamId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(streamId);
             var sut = new FileEventsRepository(config, new EventFactory(1000));
-            await sut.WriteAsync(aggregateId, expectedEvents).ConfigureAwait(false);
+            await sut.WriteAsync(streamId, expectedEvents).ConfigureAwait(false);
 
-            var events = await sut.ReadAsync(aggregateId, skip: 11).ConfigureAwait(false);
+            var events = await sut.ReadAsync(streamId, skip: 11).ConfigureAwait(false);
             events.Should().NotBeNull()
                   .And.BeEmpty();
         }

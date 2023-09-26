@@ -114,10 +114,10 @@ namespace EvenireDB
         public async ValueTask WriteAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
         {
             string dataPath = GetStreamPath(streamId, DataFileSuffix);
-            using var dataStream = new FileStream(dataPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            using var dataStream = new FileStream(dataPath, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
-            using var headersStream = new FileStream(headersPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            using var headersStream = new FileStream(headersPath, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             var eventsCount = events.Count();
 
