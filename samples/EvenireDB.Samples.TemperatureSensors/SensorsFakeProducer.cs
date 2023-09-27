@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 
 public class SensorsFakeProducer : BackgroundService
 {
-    private readonly static TimeSpan _delay = TimeSpan.FromSeconds(1);
+    private readonly static TimeSpan _delay = TimeSpan.FromSeconds(30);
     private readonly IEventsClient _eventsClient;
     private readonly SensorsConfig _sensorConfig;
 

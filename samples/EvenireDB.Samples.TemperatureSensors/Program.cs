@@ -15,7 +15,6 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-
 app.MapGet("/sensors", ([FromServices] IOptions<SensorsConfig> config) =>
 {
     return config.Value.SensorIds.Select(id => new
@@ -28,8 +27,11 @@ app.MapGet("/sensors", ([FromServices] IOptions<SensorsConfig> config) =>
 });
 app.MapGet("/sensors/{sensorId}", async ([FromServices] IEventsClient client, Guid sensorId) =>
 {
-    var events = await client.GetEventsAsync(sensorId); //TODO: handle pagination
-    if (events is null)
+    var events = new List<Event>();
+    await foreach(var @event in client.GetAllAsync(sensorId))
+        events.Add(@event);
+
+    if (events.Count == 0)
         return Results.NotFound();
 
     var sensor = Sensor.Rehydrate(sensorId, events);

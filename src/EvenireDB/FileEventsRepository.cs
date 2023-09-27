@@ -10,9 +10,7 @@ namespace EvenireDB
 {
     public record FileEventsRepositoryConfig(string BasePath, int MaxPageSize = 100);
 
-    //TODO: consider add versioning on events file
-    //TODO: consider adding write locks to handle concurrency
-    //TODO: make sure event IDs are unique in a stream
+    //TODO: consider add versioning on events file        
 
     public class FileEventsRepository : IEventsRepository
     {
