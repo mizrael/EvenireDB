@@ -108,9 +108,11 @@ namespace EvenireDB
                 // have to create a span to ensure that we're parsing the right buffer size
                 // as ArrayPool might return a buffer with size the closest pow(2)
                 var eventTypeName = Encoding.UTF8.GetString(headers[i].EventType, 0, headers[i].EventTypeLength);
-
-                // when paging, we need to take into account the position of the first block of data
+                                
                 var eventData = new byte[headers[i].EventDataLength];
+
+                // if skip is specified, when calculating the source offset we need to subtract the position of the first block of data
+                // because the stream position was already set after opening it
                 long srcOffset = headers[i].DataPosition - headers[0].DataPosition;
                 Array.Copy(dataBuffer, srcOffset, eventData, 0, headers[i].EventDataLength);
 
