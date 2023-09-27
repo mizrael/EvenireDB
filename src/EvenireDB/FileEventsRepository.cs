@@ -43,7 +43,7 @@ namespace EvenireDB
             headersStream.Position = 
                 direction == Direction.Forward ? 
                     RawEventHeader.SIZE * skip : 
-                    headersStream.Length - RawEventHeader.SIZE * skip;
+                    headersStream.Length - RawEventHeader.SIZE * _config.MaxPageSize;
 
             int dataBufferSize = 0; // TODO: this should probably be a long, but it would then require chunking from the data stream
 
@@ -68,9 +68,6 @@ namespace EvenireDB
             }
 
             ArrayPool<byte>.Shared.Return(headerBuffer);
-
-            if(direction == direction.Backward)
-                headers.Reverse();
 
             return (headers, dataBufferSize);
         }
@@ -100,6 +97,7 @@ namespace EvenireDB
 
             var results = new List<IEvent>();
             using var dataStream = new FileStream(dataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            dataStream.Position = headers[0].DataPosition;
 
             var dataBuffer = ArrayPool<byte>.Shared.Rent(dataBufferSize);
             await dataStream.ReadAsync(dataBuffer, 0, dataBufferSize, cancellationToken)
@@ -121,6 +119,9 @@ namespace EvenireDB
             }
 
             ArrayPool<byte>.Shared.Return(dataBuffer);
+
+            if (direction == Direction.Backward)
+                results.Reverse();
 
             return results;
         }

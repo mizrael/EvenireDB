@@ -66,7 +66,7 @@ namespace EvenireDB.Tests
         public async Task ReadAsync_should_read_events_backwards()
         {
             var inputEvents = _fixture.BuildEvents(142);
-            var expectedEvents = inputEvents.Reverse().Take(100).ToArray();
+            var expectedEvents = inputEvents.Reverse().ToArray();
 
             var streamId = Guid.NewGuid();
             var config = _fixture.CreateRepoConfig(streamId);
