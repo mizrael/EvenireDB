@@ -19,7 +19,7 @@ namespace EvenireDB.Client.Tests
 
             using var client = application.CreateClient();
             var sut = new EventsClient(client);
-            var events = await sut.GetEventsAsync(Guid.NewGuid());
+            var events = await sut.GetAsync(Guid.NewGuid());
             events.Should().NotBeNull().And.BeEmpty();
         }
 
@@ -34,7 +34,7 @@ namespace EvenireDB.Client.Tests
             using var client = application.CreateClient();
             var sut = new EventsClient(client);
             await sut.AppendAsync(streamId, expectedEvents);
-            var receivedEvents = await sut.GetEventsAsync(streamId);
+            var receivedEvents = await sut.GetAsync(streamId);
             receivedEvents.Should().BeEquivalentTo(expectedEvents);
         }
 
