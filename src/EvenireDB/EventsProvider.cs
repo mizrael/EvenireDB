@@ -31,7 +31,7 @@ namespace EvenireDB
             int skip = 0;
             while (true)
             {
-                tmpEvents = await _repo.ReadAsync(streamId, skip, cancellationToken).ConfigureAwait(false);
+                tmpEvents = await _repo.ReadAsync(streamId, direction: Direction.Forward, skip: skip, cancellationToken: cancellationToken).ConfigureAwait(false);
                 if (tmpEvents is null || tmpEvents.Count() == 0) 
                     break;
                 results.AddRange(tmpEvents);

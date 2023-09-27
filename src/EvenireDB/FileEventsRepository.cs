@@ -12,6 +12,12 @@ namespace EvenireDB
 
     //TODO: consider add versioning on events file        
 
+    public enum Direction
+    {
+        Forward = 0,
+        Backward = 1,
+    }
+
     public class FileEventsRepository : IEventsRepository
     {
         private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
@@ -33,7 +39,7 @@ namespace EvenireDB
         private string GetStreamPath(Guid streamId, string type)
         => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
 
-        public async ValueTask<IEnumerable<IEvent>> ReadAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
+        public async ValueTask<IEnumerable<IEvent>> ReadAsync(Guid streamId, Direction direction = Direction.Forward, int skip = 0, CancellationToken cancellationToken = default)
         {
             if (skip < 0)
                 throw new ArgumentOutOfRangeException(nameof(skip));
@@ -83,8 +89,7 @@ namespace EvenireDB
 
             var results = new List<IEvent>();
             using var dataStream = new FileStream(dataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            dataStream.Position = headers[0].DataPosition;
-
+            
             var dataBuffer = ArrayPool<byte>.Shared.Rent(dataBufferSize);
             await dataStream.ReadAsync(dataBuffer, 0, dataBufferSize, cancellationToken)
                             .ConfigureAwait(false);

@@ -62,6 +62,22 @@ namespace EvenireDB.Tests
                   .And.BeEquivalentTo(expectedEvents);
         }
 
+        [Fact]
+        public async Task ReadAsync_should_read_events_backwards()
+        {
+            var inputEvents = _fixture.BuildEvents(142);
+            var expectedEvents = inputEvents.Reverse().Take(100).ToArray();
+
+            var streamId = Guid.NewGuid();
+            var config = _fixture.CreateRepoConfig(streamId);
+            var sut = new FileEventsRepository(config, new EventFactory(1000));
+            await sut.WriteAsync(streamId, inputEvents).ConfigureAwait(false);
+
+            var events = await sut.ReadAsync(streamId, direction: Direction.Backward).ConfigureAwait(false);
+            events.Should().NotBeNullOrEmpty()
+                  .And.BeEquivalentTo(expectedEvents);
+        }
+
         [Theory]
         [InlineData(10, 10, 100)]
         public async Task ReadAsync_should_read_subsequent_events(int batchesCount, int eventsPerBatch, int expectedFileSize)
