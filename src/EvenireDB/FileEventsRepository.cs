@@ -8,15 +8,6 @@ using System.Text;
 
 namespace EvenireDB
 {
-    public record FileEventsRepositoryConfig(string BasePath, int MaxPageSize = 100);
-
-    //TODO: consider add versioning on events file        
-
-    public enum Direction
-    {
-        Forward = 0,
-        Backward = 1,
-    }
 
     public class FileEventsRepository : IEventsRepository
     {
@@ -39,27 +30,21 @@ namespace EvenireDB
         private string GetStreamPath(Guid streamId, string type)
         => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
 
-        public async ValueTask<IEnumerable<IEvent>> ReadAsync(Guid streamId, Direction direction = Direction.Forward, int skip = 0, CancellationToken cancellationToken = default)
+        private async Task<(List<RawEventHeader>, int)> ReadHeadersAsync(
+            string headersPath, 
+            Direction direction,
+            int skip, 
+            CancellationToken cancellationToken)
         {
-            if (skip < 0)
-                throw new ArgumentOutOfRangeException(nameof(skip));
-
-            string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
-            string dataPath = GetStreamPath(streamId, DataFileSuffix);
-            if (!File.Exists(headersPath) || !File.Exists(dataPath))
-                return Enumerable.Empty<Event>();
-
-            // first, read all the headers, which are stored sequentially
-            // this will allow later on pulling the data for all the events in one go
-
-            var headers = new List<RawEventHeader>();
-
-            var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
+            var headers = new List<RawEventHeader>(_config.MaxPageSize);
 
             using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             headersStream.Position = RawEventHeader.SIZE * skip;
 
             int dataBufferSize = 0; // TODO: this should probably be a long, but it would then require chunking from the data stream
+
+            // TODO: try reading a bigger buffer at once, and then parse the headers from it
+            var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
 
             while (true)
             {
@@ -80,8 +65,27 @@ namespace EvenireDB
 
             ArrayPool<byte>.Shared.Return(headerBuffer);
 
+            return (headers, dataBufferSize);
+        }
+
+        public async ValueTask<IEnumerable<IEvent>> ReadAsync(Guid streamId, Direction direction = Direction.Forward, int skip = 0, CancellationToken cancellationToken = default)
+        {
+            if (skip < 0)
+                throw new ArgumentOutOfRangeException(nameof(skip));
+
+            string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
+            string dataPath = GetStreamPath(streamId, DataFileSuffix);
+            if (!File.Exists(headersPath) || !File.Exists(dataPath))
+                return Array.Empty<Event>();
+
+            // first, read all the headers, which are stored sequentially
+            // this will allow later on pulling the data for all the events in one go
+
+            var (headers, dataBufferSize) = await this.ReadHeadersAsync(headersPath, direction, skip, cancellationToken)
+                                                      .ConfigureAwait(false);
+
             // we exit early if no headers found
-            if(headers.Count == 0)
+            if (headers.Count == 0)
                 return Array.Empty<Event>();
 
             // now we read the data for all the events in a single buffer
@@ -89,7 +93,7 @@ namespace EvenireDB
 
             var results = new List<IEvent>();
             using var dataStream = new FileStream(dataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            
+
             var dataBuffer = ArrayPool<byte>.Shared.Rent(dataBufferSize);
             await dataStream.ReadAsync(dataBuffer, 0, dataBufferSize, cancellationToken)
                             .ConfigureAwait(false);
