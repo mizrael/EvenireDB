@@ -53,7 +53,7 @@ namespace EvenireDB
                 if (entry is null)
                 {
                     var persistedEvents = await this.ReadAllPersistedAsync(streamId, cancellationToken)
-                                                   .ConfigureAwait(false);
+                                                    .ConfigureAwait(false);
                     entry = new CachedEvents(persistedEvents, new SemaphoreSlim(1, 1));
 
                     _cache.Set(key, entry, _config.CacheDuration);
@@ -66,10 +66,18 @@ namespace EvenireDB
             return entry;
         }
 
-        public async ValueTask<IEnumerable<IEvent>> GetPageAsync(Guid streamId, long startPosition = 0, CancellationToken cancellationToken = default)
+        public async ValueTask<IEnumerable<IEvent>> ReadAsync(
+            Guid streamId,
+            Direction direction = Direction.Forward,
+            long startPosition = (long)StreamPosition.Start,
+            CancellationToken cancellationToken = default)
         {
             if (startPosition < 0)
                 throw new ArgumentOutOfRangeException(nameof(startPosition));
+
+            if (direction == Direction.Backward &&
+                startPosition != (long)StreamPosition.End)
+                throw new ArgumentOutOfRangeException(nameof(startPosition), "When reading backwards, the start position must be set to StreamPosition.End");
 
             var key = streamId.ToString();
             
@@ -83,7 +91,7 @@ namespace EvenireDB
             var results = new IEvent[count];
             var j = 0;            
             for (var i = startPosition; i < end; i++)
-                results[j++] = entry.Events[(int)i]; //TODO: I'm not very proud of this cast to int.
+                results[j++] = entry.Events[(int)i]; // TODO: I don't like this cast here.
             entry.Events.Except(results);
             return results;
         }

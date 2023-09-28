@@ -8,7 +8,6 @@ using System.Text;
 
 namespace EvenireDB
 {
-
     public class FileEventsRepository : IEventsRepository
     {
         private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();

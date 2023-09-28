@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using System.IO;
 using System.Threading.Channels;
 
 namespace EvenireDB.Tests
@@ -8,19 +9,41 @@ namespace EvenireDB.Tests
         private readonly static byte[] _defaultData = new byte[] { 0x42 };
 
         [Fact]
-        public async Task GetPageAsync_should_return_empty_collection_when_data_not_available()
+        public async Task ReadAsync_should_return_empty_collection_when_data_not_available()
         {
             var repo = Substitute.For<IEventsRepository>();
             var cache = Substitute.For<IMemoryCache>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-            var events = await sut.GetPageAsync(Guid.NewGuid());
+            var events = await sut.ReadAsync(Guid.NewGuid());
             events.Should().NotBeNull().And.BeEmpty();
         }
 
         [Fact]
-        public async Task GetPageAsync_should_pull_data_from_repo_on_cache_miss()
+        public async Task ReadAsync_should_throw_when_reading_events_backwards_and_position_not_stream_end()
+        {
+            var repo = Substitute.For<IEventsRepository>();
+            var cache = Substitute.For<IMemoryCache>();
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await sut.ReadAsync(Guid.NewGuid(), direction: Direction.Backward, startPosition: 42));
+        }
+
+        [Fact]
+        public async Task ReadAsync_should_throw_when_start_position_below_zero()
+        {
+            var repo = Substitute.For<IEventsRepository>();
+            var cache = Substitute.For<IMemoryCache>();
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+
+            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await sut.ReadAsync(Guid.NewGuid(), startPosition: -1));
+        }
+
+        [Fact]
+        public async Task ReadAsync_should_pull_data_from_repo_on_cache_miss()
         {
             var streamId = Guid.NewGuid();
 
@@ -39,7 +62,7 @@ namespace EvenireDB.Tests
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-            var events = await sut.GetPageAsync(streamId);
+            var events = await sut.ReadAsync(streamId);
             events.Should().NotBeNullOrEmpty();
         }
 

@@ -1,6 +1,3 @@
-
-using System.Runtime.CompilerServices;
-
 namespace EvenireDB
 {
     //TODO: consider add versioning on events file        
