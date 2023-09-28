@@ -33,7 +33,7 @@ namespace EvenireDB
         private async Task<(List<RawEventHeader>, int)> ReadHeadersAsync(
             string headersPath, 
             Direction direction,
-            int skip, 
+            long startPosition, 
             CancellationToken cancellationToken)
         {
             var headers = new List<RawEventHeader>(_config.MaxPageSize);
@@ -42,7 +42,7 @@ namespace EvenireDB
             
             headersStream.Position = 
                 direction == Direction.Forward ? 
-                    RawEventHeader.SIZE * skip : 
+                    RawEventHeader.SIZE * startPosition : 
                     headersStream.Length - RawEventHeader.SIZE * _config.MaxPageSize;
 
             int dataBufferSize = 0; // TODO: this should probably be a long, but it would then require chunking from the data stream
@@ -72,10 +72,18 @@ namespace EvenireDB
             return (headers, dataBufferSize);
         }
 
-        public async ValueTask<IEnumerable<IEvent>> ReadAsync(Guid streamId, Direction direction = Direction.Forward, int skip = 0, CancellationToken cancellationToken = default)
+        public async ValueTask<IEnumerable<IEvent>> ReadAsync(
+            Guid streamId, 
+            Direction direction = Direction.Forward, 
+            long startPosition = (long)StreamPosition.Start,
+            CancellationToken cancellationToken = default)
         {
-            if (skip < 0)
-                throw new ArgumentOutOfRangeException(nameof(skip));
+            if (startPosition < 0)
+                throw new ArgumentOutOfRangeException(nameof(startPosition));
+
+            if(direction == Direction.Backward &&
+                startPosition != (long)StreamPosition.End)
+                throw new ArgumentOutOfRangeException(nameof(startPosition), "When reading backwards, the start position must be set to StreamPosition.End");
 
             string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
             string dataPath = GetStreamPath(streamId, DataFileSuffix);
@@ -85,7 +93,7 @@ namespace EvenireDB
             // first, read all the headers, which are stored sequentially
             // this will allow later on pulling the data for all the events in one go
 
-            var (headers, dataBufferSize) = await this.ReadHeadersAsync(headersPath, direction, skip, cancellationToken)
+            var (headers, dataBufferSize) = await this.ReadHeadersAsync(headersPath, direction, startPosition, cancellationToken)
                                                       .ConfigureAwait(false);
 
             // we exit early if no headers found
@@ -128,7 +136,7 @@ namespace EvenireDB
             return results;
         }
 
-        public async ValueTask WriteAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
+        public async ValueTask AppendAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
         {
             string dataPath = GetStreamPath(streamId, DataFileSuffix);
             using var dataStream = new FileStream(dataPath, FileMode.Append, FileAccess.Write, FileShare.Read);

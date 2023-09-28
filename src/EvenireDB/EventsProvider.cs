@@ -28,14 +28,14 @@ namespace EvenireDB
         {
             List<IEvent> results = new();
             IEnumerable<IEvent> tmpEvents;
-            int skip = 0;
+            long startPosition = 0;
             while (true)
             {
-                tmpEvents = await _repo.ReadAsync(streamId, direction: Direction.Forward, skip: skip, cancellationToken: cancellationToken).ConfigureAwait(false);
+                tmpEvents = await _repo.ReadAsync(streamId, direction: Direction.Forward, startPosition: startPosition, cancellationToken: cancellationToken).ConfigureAwait(false);
                 if (tmpEvents is null || tmpEvents.Count() == 0) 
                     break;
                 results.AddRange(tmpEvents);
-                skip += tmpEvents.Count();
+                startPosition += tmpEvents.Count();
             }
             return results;
         }
@@ -66,24 +66,24 @@ namespace EvenireDB
             return entry;
         }
 
-        public async ValueTask<IEnumerable<IEvent>> GetPageAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
+        public async ValueTask<IEnumerable<IEvent>> GetPageAsync(Guid streamId, long startPosition = 0, CancellationToken cancellationToken = default)
         {
-            if (skip < 0)
-                throw new ArgumentOutOfRangeException(nameof(skip));
+            if (startPosition < 0)
+                throw new ArgumentOutOfRangeException(nameof(startPosition));
 
             var key = streamId.ToString();
             
             CachedEvents entry = await EnsureCachedEventsAsync(streamId, key, cancellationToken).ConfigureAwait(false);
 
-            if (entry.Events == null || entry.Events.Count == 0 || entry.Events.Count < skip)
+            if (entry.Events == null || entry.Events.Count == 0 || entry.Events.Count < startPosition)
                 return Enumerable.Empty<IEvent>();
 
-            var end = Math.Min(skip + _config.MaxPageSize, entry.Events.Count);
-            var count = end - skip;
+            var end = Math.Min(startPosition + _config.MaxPageSize, entry.Events.Count);
+            var count = end - startPosition;
             var results = new IEvent[count];
             var j = 0;            
-            for (var i = skip; i < end; i++)
-                results[j++] = entry.Events[i];
+            for (var i = startPosition; i < end; i++)
+                results[j++] = entry.Events[(int)i]; //TODO: I'm not very proud of this cast to int.
             entry.Events.Except(results);
             return results;
         }

@@ -1,4 +1,6 @@
 
+using System.Runtime.CompilerServices;
+
 namespace EvenireDB
 {
     //TODO: consider add versioning on events file        
@@ -7,5 +9,11 @@ namespace EvenireDB
     {
         Forward = 0,
         Backward = 1,
+    }
+
+    public enum StreamPosition : long
+    {
+        Start = 0,
+        End = long.MaxValue
     }
 }
