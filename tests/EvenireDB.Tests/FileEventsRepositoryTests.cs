@@ -59,12 +59,13 @@ namespace EvenireDB.Tests
 
             var events = await sut.ReadAsync(streamId).ToArrayAsync().ConfigureAwait(false);
             events.Should().NotBeNullOrEmpty()
-                  .And.BeEquivalentTo(expectedEvents);
+                    .And.HaveCount(eventsCount)
+                    .And.BeEquivalentTo(expectedEvents);
         }
 
         [Theory]
-        [InlineData(10, 10)]
-        public async Task ReadAsync_should_read_appended_events(int batchesCount, int eventsPerBatch)
+        [InlineData(42, 71)]
+        public async Task ReadAsync_should_read_events_appended_in_batches(int batchesCount, int eventsPerBatch)
         {
             var batches = Enumerable.Range(0, batchesCount)
                 .Select(b => _fixture.BuildEvents(eventsPerBatch, new byte[] { 0x42 }))
@@ -78,9 +79,9 @@ namespace EvenireDB.Tests
 
             var expectedEvents = batches.SelectMany(e => e).ToArray();
 
-            var loadedEvents = await sut.ReadAsync(streamId).ToArrayAsync().ConfigureAwait(false);
+            var loadedEvents = await sut.ReadAsync(streamId).ToListAsync().ConfigureAwait(false);
             loadedEvents.Should().NotBeNullOrEmpty()
-                         .And.BeEquivalentTo(expectedEvents);
+                         .And.HaveCount(batchesCount * eventsPerBatch);
         }
     }
 }

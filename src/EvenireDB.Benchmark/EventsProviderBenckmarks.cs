@@ -40,8 +40,11 @@ public class EventsProviderBenckmarks
     }
 
     [Benchmark(Baseline = true)]    
-    public async Task GetPageAsync_Baseline()
+    public async Task ReadAsync_Baseline()
     {
-        (await _sut.ReadAsync(_streamId).ConfigureAwait(false)).Consume(_consumer);
+        int count = 0;
+        var events = await _sut.ReadAsync(_streamId).ConfigureAwait(false);
+        foreach (var @evt in events)
+            count++;
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
+using System.Linq;
 
 namespace EvenireDB
 {
@@ -24,8 +26,10 @@ namespace EvenireDB
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
         }
 
-        private async ValueTask<CachedEvents> EnsureCachedEventsAsync(Guid streamId, string key, CancellationToken cancellationToken)
+        private async ValueTask<CachedEvents> EnsureCachedEventsAsync(Guid streamId, CancellationToken cancellationToken)
         {
+            var key = streamId.ToString();
+
             var entry = _cache.Get<CachedEvents>(key);
             if (entry is not null)
                 return entry;
@@ -60,24 +64,43 @@ namespace EvenireDB
             if (startPosition < 0)
                 throw new ArgumentOutOfRangeException(nameof(startPosition));
 
-            if (direction == Direction.Backward &&
-                startPosition != (long)StreamPosition.End)
-                throw new ArgumentOutOfRangeException(nameof(startPosition), "When reading backwards, the start position must be set to StreamPosition.End");
+            CachedEvents entry = await EnsureCachedEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
-            var key = streamId.ToString();
-            
-            CachedEvents entry = await EnsureCachedEventsAsync(streamId, key, cancellationToken).ConfigureAwait(false);
+            if (entry.Events == null || entry.Events.Count == 0)
+                return Array.Empty<IEvent>();
 
-            if (entry.Events == null || entry.Events.Count == 0 || entry.Events.Count < startPosition)
-                return Enumerable.Empty<IEvent>();
+            IEvent[] results;
 
-            var end = Math.Min(startPosition + _config.MaxPageSize, entry.Events.Count);
-            var count = end - startPosition;
-            var results = new IEvent[count];
-            var j = 0;            
-            for (var i = startPosition; i < end; i++)
-                results[j++] = entry.Events[(int)i]; // TODO: I don't like this cast here.
-            entry.Events.Except(results);
+            if (direction == Direction.Forward)
+            {
+                if (entry.Events.Count < startPosition)
+                    return Array.Empty<IEvent>();
+
+                int j = 0, i = (int)startPosition; 
+                int count = Math.Min(_config.MaxPageSize, entry.Events.Count - i);
+                results = new IEvent[count]; 
+                while (j != count)
+                {
+                    results[j++] = entry.Events[i++];
+                }
+            }
+            else
+            {
+                if(startPosition == (long)StreamPosition.End)
+                    startPosition = entry.Events.Count-1;
+               
+                if (startPosition >= entry.Events.Count)
+                    return Array.Empty<IEvent>();
+
+                int j = 0, i = (int)startPosition;
+                int count = Math.Min(_config.MaxPageSize, i + 1);
+                results = new IEvent[count];
+                while(j != count)
+                {
+                    results[j++] = entry.Events[i--];
+                }
+            }
+
             return results;
         }
 
@@ -89,9 +112,7 @@ namespace EvenireDB
             if (!incomingEvents.Any())
                 return new SuccessResult();
 
-            var key = streamId.ToString();
-
-            CachedEvents entry = await EnsureCachedEventsAsync(streamId, key, cancellationToken).ConfigureAwait(false);
+            CachedEvents entry = await EnsureCachedEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
             entry.Semaphore.Wait(cancellationToken);
             try
@@ -100,7 +121,7 @@ namespace EvenireDB
                     HasDuplicateEvent(incomingEvents, entry, out var duplicate))
                     return FailureResult.DuplicateEvent(duplicate);
 
-                AddIncomingToCache(incomingEvents, key, entry);
+                UpdateCache(streamId, incomingEvents, entry);
 
                 var group = new IncomingEventsGroup(streamId, incomingEvents);
                 _writer.TryWrite(group); //TODO: error checking
@@ -113,10 +134,10 @@ namespace EvenireDB
             return new SuccessResult();
         }
 
-        private void AddIncomingToCache(IEnumerable<IEvent> incomingEvents, string key, CachedEvents entry)
+        private void UpdateCache(Guid streamId, IEnumerable<IEvent> incomingEvents, CachedEvents entry)
         {
             entry.Events.AddRange(incomingEvents);
-            _cache.Set(key, entry, _config.CacheDuration);
+            _cache.Set(streamId.ToString(), entry, _config.CacheDuration);
         }
 
         private static bool HasDuplicateEvent(IEnumerable<IEvent> incomingEvents, CachedEvents entry, out IEvent? duplicate)

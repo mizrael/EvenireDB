@@ -29,41 +29,6 @@ namespace EvenireDB
         private string GetStreamPath(Guid streamId, string type)
         => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
 
-        //private async ValueTask<List<RawEventHeader>> ReadHeadersAsync(
-        //    string headersPath, 
-        //    CancellationToken cancellationToken)
-        //{
-        //    var headers = new List<RawEventHeader>(_config.MaxPageSize);
-
-        //    using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-          
-        //    int dataBufferSize = 0; // TODO: this should probably be a long, but it would then require chunking from the data stream
-
-        //    // TODO: try reading a bigger buffer at once, and then parse the headers from it
-        //    var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE * _config.MaxPageSize);
-
-        //    while (true)
-        //    {
-        //        if (headers.Count >= _config.MaxPageSize)
-        //            break;
-
-        //        var bytesRead = await headersStream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
-        //                                           .ConfigureAwait(false);
-        //        if (bytesRead == 0)
-        //            break;
-
-        //        var header = new RawEventHeader();
-        //        RawEventHeader.Parse(headerBuffer, ref header);
-        //        headers.Add(header);
-
-        //        dataBufferSize += header.EventDataLength;
-        //    }
-
-        //    ArrayPool<byte>.Shared.Return(headerBuffer);
-
-        //    return (headers, dataBufferSize);
-        //}
-
         public async IAsyncEnumerable<IEvent> ReadAsync(
             Guid streamId, 
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
