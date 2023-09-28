@@ -14,7 +14,7 @@ namespace EvenireDB.Client
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public async Task<IEnumerable<Event>> GetAsync(Guid streamId, int startPosition = 0, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<Event>> ReadAsync(Guid streamId, int startPosition = 0, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.GetAsync($"/api/v1/events/{streamId}?pos={startPosition}", HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                                             .ConfigureAwait(false);

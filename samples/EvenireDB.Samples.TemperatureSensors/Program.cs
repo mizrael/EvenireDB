@@ -28,7 +28,7 @@ app.MapGet("/sensors", ([FromServices] IOptions<SensorsConfig> config) =>
 app.MapGet("/sensors/{sensorId}", async ([FromServices] IEventsClient client, Guid sensorId) =>
 {
     var events = new List<Event>();
-    await foreach(var @event in client.GetAllAsync(sensorId))
+    await foreach(var @event in client.ReadAllAsync(sensorId))
         events.Add(@event);
 
     if (events.Count == 0)

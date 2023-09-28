@@ -4,7 +4,6 @@ namespace EvenireDB.Client.Tests
 {
     public class EventsClientTests : IClassFixture<ServerFixture>
     {
-        private readonly static byte[] _defaultEventData = new byte[] { 0x42 }; 
         private readonly ServerFixture _serverFixture;
 
         public EventsClientTests(ServerFixture serverFixture)
@@ -19,7 +18,7 @@ namespace EvenireDB.Client.Tests
 
             using var client = application.CreateClient();
             var sut = new EventsClient(client);
-            var events = await sut.GetAsync(Guid.NewGuid());
+            var events = await sut.ReadAsync(Guid.NewGuid());
             events.Should().NotBeNull().And.BeEmpty();
         }
 
@@ -27,14 +26,14 @@ namespace EvenireDB.Client.Tests
         public async Task AppendAsync_should_append_events()
         {
             var streamId = Guid.NewGuid();
-            var expectedEvents = BuildEvents(10);
+            var expectedEvents = TestUtils.BuildEvents(10);
 
             await using var application = _serverFixture.CreateServer();
 
             using var client = application.CreateClient();
             var sut = new EventsClient(client);
             await sut.AppendAsync(streamId, expectedEvents);
-            var receivedEvents = await sut.GetAsync(streamId);
+            var receivedEvents = await sut.ReadAsync(streamId);
             receivedEvents.Should().BeEquivalentTo(expectedEvents);
         }
 
@@ -42,7 +41,7 @@ namespace EvenireDB.Client.Tests
         public async Task AppendAsync_should_fail_when_events_already_appended()
         {
             var streamId = Guid.NewGuid();
-            var expectedEvents = BuildEvents(10);
+            var expectedEvents = TestUtils.BuildEvents(10);
 
             await using var application = _serverFixture.CreateServer();
 
@@ -51,8 +50,5 @@ namespace EvenireDB.Client.Tests
             await sut.AppendAsync(streamId, expectedEvents);
             await Assert.ThrowsAsync<DuplicatedEventException>(async () => await sut.AppendAsync(streamId, expectedEvents));
         }
-
-        private Event[] BuildEvents(int count)
-            => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _defaultEventData)).ToArray();
     }
 }
