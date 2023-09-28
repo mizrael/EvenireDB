@@ -52,10 +52,8 @@ namespace EvenireDB.Tests
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
-            repo.ReadAsync(streamId, Arg.Any<Direction>(), 0, Arg.Any<CancellationToken>())
-                .Returns(expectedEvents.Take(100));
-            repo.ReadAsync(streamId, Arg.Any<Direction>(), 1, Arg.Any<CancellationToken>())
-                .Returns(expectedEvents.Skip(100).Take(100));
+            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
+                .Returns(expectedEvents.ToAsyncEnumerable());
 
             var cache = Substitute.For<IMemoryCache>();
 

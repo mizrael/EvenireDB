@@ -29,80 +29,84 @@ namespace EvenireDB
         private string GetStreamPath(Guid streamId, string type)
         => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
 
-        private async Task<(List<RawEventHeader>, int)> ReadHeadersAsync(
-            string headersPath, 
-            Direction direction,
-            long startPosition, 
-            CancellationToken cancellationToken)
+        //private async ValueTask<List<RawEventHeader>> ReadHeadersAsync(
+        //    string headersPath, 
+        //    CancellationToken cancellationToken)
+        //{
+        //    var headers = new List<RawEventHeader>(_config.MaxPageSize);
+
+        //    using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+          
+        //    int dataBufferSize = 0; // TODO: this should probably be a long, but it would then require chunking from the data stream
+
+        //    // TODO: try reading a bigger buffer at once, and then parse the headers from it
+        //    var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE * _config.MaxPageSize);
+
+        //    while (true)
+        //    {
+        //        if (headers.Count >= _config.MaxPageSize)
+        //            break;
+
+        //        var bytesRead = await headersStream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
+        //                                           .ConfigureAwait(false);
+        //        if (bytesRead == 0)
+        //            break;
+
+        //        var header = new RawEventHeader();
+        //        RawEventHeader.Parse(headerBuffer, ref header);
+        //        headers.Add(header);
+
+        //        dataBufferSize += header.EventDataLength;
+        //    }
+
+        //    ArrayPool<byte>.Shared.Return(headerBuffer);
+
+        //    return (headers, dataBufferSize);
+        //}
+
+        public async IAsyncEnumerable<IEvent> ReadAsync(
+            Guid streamId, 
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var headers = new List<RawEventHeader>(_config.MaxPageSize);
+            string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
+            string dataPath = GetStreamPath(streamId, DataFileSuffix);
+            if (!File.Exists(headersPath) || !File.Exists(dataPath))
+                yield break;
 
             using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            
-            headersStream.Position = 
-                direction == Direction.Forward ? 
-                    RawEventHeader.SIZE * startPosition : 
-                    headersStream.Length - RawEventHeader.SIZE * _config.MaxPageSize;
 
-            int dataBufferSize = 0; // TODO: this should probably be a long, but it would then require chunking from the data stream
+            int headerBufferLen = RawEventHeader.SIZE * _config.MaxPageSize;
+            var headerBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
 
-            // TODO: try reading a bigger buffer at once, and then parse the headers from it
-            var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
+            var headers = new List<RawEventHeader>();
+            int dataBufferSize = 0;
 
             while (true)
             {
-                if (headers.Count >= _config.MaxPageSize)
-                    break;
-
-                var bytesRead = await headersStream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
+                int bytesRead = await headersStream.ReadAsync(headerBuffer, 0, headerBufferLen, cancellationToken)
                                                    .ConfigureAwait(false);
                 if (bytesRead == 0)
                     break;
 
-                var header = new RawEventHeader();
-                RawEventHeader.Parse(headerBuffer, ref header);
-                headers.Add(header);
+                int offset = 0;
+                while (offset < bytesRead)
+                {
+                    var header = Unsafe.As<byte, RawEventHeader>(ref headerBuffer[offset]);
+                    dataBufferSize += header.EventDataLength;
 
-                dataBufferSize += header.EventDataLength;
+                    headers.Add(header);
+                    offset += RawEventHeader.SIZE;
+                }
             }
 
             ArrayPool<byte>.Shared.Return(headerBuffer);
 
-            return (headers, dataBufferSize);
-        }
-
-        public async ValueTask<IEnumerable<IEvent>> ReadAsync(
-            Guid streamId, 
-            Direction direction = Direction.Forward, 
-            long startPosition = (long)StreamPosition.Start,
-            CancellationToken cancellationToken = default)
-        {
-            if (startPosition < 0)
-                throw new ArgumentOutOfRangeException(nameof(startPosition));
-
-            if(direction == Direction.Backward &&
-                startPosition != (long)StreamPosition.End)
-                throw new ArgumentOutOfRangeException(nameof(startPosition), "When reading backwards, the start position must be set to StreamPosition.End");
-
-            string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
-            string dataPath = GetStreamPath(streamId, DataFileSuffix);
-            if (!File.Exists(headersPath) || !File.Exists(dataPath))
-                return Array.Empty<Event>();
-
-            // first, read all the headers, which are stored sequentially
-            // this will allow later on pulling the data for all the events in one go
-
-            var (headers, dataBufferSize) = await this.ReadHeadersAsync(headersPath, direction, startPosition, cancellationToken)
-                                                      .ConfigureAwait(false);
-
             // we exit early if no headers found
             if (headers.Count == 0)
-                return Array.Empty<Event>();
+                yield break;
 
             // now we read the data for all the events in a single buffer
             // so that we can parse it directly, avoiding accessing the file any longer
-
-            var results = new List<IEvent>();
             using var dataStream = new FileStream(dataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             dataStream.Position = headers[0].DataPosition;
 
@@ -115,7 +119,7 @@ namespace EvenireDB
                 // have to create a span to ensure that we're parsing the right buffer size
                 // as ArrayPool might return a buffer with size the closest pow(2)
                 var eventTypeName = Encoding.UTF8.GetString(headers[i].EventType, 0, headers[i].EventTypeLength);
-                                
+
                 var eventData = new byte[headers[i].EventDataLength];
 
                 // if skip is specified, when calculating the source offset we need to subtract the position of the first block of data
@@ -124,15 +128,10 @@ namespace EvenireDB
                 Array.Copy(dataBuffer, srcOffset, eventData, 0, headers[i].EventDataLength);
 
                 var @event = _factory.Create(headers[i].EventId, eventTypeName, eventData);
-                results.Add(@event);
+                yield return @event;
             }
 
             ArrayPool<byte>.Shared.Return(dataBuffer);
-
-            if (direction == Direction.Backward)
-                results.Reverse();
-
-            return results;
         }
 
         public async ValueTask AppendAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
@@ -167,7 +166,7 @@ namespace EvenireDB
                     EventDataLength = @event.Data.Length,
                     EventTypeLength = (short)@event.Type.Length,
                 };
-                header.CopyTo(headerBuffer);
+                header.CopyTo(ref headerBuffer);
                 await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
                                      .ConfigureAwait(false);
 

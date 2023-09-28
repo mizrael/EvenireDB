@@ -24,22 +24,6 @@ namespace EvenireDB
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
         }
 
-        private async ValueTask<List<IEvent>> ReadAllPersistedAsync(Guid streamId, CancellationToken cancellationToken = default)
-        {
-            List<IEvent> results = new();
-            IEnumerable<IEvent> tmpEvents;
-            long startPosition = 0;
-            while (true)
-            {
-                tmpEvents = await _repo.ReadAsync(streamId, direction: Direction.Forward, startPosition: startPosition, cancellationToken: cancellationToken).ConfigureAwait(false);
-                if (tmpEvents is null || tmpEvents.Count() == 0) 
-                    break;
-                results.AddRange(tmpEvents);
-                startPosition += tmpEvents.Count();
-            }
-            return results;
-        }
-
         private async ValueTask<CachedEvents> EnsureCachedEventsAsync(Guid streamId, string key, CancellationToken cancellationToken)
         {
             var entry = _cache.Get<CachedEvents>(key);
@@ -52,8 +36,9 @@ namespace EvenireDB
                 entry = _cache.Get<CachedEvents>(key);
                 if (entry is null)
                 {
-                    var persistedEvents = await this.ReadAllPersistedAsync(streamId, cancellationToken)
-                                                    .ConfigureAwait(false);
+                    var persistedEvents = new List<IEvent>();
+                    await foreach(var @event in _repo.ReadAsync(streamId, cancellationToken))
+                        persistedEvents.Add(@event);
                     entry = new CachedEvents(persistedEvents, new SemaphoreSlim(1, 1));
 
                     _cache.Set(key, entry, _config.CacheDuration);

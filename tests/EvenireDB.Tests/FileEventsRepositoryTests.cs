@@ -48,7 +48,7 @@ namespace EvenireDB.Tests
         [Theory]
         [InlineData(1)]
         [InlineData(10)]
-        public async Task ReadAsync_should_read_events(int eventsCount)
+        public async Task ReadAsync_should_read_entire_stream(int eventsCount)
         {
             var expectedEvents = _fixture.BuildEvents(eventsCount);
 
@@ -57,44 +57,14 @@ namespace EvenireDB.Tests
             var sut = new FileEventsRepository(config, new EventFactory(1000));
             await sut.AppendAsync(streamId, expectedEvents).ConfigureAwait(false);
 
-            var events = await sut.ReadAsync(streamId).ConfigureAwait(false);
+            var events = await sut.ReadAsync(streamId).ToArrayAsync().ConfigureAwait(false);
             events.Should().NotBeNullOrEmpty()
                   .And.BeEquivalentTo(expectedEvents);
-        }
-
-        [Fact]
-        public async Task ReadAsync_should_read_events_backwards()
-        {
-            var inputEvents = _fixture.BuildEvents(142);
-            var expectedEvents = inputEvents.Reverse().ToArray();
-
-            var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config, new EventFactory(1000));
-            await sut.AppendAsync(streamId, inputEvents).ConfigureAwait(false);
-
-            var events = await sut.ReadAsync(streamId, direction: Direction.Backward, startPosition: (long)StreamPosition.End).ConfigureAwait(false);
-            events.Should().NotBeNullOrEmpty()
-                  .And.BeEquivalentTo(expectedEvents);
-        }
-
-        [Fact]
-        public async Task ReadAsync_should_throw_when_reading_events_backwards_and_position_not_stream_end()
-        {
-            var inputEvents = _fixture.BuildEvents(142);
-            var expectedEvents = inputEvents.Reverse().ToArray();
-
-            var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config, new EventFactory(1000));
-            await sut.AppendAsync(streamId, inputEvents).ConfigureAwait(false);
-
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await sut.ReadAsync(streamId, direction: Direction.Backward, startPosition: 42));
         }
 
         [Theory]
-        [InlineData(10, 10, 100)]
-        public async Task ReadAsync_should_read_subsequent_events(int batchesCount, int eventsPerBatch, int expectedFileSize)
+        [InlineData(10, 10)]
+        public async Task ReadAsync_should_read_appended_events(int batchesCount, int eventsPerBatch)
         {
             var batches = Enumerable.Range(0, batchesCount)
                 .Select(b => _fixture.BuildEvents(eventsPerBatch, new byte[] { 0x42 }))
@@ -108,57 +78,9 @@ namespace EvenireDB.Tests
 
             var expectedEvents = batches.SelectMany(e => e).ToArray();
 
-            var loadedEvents = await sut.ReadAsync(streamId).ConfigureAwait(false);
+            var loadedEvents = await sut.ReadAsync(streamId).ToArrayAsync().ConfigureAwait(false);
             loadedEvents.Should().NotBeNullOrEmpty()
                          .And.BeEquivalentTo(expectedEvents);
-        }
-
-        [Fact]
-        public async Task ReadAsync_should_read_events_when_offset_provided()
-        {
-            var expectedEvents = _fixture.BuildEvents(142);
-            var expectedEvent = expectedEvents.Skip(42).First();
-
-            var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config, new EventFactory(1000));
-
-            await sut.AppendAsync(streamId, expectedEvents).ConfigureAwait(false);
-
-            var events = await sut.ReadAsync(streamId, startPosition: 42).ConfigureAwait(false);
-            events.Should().NotBeNullOrEmpty()
-                  .And.HaveCount(100);
-            events.ElementAt(0).Id.Should().Be(expectedEvent.Id);
-        }
-
-        [Fact]
-        public async Task ReadAsync_should_read_only_page_size_events()
-        {
-            var expectedEvents = _fixture.BuildEvents(142);
-
-            var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config, new EventFactory(1000));
-            await sut.AppendAsync(streamId, expectedEvents).ConfigureAwait(false);
-
-            var events = await sut.ReadAsync(streamId, startPosition: 0).ConfigureAwait(false);
-            events.Should().NotBeNullOrEmpty()
-                  .And.HaveCount(100);
-        }
-
-        [Fact]
-        public async Task ReadAsync_should_return_empty_collection_when_skip_to_high()
-        {
-            var expectedEvents = _fixture.BuildEvents(10);
-
-            var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config, new EventFactory(1000));
-            await sut.AppendAsync(streamId, expectedEvents).ConfigureAwait(false);
-
-            var events = await sut.ReadAsync(streamId, startPosition: 11).ConfigureAwait(false);
-            events.Should().NotBeNull()
-                  .And.BeEmpty();
         }
     }
 }
