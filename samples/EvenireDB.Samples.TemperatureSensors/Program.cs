@@ -32,7 +32,7 @@ app.MapGet("/sensors/{sensorId}", async ([FromServices] IEventsClient client, Gu
     if (events.Count() == 0)
         return Results.NotFound();
 
-    var sensor = Sensor.Rehydrate(sensorId, events);
+    var sensor = Sensor.Create(sensorId, events);
     return Results.Ok(sensor);
 });
 
@@ -40,19 +40,27 @@ app.Run();
 
 public record Sensor
 {
-    public Guid Id { get; init; }
-    public Reading[]? Readings { get; init; }
+    private Sensor(Guid id, Reading[]? readings)
+    {
+        this.Id = id;
+        this.Readings = readings ?? Array.Empty<Reading>();
 
-    public static Sensor Rehydrate(Guid id, IEnumerable<Event> events)
+        this.Average = this.Readings.Select(r => r.Temperature).Average();
+    }
+
+    public Guid Id { get; }
+    
+    public Reading[] Readings { get; }
+
+    public double Average { get; }
+
+    public static Sensor Create(Guid id, IEnumerable<Event> events)
     {
         var readings = events.Where(evt => evt.Type == "ReadingReceived")
                              .Select(evt => JsonSerializer.Deserialize<Reading>(evt.Data))
                              .ToArray();
-        return new Sensor()
-        {
-            Id = id,
-            Readings = readings
-        };
+
+        return new Sensor(id, readings);
     }
 }
 
