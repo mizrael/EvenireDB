@@ -1,12 +1,14 @@
-﻿namespace EvenireDB
+﻿using System.Runtime.CompilerServices;
+
+namespace EvenireDB
 {
-    internal struct RawEventHeader
+    internal readonly struct RawEventHeader
     {
-        public Guid EventId;
-        public long DataPosition;
-        public byte[] EventType;
-        public short EventTypeLength;
-        public int EventDataLength;
+        public readonly Guid EventId;
+        public readonly long DataPosition;
+        public readonly byte[] EventType; // should always be size Constants.MAX_EVENT_TYPE_LENGTH
+        public readonly short EventTypeLength;
+        public readonly int EventDataLength;
 
         public const int SIZE =
             TypeSizes.GUID + // index
@@ -22,10 +24,9 @@
         private const int EVENT_TYPE_NAME_LENGTH_POS = EVENT_TYPE_NAME_POS + Constants.MAX_EVENT_TYPE_LENGTH;
         private const int EVENT_DATA_LENGTH_POS = EVENT_TYPE_NAME_LENGTH_POS + sizeof(short);
 
-        public readonly void CopyTo(byte[] buffer)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly void ToBytes(ref byte[] buffer)
         {
-            // TODO: avoid BitConverter
-
             // event index
             Array.Copy(this.EventId.ToByteArray(), 0, buffer, EVENT_ID_POS, TypeSizes.GUID);
 
@@ -42,13 +43,27 @@
             Array.Copy(BitConverter.GetBytes(this.EventDataLength), 0, buffer, EVENT_DATA_LENGTH_POS, sizeof(int));
         }
 
-        public static void Parse(byte[] data, ref RawEventHeader header)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RawEventHeader(ReadOnlyMemory<byte> data) : this(data.Span) { }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RawEventHeader(ReadOnlySpan<byte> data)
         {
-            header.EventId = new Guid(data.AsSpan(EVENT_ID_POS, TypeSizes.GUID));
-            header.DataPosition = BitConverter.ToInt32(data, OFFSET_POS);
-            header.EventType = data.AsSpan(EVENT_TYPE_NAME_POS, Constants.MAX_EVENT_TYPE_LENGTH).ToArray();
-            header.EventTypeLength = BitConverter.ToInt16(data, EVENT_TYPE_NAME_LENGTH_POS);
-            header.EventDataLength = BitConverter.ToInt32(data, EVENT_DATA_LENGTH_POS);
+            this.EventId = new Guid(data.Slice(EVENT_ID_POS, TypeSizes.GUID));
+            this.DataPosition = BitConverter.ToInt32(data.Slice(OFFSET_POS));
+            this.EventType = data.Slice(EVENT_TYPE_NAME_POS, Constants.MAX_EVENT_TYPE_LENGTH).ToArray();
+            this.EventTypeLength = BitConverter.ToInt16(data.Slice(EVENT_TYPE_NAME_LENGTH_POS));
+            this.EventDataLength = BitConverter.ToInt32(data.Slice(EVENT_DATA_LENGTH_POS));
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public RawEventHeader(Guid eventId, byte[] eventType, long dataPosition, int eventDataLength, short eventTypeLength)
+        {
+            EventId = eventId;
+            EventType = eventType;
+            DataPosition = dataPosition;
+            EventDataLength = eventDataLength;
+            EventTypeLength = eventTypeLength;
         }
     }
 }

@@ -8,12 +8,6 @@ using System.Text;
 
 namespace EvenireDB
 {
-    public record FileEventsRepositoryConfig(string BasePath, int MaxPageSize = 100);
-
-    //TODO: consider add versioning on events file
-    //TODO: consider adding write locks to handle concurrency
-    //TODO: make sure event IDs are unique in a stream
-
     public class FileEventsRepository : IEventsRepository
     {
         private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
@@ -35,55 +29,49 @@ namespace EvenireDB
         private string GetStreamPath(Guid streamId, string type)
         => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
 
-        public async ValueTask<IEnumerable<IEvent>> ReadAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<IEvent> ReadAsync(
+            Guid streamId, 
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            if (skip < 0)
-                throw new ArgumentOutOfRangeException(nameof(skip));
-
             string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
             string dataPath = GetStreamPath(streamId, DataFileSuffix);
             if (!File.Exists(headersPath) || !File.Exists(dataPath))
-                return Enumerable.Empty<Event>();
-
-            // first, read all the headers, which are stored sequentially
-            // this will allow later on pulling the data for all the events in one go
-
-            var headers = new List<RawEventHeader>();
-
-            var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
+                yield break;
 
             using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            headersStream.Position = RawEventHeader.SIZE * skip;
 
-            int dataBufferSize = 0; // TODO: this should probably be a long, but it would then require chunking from the data stream
+            int headerBufferLen = RawEventHeader.SIZE * (int)_config.MaxPageSize;
+            var headersBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
+            
+            var headers = new List<RawEventHeader>();
+            int dataBufferSize = 0;
 
             while (true)
             {
-                if (headers.Count >= _config.MaxPageSize)
-                    break;
-
-                var bytesRead = await headersStream.ReadAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
+                int bytesRead = await headersStream.ReadAsync(headersBuffer, 0, headerBufferLen, cancellationToken)
                                                    .ConfigureAwait(false);
                 if (bytesRead == 0)
                     break;
 
-                var header = new RawEventHeader();
-                RawEventHeader.Parse(headerBuffer, ref header);
-                headers.Add(header);
+                int offset = 0;
+                while (offset < bytesRead)
+                {
+                    var header = new RawEventHeader(headersBuffer.AsMemory(offset, RawEventHeader.SIZE));                                      
+                    headers.Add(header);
 
-                dataBufferSize += header.EventDataLength;
+                    dataBufferSize += header.EventDataLength;
+                    offset += RawEventHeader.SIZE;
+                }
             }
 
-            ArrayPool<byte>.Shared.Return(headerBuffer);
-
+            ArrayPool<byte>.Shared.Return(headersBuffer);
+            
             // we exit early if no headers found
-            if(headers.Count == 0)
-                return Array.Empty<Event>();
+            if (headers.Count == 0)
+                yield break;
 
             // now we read the data for all the events in a single buffer
             // so that we can parse it directly, avoiding accessing the file any longer
-
-            var results = new List<IEvent>();
             using var dataStream = new FileStream(dataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             dataStream.Position = headers[0].DataPosition;
 
@@ -97,31 +85,31 @@ namespace EvenireDB
                 // as ArrayPool might return a buffer with size the closest pow(2)
                 var eventTypeName = Encoding.UTF8.GetString(headers[i].EventType, 0, headers[i].EventTypeLength);
 
-                // when paging, we need to take into account the position of the first block of data
                 var eventData = new byte[headers[i].EventDataLength];
+
+                // if skip is specified, when calculating the source offset we need to subtract the position of the first block of data
+                // because the stream position was already set after opening it
                 long srcOffset = headers[i].DataPosition - headers[0].DataPosition;
                 Array.Copy(dataBuffer, srcOffset, eventData, 0, headers[i].EventDataLength);
 
                 var @event = _factory.Create(headers[i].EventId, eventTypeName, eventData);
-                results.Add(@event);
+                yield return @event;
             }
 
             ArrayPool<byte>.Shared.Return(dataBuffer);
-
-            return results;
         }
 
-        public async ValueTask WriteAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
+        public async ValueTask AppendAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
         {
             string dataPath = GetStreamPath(streamId, DataFileSuffix);
-            using var dataStream = new FileStream(dataPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            using var dataStream = new FileStream(dataPath, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
-            using var headersStream = new FileStream(headersPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read);
+            using var headersStream = new FileStream(headersPath, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             var eventsCount = events.Count();
 
-            var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
+            byte[] headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
 
             for (int i = 0; i < eventsCount; i++)
             {
@@ -135,15 +123,14 @@ namespace EvenireDB
                     return dest;
                 });
 
-                var header = new RawEventHeader
-                {
-                    EventId = @event.Id,
-                    EventType = eventType,
-                    DataPosition = dataStream.Position,
-                    EventDataLength = @event.Data.Length,
-                    EventTypeLength = (short)@event.Type.Length,
-                };
-                header.CopyTo(headerBuffer);
+                var header = new RawEventHeader(
+                    eventId: @event.Id,
+                    eventType: eventType,
+                    dataPosition: dataStream.Position,
+                    eventDataLength: @event.Data.Length,
+                    eventTypeLength: (short)@event.Type.Length
+                );
+                header.ToBytes(ref headerBuffer);
                 await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
                                      .ConfigureAwait(false);
 

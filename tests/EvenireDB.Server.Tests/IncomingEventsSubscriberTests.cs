@@ -10,7 +10,7 @@ namespace EvenireDB.Server.Tests
         {
             var channel = Channel.CreateBounded<IncomingEventsGroup>(10);
             var repo = Substitute.For<IEventsRepository>();
-            repo.WhenForAnyArgs(r => r.WriteAsync(Arg.Any<Guid>(), null, default))
+            repo.WhenForAnyArgs(r => r.AppendAsync(Arg.Any<Guid>(), null, default))
                 .Throw<Exception>();
 
             var logger = Substitute.For<ILogger<IncomingEventsPersistenceWorker>>();
@@ -29,7 +29,7 @@ namespace EvenireDB.Server.Tests
             await sut.StopAsync(default);
 
             await repo.ReceivedWithAnyArgs(groups.Length)
-                      .WriteAsync(Arg.Any<Guid>(), null, default);
+                      .AppendAsync(Arg.Any<Guid>(), null, default);
         }
     }
 }

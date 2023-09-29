@@ -24,24 +24,10 @@ namespace EvenireDB
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
         }
 
-        private async ValueTask<List<IEvent>> ReadAllPersistedAsync(Guid streamId, CancellationToken cancellationToken = default)
+        private async ValueTask<CachedEvents> EnsureCachedEventsAsync(Guid streamId, CancellationToken cancellationToken)
         {
-            List<IEvent> results = new();
-            IEnumerable<IEvent> tmpEvents;
-            int skip = 0;
-            while (true)
-            {
-                tmpEvents = await _repo.ReadAsync(streamId, skip, cancellationToken).ConfigureAwait(false);
-                if (tmpEvents is null || tmpEvents.Count() == 0) 
-                    break;
-                results.AddRange(tmpEvents);
-                skip += tmpEvents.Count();
-            }
-            return results;
-        }
+            var key = streamId.ToString();
 
-        private async ValueTask<CachedEvents> EnsureCachedEventsAsync(Guid streamId, string key, CancellationToken cancellationToken)
-        {
             var entry = _cache.Get<CachedEvents>(key);
             if (entry is not null)
                 return entry;
@@ -52,8 +38,9 @@ namespace EvenireDB
                 entry = _cache.Get<CachedEvents>(key);
                 if (entry is null)
                 {
-                    var persistedEvents = await this.ReadAllPersistedAsync(streamId, cancellationToken)
-                                                   .ConfigureAwait(false);
+                    var persistedEvents = new List<IEvent>();
+                    await foreach(var @event in _repo.ReadAsync(streamId, cancellationToken))
+                        persistedEvents.Add(@event);
                     entry = new CachedEvents(persistedEvents, new SemaphoreSlim(1, 1));
 
                     _cache.Set(key, entry, _config.CacheDuration);
@@ -66,25 +53,54 @@ namespace EvenireDB
             return entry;
         }
 
-        public async ValueTask<IEnumerable<IEvent>> GetPageAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
+        public async ValueTask<IEnumerable<IEvent>> ReadAsync(
+            Guid streamId,
+            StreamPosition startPosition, 
+            Direction direction = Direction.Forward,            
+            CancellationToken cancellationToken = default)
         {
-            if (skip < 0)
-                throw new ArgumentOutOfRangeException(nameof(skip));
+            if (startPosition < 0)
+                throw new ArgumentOutOfRangeException(nameof(startPosition));
 
-            var key = streamId.ToString();
-            
-            CachedEvents entry = await EnsureCachedEventsAsync(streamId, key, cancellationToken).ConfigureAwait(false);
+            CachedEvents entry = await EnsureCachedEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
-            if (entry.Events == null || entry.Events.Count == 0 || entry.Events.Count < skip)
-                return Enumerable.Empty<IEvent>();
+            if (entry.Events == null || entry.Events.Count == 0)
+                return Array.Empty<IEvent>();
 
-            var end = Math.Min(skip + _config.MaxPageSize, entry.Events.Count);
-            var count = end - skip;
-            var results = new IEvent[count];
-            var j = 0;            
-            for (var i = skip; i < end; i++)
-                results[j++] = entry.Events[i];
-            entry.Events.Except(results);
+            IEvent[] results;
+            uint totalCount = (uint)entry.Events.Count;
+            uint pos = startPosition;
+
+            if (direction == Direction.Forward)
+            {
+                if (totalCount < startPosition)
+                    return Array.Empty<IEvent>();
+
+                uint j = 0, i = pos,
+                    finalCount = Math.Min(_config.MaxPageSize, totalCount - i);
+                results = new IEvent[finalCount]; 
+                while (j != finalCount)
+                {
+                    results[j++] = entry.Events[(int)i++];
+                }
+            }
+            else
+            {              
+                if(startPosition == StreamPosition.End)
+                    pos = totalCount - 1;
+               
+                if (pos >= totalCount)
+                    return Array.Empty<IEvent>();
+
+                uint j = 0, i = pos,
+                      finalCount = Math.Min(_config.MaxPageSize, i + 1);
+                results = new IEvent[finalCount];
+                while(j != finalCount)
+                {
+                    results[j++] = entry.Events[(int)i--];
+                }
+            }
+
             return results;
         }
 
@@ -96,9 +112,7 @@ namespace EvenireDB
             if (!incomingEvents.Any())
                 return new SuccessResult();
 
-            var key = streamId.ToString();
-
-            CachedEvents entry = await EnsureCachedEventsAsync(streamId, key, cancellationToken).ConfigureAwait(false);
+            CachedEvents entry = await EnsureCachedEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
             entry.Semaphore.Wait(cancellationToken);
             try
@@ -107,7 +121,7 @@ namespace EvenireDB
                     HasDuplicateEvent(incomingEvents, entry, out var duplicate))
                     return FailureResult.DuplicateEvent(duplicate);
 
-                AddIncomingToCache(incomingEvents, key, entry);
+                UpdateCache(streamId, incomingEvents, entry);
 
                 var group = new IncomingEventsGroup(streamId, incomingEvents);
                 _writer.TryWrite(group); //TODO: error checking
@@ -120,10 +134,10 @@ namespace EvenireDB
             return new SuccessResult();
         }
 
-        private void AddIncomingToCache(IEnumerable<IEvent> incomingEvents, string key, CachedEvents entry)
+        private void UpdateCache(Guid streamId, IEnumerable<IEvent> incomingEvents, CachedEvents entry)
         {
             entry.Events.AddRange(incomingEvents);
-            _cache.Set(key, entry, _config.CacheDuration);
+            _cache.Set(streamId.ToString(), entry, _config.CacheDuration);
         }
 
         private static bool HasDuplicateEvent(IEnumerable<IEvent> incomingEvents, CachedEvents entry, out IEvent? duplicate)

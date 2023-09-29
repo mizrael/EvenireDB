@@ -13,11 +13,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Server", "Evenire
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Server.Tests", "..\tests\EvenireDB.Server.Tests\EvenireDB.Server.Tests.csproj", "{57498174-AE43-4872-8DD1-D1AC649DFD00}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvenireDB.Client", "EvenireDB.Client\EvenireDB.Client.csproj", "{E2B7F68B-0B68-4B9E-9997-EB357418E064}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Client", "EvenireDB.Client\EvenireDB.Client.csproj", "{E2B7F68B-0B68-4B9E-9997-EB357418E064}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Client.Tests", "..\tests\EvenireDB.Client.Tests\EvenireDB.Client.Tests.csproj", "{FC54BD0B-1471-4252-8B3F-97BE64B90B1A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CDD60004-8C27-46E1-9235-9376B86E9003}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{967C1ED1-EA6E-4C72-BB85-38D8D3057A5F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvenireDB.Samples.TemperatureSensors", "..\samples\EvenireDB.Samples.TemperatureSensors\EvenireDB.Samples.TemperatureSensors.csproj", "{B0B002EB-6E66-4D86-B03B-7CB2AABD865E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -53,6 +57,10 @@ Global
 		{FC54BD0B-1471-4252-8B3F-97BE64B90B1A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FC54BD0B-1471-4252-8B3F-97BE64B90B1A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FC54BD0B-1471-4252-8B3F-97BE64B90B1A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B0B002EB-6E66-4D86-B03B-7CB2AABD865E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B0B002EB-6E66-4D86-B03B-7CB2AABD865E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B0B002EB-6E66-4D86-B03B-7CB2AABD865E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B0B002EB-6E66-4D86-B03B-7CB2AABD865E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -61,6 +69,7 @@ Global
 		{0CE5609B-4935-46F0-8EDD-90AB69BFD58D} = {CDD60004-8C27-46E1-9235-9376B86E9003}
 		{57498174-AE43-4872-8DD1-D1AC649DFD00} = {CDD60004-8C27-46E1-9235-9376B86E9003}
 		{FC54BD0B-1471-4252-8B3F-97BE64B90B1A} = {CDD60004-8C27-46E1-9235-9376B86E9003}
+		{B0B002EB-6E66-4D86-B03B-7CB2AABD865E} = {967C1ED1-EA6E-4C72-BB85-38D8D3057A5F}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8D2FA660-798C-4C70-9A70-59435A090136}

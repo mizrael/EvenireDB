@@ -14,9 +14,13 @@ namespace EvenireDB.Client
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public async Task<IEnumerable<Event>> GetEventsAsync(Guid streamId, int skip = 0, CancellationToken cancellationToken = default)
+        public async Task<IEnumerable<Event>> ReadAsync(
+            Guid streamId,
+            StreamPosition position,
+            Direction direction = Direction.Forward,
+            CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.GetAsync($"/api/v1/events/{streamId}?skip={skip}", HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            var response = await _httpClient.GetAsync($"/api/v1/events/{streamId}?pos={position}&dir={(int)direction}", HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                                             .ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             var results = await response.Content.ReadFromJsonAsync<Event[]>(cancellationToken: cancellationToken);

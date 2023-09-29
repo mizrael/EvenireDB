@@ -8,19 +8,19 @@ namespace EvenireDB.Tests
         private readonly static byte[] _defaultData = new byte[] { 0x42 };
 
         [Fact]
-        public async Task GetPageAsync_should_return_empty_collection_when_data_not_available()
+        public async Task ReadAsync_should_return_empty_collection_when_data_not_available()
         {
             var repo = Substitute.For<IEventsRepository>();
             var cache = Substitute.For<IMemoryCache>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-            var events = await sut.GetPageAsync(Guid.NewGuid());
+            var events = await sut.ReadAsync(Guid.NewGuid(), StreamPosition.Start);
             events.Should().NotBeNull().And.BeEmpty();
         }
 
         [Fact]
-        public async Task GetPageAsync_should_pull_data_from_repo_on_cache_miss()
+        public async Task ReadAsync_should_pull_data_from_repo_on_cache_miss()
         {
             var streamId = Guid.NewGuid();
 
@@ -29,18 +29,149 @@ namespace EvenireDB.Tests
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
-            repo.ReadAsync(streamId, 0, Arg.Any<CancellationToken>())
-                .Returns(expectedEvents.Take(100));
-            repo.ReadAsync(streamId, 1, Arg.Any<CancellationToken>())
-                .Returns(expectedEvents.Skip(100).Take(100));
+            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
+                .Returns(expectedEvents.ToAsyncEnumerable());
 
             var cache = Substitute.For<IMemoryCache>();
 
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-            var events = await sut.GetPageAsync(streamId);
-            events.Should().NotBeNullOrEmpty();
+            var events = await sut.ReadAsync(streamId, StreamPosition.Start);
+            events.Should().NotBeNullOrEmpty()
+                           .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
+                           .And.BeEquivalentTo(expectedEvents.Take((int)EventsProviderConfig.Default.MaxPageSize));
+        }
+
+        [Fact]
+        public async Task ReadAsync_should_be_able_to_read_backwards()
+        {
+            var streamId = Guid.NewGuid();
+
+            var sourceEvents = Enumerable.Range(0, 242)
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToArray();
+
+            var repo = Substitute.For<IEventsRepository>();
+            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
+                .Returns(sourceEvents.ToAsyncEnumerable());
+
+            var cache = Substitute.For<IMemoryCache>();
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+
+            var expectedEvents = sourceEvents.Skip(142).ToArray().Reverse();
+
+            var loadedEvents = await sut.ReadAsync(streamId, startPosition: StreamPosition.End, direction: Direction.Backward);
+            loadedEvents.Should().NotBeNull()
+                .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
+                .And.BeEquivalentTo(expectedEvents);
+        }
+
+        [Fact]
+        public async Task ReadAsync_should_be_able_to_read_backwards_from_position()
+        {
+            var streamId = Guid.NewGuid();
+
+            var sourceEvents = Enumerable.Range(0, 242)
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToArray();
+
+            var repo = Substitute.For<IEventsRepository>();
+            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
+                .Returns(sourceEvents.ToAsyncEnumerable());
+
+            var cache = Substitute.For<IMemoryCache>();
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+
+            var offset = 11;
+            StreamPosition startPosition = (uint)(sourceEvents.Length - offset);
+
+            var expectedEvents = sourceEvents.Reverse().Skip(offset-1).Take((int)EventsProviderConfig.Default.MaxPageSize);
+
+            var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Backward);
+            loadedEvents.Should().NotBeNull()
+                .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
+                .And.BeEquivalentTo(expectedEvents);
+        }
+
+        [Fact]
+        public async Task ReadAsync_should_be_able_to_read_last_page_backwards_from_position()
+        {
+            var streamId = Guid.NewGuid();
+
+            var sourceEvents = Enumerable.Range(0, 242)
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToArray();
+
+            var repo = Substitute.For<IEventsRepository>();
+            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
+                .Returns(sourceEvents.ToAsyncEnumerable());
+
+            var cache = Substitute.For<IMemoryCache>();
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+
+            var startPosition = EventsProviderConfig.Default.MaxPageSize / 2;
+
+            var expectedEvents = sourceEvents.Take((int)startPosition+1).Reverse();
+
+            var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Backward);
+            loadedEvents.Should().NotBeNull()
+                .And.HaveCount(expectedEvents.Count())
+                .And.BeEquivalentTo(expectedEvents);
+        }
+
+        [Fact]
+        public async Task ReadAsync_should_be_able_to_read_forward()
+        {
+            var streamId = Guid.NewGuid();
+
+            var sourceEvents = Enumerable.Range(0, 242)
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToArray();
+
+            var repo = Substitute.For<IEventsRepository>();
+            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
+                .Returns(sourceEvents.ToAsyncEnumerable());
+
+            var cache = Substitute.For<IMemoryCache>();
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+
+            var expectedEvents = sourceEvents.Take((int)EventsProviderConfig.Default.MaxPageSize);
+
+            var loadedEvents = await sut.ReadAsync(streamId, startPosition: StreamPosition.Start, direction: Direction.Forward);
+            loadedEvents.Should().NotBeNull()
+                .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
+                .And.BeEquivalentTo(expectedEvents);
+        }
+
+        [Fact]
+        public async Task ReadAsync_should_be_able_to_read_forward_from_position()
+        {
+            var streamId = Guid.NewGuid();
+
+            var sourceEvents = Enumerable.Range(0, 242)
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToArray();
+
+            var repo = Substitute.For<IEventsRepository>();
+            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
+                .Returns(sourceEvents.ToAsyncEnumerable());
+
+            var cache = Substitute.For<IMemoryCache>();
+            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+
+            StreamPosition startPosition = 11;
+            var expectedEvents = sourceEvents.Skip(11).Take((int)EventsProviderConfig.Default.MaxPageSize);
+
+            var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Forward);
+            loadedEvents.Should().NotBeNull()
+                .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
+                .And.BeEquivalentTo(expectedEvents);
         }
 
         [Fact]

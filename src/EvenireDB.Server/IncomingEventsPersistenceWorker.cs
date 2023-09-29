@@ -31,7 +31,7 @@ public class IncomingEventsPersistenceWorker : BackgroundService
             {
                 try
                 {
-                    await _repo.WriteAsync(group.AggregateId, group.Events, cancellationToken)
+                    await _repo.AppendAsync(group.AggregateId, group.Events, cancellationToken)
                            .ConfigureAwait(false);
                 }
                 catch (Exception ex)
