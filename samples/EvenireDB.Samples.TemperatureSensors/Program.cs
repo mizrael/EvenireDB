@@ -8,14 +8,14 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = new Uri(builder.Configuration.GetConnectionString("evenire"));
 
 builder.Services.AddHostedService<SensorsFakeProducer>()
-                .Configure<SensorsConfig>(builder.Configuration.GetSection("SensorsConfig"))
+                .Configure<Settings>(builder.Configuration.GetSection("Settings"))
                 .AddEvenireDB(new EvenireConfig(connectionString));
 
 var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-app.MapGet("/sensors", ([FromServices] IOptions<SensorsConfig> config) =>
+app.MapGet("/sensors", ([FromServices] IOptions<Settings> config) =>
 {
     return config.Value.SensorIds.Select(id => new
     {

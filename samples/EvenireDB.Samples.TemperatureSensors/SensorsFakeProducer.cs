@@ -5,9 +5,9 @@ public class SensorsFakeProducer : BackgroundService
 {
     private readonly static TimeSpan _delay = TimeSpan.FromSeconds(30);
     private readonly IEventsClient _eventsClient;
-    private readonly SensorsConfig _sensorConfig;
+    private readonly Settings _sensorConfig;
 
-    public SensorsFakeProducer(IEventsClient eventsClient, IOptions<SensorsConfig> sensorConfig)
+    public SensorsFakeProducer(IEventsClient eventsClient, IOptions<Settings> sensorConfig)
     {
         _eventsClient = eventsClient;
         _sensorConfig = sensorConfig.Value;
