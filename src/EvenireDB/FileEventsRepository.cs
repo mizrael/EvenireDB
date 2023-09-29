@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 [assembly: InternalsVisibleTo("EvenireDB.Benchmark")]
@@ -41,14 +42,14 @@ namespace EvenireDB
             using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
             int headerBufferLen = RawEventHeader.SIZE * (int)_config.MaxPageSize;
-            var headerBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
-
+            var headersBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
+            
             var headers = new List<RawEventHeader>();
             int dataBufferSize = 0;
 
             while (true)
             {
-                int bytesRead = await headersStream.ReadAsync(headerBuffer, 0, headerBufferLen, cancellationToken)
+                int bytesRead = await headersStream.ReadAsync(headersBuffer, 0, headerBufferLen, cancellationToken)
                                                    .ConfigureAwait(false);
                 if (bytesRead == 0)
                     break;
@@ -56,16 +57,16 @@ namespace EvenireDB
                 int offset = 0;
                 while (offset < bytesRead)
                 {
-                    var header = Unsafe.As<byte, RawEventHeader>(ref headerBuffer[offset]);
-                    dataBufferSize += header.EventDataLength;
-
+                    var header = new RawEventHeader(headersBuffer.AsMemory(offset, RawEventHeader.SIZE));                                      
                     headers.Add(header);
+
+                    dataBufferSize += header.EventDataLength;
                     offset += RawEventHeader.SIZE;
                 }
             }
 
-            ArrayPool<byte>.Shared.Return(headerBuffer);
-
+            ArrayPool<byte>.Shared.Return(headersBuffer);
+            
             // we exit early if no headers found
             if (headers.Count == 0)
                 yield break;
@@ -109,7 +110,7 @@ namespace EvenireDB
 
             var eventsCount = events.Count();
 
-            var headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
+            byte[] headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
 
             for (int i = 0; i < eventsCount; i++)
             {
@@ -123,15 +124,14 @@ namespace EvenireDB
                     return dest;
                 });
 
-                var header = new RawEventHeader
-                {
+                var header = new RawEventHeader() {
                     EventId = @event.Id,
                     EventType = eventType,
                     DataPosition = dataStream.Position,
                     EventDataLength = @event.Data.Length,
-                    EventTypeLength = (short)@event.Type.Length,
+                    EventTypeLength = (short)@event.Type.Length
                 };
-                header.CopyTo(ref headerBuffer);
+                header.ToBytes(ref headerBuffer);
                 await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
                                      .ConfigureAwait(false);
 

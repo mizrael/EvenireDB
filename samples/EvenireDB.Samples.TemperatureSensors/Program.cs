@@ -27,11 +27,9 @@ app.MapGet("/sensors", ([FromServices] IOptions<SensorsConfig> config) =>
 });
 app.MapGet("/sensors/{sensorId}", async ([FromServices] IEventsClient client, Guid sensorId) =>
 {
-    var events = new List<Event>();
-    await foreach(var @event in client.ReadAllAsync(sensorId))
-        events.Add(@event);
+    var events = await client.ReadAsync(sensorId, StreamPosition.End, Direction.Backward).ConfigureAwait(false);
 
-    if (events.Count == 0)
+    if (events.Count() == 0)
         return Results.NotFound();
 
     var sensor = Sensor.Rehydrate(sensorId, events);
