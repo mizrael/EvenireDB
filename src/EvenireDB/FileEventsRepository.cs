@@ -124,13 +124,13 @@ namespace EvenireDB
                     return dest;
                 });
 
-                var header = new RawEventHeader() {
-                    EventId = @event.Id,
-                    EventType = eventType,
-                    DataPosition = dataStream.Position,
-                    EventDataLength = @event.Data.Length,
-                    EventTypeLength = (short)@event.Type.Length
-                };
+                var header = new RawEventHeader(
+                    eventId: @event.Id,
+                    eventType: eventType,
+                    dataPosition: dataStream.Position,
+                    eventDataLength: @event.Data.Length,
+                    eventTypeLength: (short)@event.Type.Length
+                );
                 header.ToBytes(ref headerBuffer);
                 await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
                                      .ConfigureAwait(false);

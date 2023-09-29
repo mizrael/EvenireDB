@@ -13,13 +13,13 @@ namespace EvenireDB.Tests
 
             var eventId = new Guid("54ECC541-0899-4E38-A2E3-6BC8C3258DC7");
 
-            var header = new RawEventHeader() {
-                EventId = eventId, 
-                DataPosition = 42,                
-                EventDataLength = 71,
-                EventType = eventTypeData,
-                EventTypeLength = (short)eventType.Length
-            };
+            var header = new RawEventHeader(
+                eventId: eventId,
+                dataPosition: 42,
+                eventDataLength: 71,
+                eventType: eventTypeData,
+                eventTypeLength: (short)eventType.Length
+            );
 
             var destBuffer = new byte[RawEventHeader.SIZE];
             header.ToBytes(ref destBuffer);
