@@ -40,7 +40,7 @@ namespace EvenireDB
 
             using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-            int headerBufferLen = RawEventHeader.SIZE * _config.MaxPageSize;
+            int headerBufferLen = RawEventHeader.SIZE * (int)_config.MaxPageSize;
             var headerBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
 
             var headers = new List<RawEventHeader>();

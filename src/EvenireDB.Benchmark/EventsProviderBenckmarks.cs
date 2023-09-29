@@ -43,7 +43,7 @@ public class EventsProviderBenckmarks
     public async Task ReadAsync_Baseline()
     {
         int count = 0;
-        var events = await _sut.ReadAsync(_streamId).ConfigureAwait(false);
+        var events = await _sut.ReadAsync(_streamId, StreamPosition.Start).ConfigureAwait(false);
         foreach (var @evt in events)
             count++;
     }

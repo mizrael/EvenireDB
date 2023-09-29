@@ -15,19 +15,8 @@ namespace EvenireDB.Tests
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-            var events = await sut.ReadAsync(Guid.NewGuid());
+            var events = await sut.ReadAsync(Guid.NewGuid(), StreamPosition.Start);
             events.Should().NotBeNull().And.BeEmpty();
-        }
-
-        [Fact]
-        public async Task ReadAsync_should_throw_when_start_position_below_zero()
-        {
-            var repo = Substitute.For<IEventsRepository>();
-            var cache = Substitute.For<IMemoryCache>();
-            var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
-
-            await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await sut.ReadAsync(Guid.NewGuid(), startPosition: -1));
         }
 
         [Fact]
@@ -48,10 +37,10 @@ namespace EvenireDB.Tests
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-            var events = await sut.ReadAsync(streamId);
+            var events = await sut.ReadAsync(streamId, StreamPosition.Start);
             events.Should().NotBeNullOrEmpty()
-                           .And.HaveCount(EventsProviderConfig.Default.MaxPageSize)
-                           .And.BeEquivalentTo(expectedEvents.Take(EventsProviderConfig.Default.MaxPageSize));
+                           .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
+                           .And.BeEquivalentTo(expectedEvents.Take((int)EventsProviderConfig.Default.MaxPageSize));
         }
 
         [Fact]
@@ -73,9 +62,9 @@ namespace EvenireDB.Tests
 
             var expectedEvents = sourceEvents.Skip(142).ToArray().Reverse();
 
-            var loadedEvents = await sut.ReadAsync(streamId, startPosition: (long)StreamPosition.End, direction: Direction.Backward);
+            var loadedEvents = await sut.ReadAsync(streamId, startPosition: StreamPosition.End, direction: Direction.Backward);
             loadedEvents.Should().NotBeNull()
-                .And.HaveCount(EventsProviderConfig.Default.MaxPageSize)
+                .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
                 .And.BeEquivalentTo(expectedEvents);
         }
 
@@ -97,13 +86,13 @@ namespace EvenireDB.Tests
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
             var offset = 11;
-            var startPosition = sourceEvents.Length - offset;
+            StreamPosition startPosition = (uint)(sourceEvents.Length - offset);
 
-            var expectedEvents = sourceEvents.Reverse().Skip(offset-1).Take(EventsProviderConfig.Default.MaxPageSize);
+            var expectedEvents = sourceEvents.Reverse().Skip(offset-1).Take((int)EventsProviderConfig.Default.MaxPageSize);
 
             var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Backward);
             loadedEvents.Should().NotBeNull()
-                .And.HaveCount(EventsProviderConfig.Default.MaxPageSize)
+                .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
                 .And.BeEquivalentTo(expectedEvents);
         }
 
@@ -126,7 +115,7 @@ namespace EvenireDB.Tests
 
             var startPosition = EventsProviderConfig.Default.MaxPageSize / 2;
 
-            var expectedEvents = sourceEvents.Take(startPosition+1).Reverse();
+            var expectedEvents = sourceEvents.Take((int)startPosition+1).Reverse();
 
             var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Backward);
             loadedEvents.Should().NotBeNull()
@@ -151,11 +140,11 @@ namespace EvenireDB.Tests
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-            var expectedEvents = sourceEvents.Take(EventsProviderConfig.Default.MaxPageSize);
+            var expectedEvents = sourceEvents.Take((int)EventsProviderConfig.Default.MaxPageSize);
 
-            var loadedEvents = await sut.ReadAsync(streamId, startPosition: (long)StreamPosition.Start, direction: Direction.Forward);
+            var loadedEvents = await sut.ReadAsync(streamId, startPosition: StreamPosition.Start, direction: Direction.Forward);
             loadedEvents.Should().NotBeNull()
-                .And.HaveCount(EventsProviderConfig.Default.MaxPageSize)
+                .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
                 .And.BeEquivalentTo(expectedEvents);
         }
 
@@ -176,12 +165,12 @@ namespace EvenireDB.Tests
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-            var startPosition = 11;
-            var expectedEvents = sourceEvents.Skip(startPosition).Take(EventsProviderConfig.Default.MaxPageSize);
+            StreamPosition startPosition = 11;
+            var expectedEvents = sourceEvents.Skip(11).Take((int)EventsProviderConfig.Default.MaxPageSize);
 
             var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Forward);
             loadedEvents.Should().NotBeNull()
-                .And.HaveCount(EventsProviderConfig.Default.MaxPageSize)
+                .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
                 .And.BeEquivalentTo(expectedEvents);
         }
 

@@ -19,9 +19,10 @@ namespace EvenireDB.Server.Routes
         private static async ValueTask<IEnumerable<EventDTO>> GetEvents(
             [FromServices] EventsProvider provider,
             Guid streamId,
-            [FromQuery(Name = "pos")] int startPosition = 0)
+            [FromQuery(Name = "pos")] uint startPosition = 0,
+            [FromQuery(Name = "dir")] Direction direction = Direction.Forward)
         {
-            var events = await provider.ReadAsync(streamId, startPosition: startPosition).ConfigureAwait(false);
+            var events = await provider.ReadAsync(streamId, direction: direction, startPosition: startPosition).ConfigureAwait(false);
             return (events is null) ?
                 Array.Empty<EventDTO>() :
                 events.Select(@event => EventDTO.FromModel(@event));

@@ -1,10 +1,10 @@
-﻿namespace EvenireDB
+﻿namespace EvenireDB.Client
 {
     public readonly record struct StreamPosition
     {
         private readonly uint _value;
 
-        public StreamPosition(uint value) 
+        public StreamPosition(uint value)
         {
             _value = value;
         }

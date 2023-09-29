@@ -1,7 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using System.Runtime.CompilerServices;
 using System.Threading.Channels;
-using System.Linq;
 
 namespace EvenireDB
 {
@@ -57,8 +55,8 @@ namespace EvenireDB
 
         public async ValueTask<IEnumerable<IEvent>> ReadAsync(
             Guid streamId,
-            Direction direction = Direction.Forward,
-            long startPosition = (long)StreamPosition.Start,
+            StreamPosition startPosition, 
+            Direction direction = Direction.Forward,            
             CancellationToken cancellationToken = default)
         {
             if (startPosition < 0)
@@ -70,34 +68,36 @@ namespace EvenireDB
                 return Array.Empty<IEvent>();
 
             IEvent[] results;
+            uint totalCount = (uint)entry.Events.Count;
+            uint pos = startPosition;
 
             if (direction == Direction.Forward)
             {
-                if (entry.Events.Count < startPosition)
+                if (totalCount < startPosition)
                     return Array.Empty<IEvent>();
 
-                int j = 0, i = (int)startPosition; 
-                int count = Math.Min(_config.MaxPageSize, entry.Events.Count - i);
-                results = new IEvent[count]; 
-                while (j != count)
+                uint j = 0, i = pos,
+                    finalCount = Math.Min(_config.MaxPageSize, totalCount - i);
+                results = new IEvent[finalCount]; 
+                while (j != finalCount)
                 {
-                    results[j++] = entry.Events[i++];
+                    results[j++] = entry.Events[(int)i++];
                 }
             }
             else
-            {
-                if(startPosition == (long)StreamPosition.End)
-                    startPosition = entry.Events.Count-1;
+            {              
+                if(startPosition == StreamPosition.End)
+                    pos = totalCount - 1;
                
-                if (startPosition >= entry.Events.Count)
+                if (pos >= totalCount)
                     return Array.Empty<IEvent>();
 
-                int j = 0, i = (int)startPosition;
-                int count = Math.Min(_config.MaxPageSize, i + 1);
-                results = new IEvent[count];
-                while(j != count)
+                uint j = 0, i = pos,
+                      finalCount = Math.Min(_config.MaxPageSize, i + 1);
+                results = new IEvent[finalCount];
+                while(j != finalCount)
                 {
-                    results[j++] = entry.Events[i--];
+                    results[j++] = entry.Events[(int)i--];
                 }
             }
 

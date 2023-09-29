@@ -1,5 +1,6 @@
 using EvenireDB;
 using EvenireDB.Server.Routes;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Threading.Channels;
 
@@ -27,7 +28,7 @@ builder.Services
     .AddSingleton(ctx =>
     {
         var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
-        return new EventsProviderConfig(serverConfig.CacheDuration, serverConfig.MaxPageSize);
+        return new EventsProviderConfig(serverConfig.CacheDuration, serverConfig.MaxPageSizeToClient);
     })
     .AddSingleton<EventsProvider>()
     .AddSingleton(channel.Writer)
@@ -51,7 +52,7 @@ builder.Services
                 dataPath = Path.Combine(AppContext.BaseDirectory, dataPath);
         }
 
-        return new FileEventsRepositoryConfig(dataPath);
+        return new FileEventsRepositoryConfig(dataPath, serverConfig.MaxEventsPageSizeFromDisk);
     })
     .AddSingleton<IEventsRepository, FileEventsRepository>()
     .AddHostedService<IncomingEventsPersistenceWorker>();

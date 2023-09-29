@@ -2,9 +2,9 @@ namespace EvenireDB
 {
     public class EventFactory : IEventFactory
     {
-        private readonly int _maxEventDataSize;
+        private readonly uint _maxEventDataSize;
 
-        public EventFactory(int maxEventDataSize)
+        public EventFactory(uint maxEventDataSize)
         {
             _maxEventDataSize = maxEventDataSize;
         }

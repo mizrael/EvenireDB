@@ -1,5 +1,4 @@
 ﻿using EvenireDB.Server.DTO;
-using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes
