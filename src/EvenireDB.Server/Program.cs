@@ -1,6 +1,5 @@
 using EvenireDB;
 using EvenireDB.Server.Routes;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Threading.Channels;
 

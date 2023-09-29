@@ -24,7 +24,6 @@ namespace EvenireDB.Tests
             var destBuffer = new byte[RawEventHeader.SIZE];
             header.ToBytes(ref destBuffer);
 
-            //var deserializedHeader = RawEventHeader.Parse(ref destBuffer);
             var deserializedHeader = new RawEventHeader(new ReadOnlySpan<byte>(destBuffer));
             deserializedHeader.DataPosition.Should().Be(42);
             deserializedHeader.EventId.Should().Be(eventId);
