@@ -29,7 +29,7 @@ namespace EvenireDB.Client
             await foreach(var item in response.ResponseStream.ReadAllAsync().ConfigureAwait(false))
             {
                 var eventId = Guid.Parse(item.EventId);
-                yield return new Event(eventId, item.Type, item.Data.Memory);
+                yield return new Event(eventId, item.Type, item.Data.ToArray()); //TODO: is there a way to avoid the copy?
             }
         }
     }
