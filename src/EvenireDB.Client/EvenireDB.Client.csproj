@@ -12,8 +12,8 @@
 	  <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
   </ItemGroup>
 
-	<ItemGroup>
-		<Protobuf Include="..\Protos\events.proto" GrpcServices="Client" Link="Protos\events.proto" />
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\EvenireDB.Grpc\EvenireDB.Grpc.csproj" />
+  </ItemGroup>
 
 </Project>

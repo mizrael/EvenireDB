@@ -1,4 +1,5 @@
 ﻿using EvenireDB.Server.DTO;
+using Grpc.Net.Client;
 using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes

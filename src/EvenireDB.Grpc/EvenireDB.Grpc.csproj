@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Grpc.AspNetCore" Version="2.32.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="..\Protos\events.proto" Link="Protos\events.proto" />
+	</ItemGroup>
+
+</Project>

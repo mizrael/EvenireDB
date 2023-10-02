@@ -1,25 +1,28 @@
-using EvenireDB.Server.Tests;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Mvc.Testing;
+﻿using EvenireDB.Server.Tests;
 
 namespace EvenireDB.Client.Tests
 {
-    public class HttpEventsClientTests : IClassFixture<ServerFixture>
+    public class GrpcEventsClientTests : IClassFixture<ServerFixture>
     {
         private readonly ServerFixture _serverFixture;
 
-        public HttpEventsClientTests(ServerFixture serverFixture)
+        public GrpcEventsClientTests(ServerFixture serverFixture)
         {
             _serverFixture = serverFixture;
+        }
+
+        private async Task<GrpcEventsClient> CreateSutAsync()
+        {
+            var channel = _serverFixture.CreateGrpcChannel();
+            var client = new GrpcEvents.EventsGrpcService.EventsGrpcServiceClient(channel);
+            return new GrpcEventsClient(client);
         }
 
         [Fact]
         public async Task ReadAsync_should_return_empty_collection_when_no_events_available()
         {
-            await using var application = _serverFixture.CreateServer();
+            var sut = await CreateSutAsync();
 
-            using var client = application.CreateClient();
-            var sut = new HttpEventsClient(client);
             var events = await sut.ReadAsync(Guid.NewGuid()).ToListAsync();
             events.Should().NotBeNull().And.BeEmpty();
         }
@@ -30,10 +33,8 @@ namespace EvenireDB.Client.Tests
             var streamId = Guid.NewGuid();
             var inputEvents = TestUtils.BuildEvents(242);
 
-            await using var application = _serverFixture.CreateServer();
+            var sut = await CreateSutAsync();
 
-            using var client = application.CreateClient();
-            var sut = new HttpEventsClient(client);
             await sut.AppendAsync(streamId, inputEvents);
 
             var expectedEvents = inputEvents.Reverse().Take(100);
@@ -49,10 +50,8 @@ namespace EvenireDB.Client.Tests
             var streamId = Guid.NewGuid();
             var expectedEvents = TestUtils.BuildEvents(10);
 
-            await using var application = _serverFixture.CreateServer();
+            var sut = await CreateSutAsync();
 
-            using var client = application.CreateClient();
-            var sut = new HttpEventsClient(client);
             await sut.AppendAsync(streamId, expectedEvents);
             var receivedEvents = await sut.ReadAsync(streamId).ToListAsync();
             receivedEvents.Should().BeEquivalentTo(expectedEvents);
@@ -64,10 +63,8 @@ namespace EvenireDB.Client.Tests
             var streamId = Guid.NewGuid();
             var expectedEvents = TestUtils.BuildEvents(10);
 
-            await using var application = _serverFixture.CreateServer();
+            var sut = await CreateSutAsync();
 
-            using var client = application.CreateClient();
-            var sut = new HttpEventsClient(client);
             await sut.AppendAsync(streamId, expectedEvents);
             await Assert.ThrowsAsync<DuplicatedEventException>(async () => await sut.AppendAsync(streamId, expectedEvents));
         }

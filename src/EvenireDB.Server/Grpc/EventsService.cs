@@ -1,5 +1,4 @@
-﻿using Google.Protobuf.WellKnownTypes;
-using Grpc.Core;
+﻿using Grpc.Core;
 using GrpcEvents;
 
 namespace EvenireDB.Server.Grpc
