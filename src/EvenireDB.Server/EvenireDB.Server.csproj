@@ -20,8 +20,9 @@
     <ProjectReference Include="..\EvenireDB\EvenireDB.csproj" />
   </ItemGroup>
 
-	<ItemGroup>
-		<Protobuf Include="Protos\events.proto" GrpcServices="Server" />
-	</ItemGroup>
 
+	<ItemGroup>
+		<Protobuf Include="..\Protos\events.proto" GrpcServices="Server" Link="Protos\events.proto" />
+	</ItemGroup>
+	
 </Project>

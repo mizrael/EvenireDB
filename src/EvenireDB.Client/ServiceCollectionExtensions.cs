@@ -1,5 +1,4 @@
-﻿using GrpcEventsClient;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
@@ -14,7 +13,7 @@ namespace EvenireDB.Client
 
             if (config.UseGrpc)
             {
-                services.AddGrpcClient<EventsGrpcService.EventsGrpcServiceClient>(o =>
+                services.AddGrpcClient<GrpcEvents.EventsGrpcService.EventsGrpcServiceClient>(o =>
                 {
                     o.Address = config.Uri;
                 });

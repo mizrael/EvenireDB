@@ -23,6 +23,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{967C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Samples.TemperatureSensors", "..\samples\EvenireDB.Samples.TemperatureSensors\EvenireDB.Samples.TemperatureSensors.csproj", "{B0B002EB-6E66-4D86-B03B-7CB2AABD865E}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protos", "Protos", "{D8C01B72-2BBD-4212-984F-8E60C5D73F7B}"
+	ProjectSection(SolutionItems) = preProject
+		Protos\events.proto = Protos\events.proto
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
