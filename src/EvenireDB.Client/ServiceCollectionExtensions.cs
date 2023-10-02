@@ -18,6 +18,7 @@ namespace EvenireDB.Client
                 {
                     o.Address = config.Uri;
                 });
+                services.AddTransient<IEventsClient, GrpcEventsClient>();
             }
             else
             {

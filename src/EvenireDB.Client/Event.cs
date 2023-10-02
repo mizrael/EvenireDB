@@ -4,7 +4,7 @@ namespace EvenireDB.Client
 {
     public record Event
     {
-        public Event(Guid id, string type, byte[] data)
+        public Event(Guid id, string type, ReadOnlyMemory<byte> data)
         {
             if (string.IsNullOrWhiteSpace(type))
                 throw new ArgumentException($"'{nameof(type)}' cannot be null or whitespace.", nameof(type));
@@ -15,14 +15,14 @@ namespace EvenireDB.Client
             Id = id;
             Type = type;
 
-            if (data is null || data.Length == 0)
+            if (data.Length == 0)
                 throw new ArgumentNullException(nameof(data));
             Data = data;
         }
 
         public Guid Id { get; }
         public string Type { get; }
-        public byte[] Data { get; }
+        public ReadOnlyMemory<byte> Data { get; }
 
         public static Event Create<T>(T payload, string type = "")
         {
