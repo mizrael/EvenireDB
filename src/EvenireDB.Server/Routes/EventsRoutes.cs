@@ -32,6 +32,9 @@ namespace EvenireDB.Server.Routes
             Guid streamId,
             [FromBody] EventDTO[]? dtos)
         {
+            if(dtos is null)
+                return Results.BadRequest();
+
             IEvent[] events;
 
             try

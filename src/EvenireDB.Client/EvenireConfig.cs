@@ -2,11 +2,14 @@
 {
     public record EvenireConfig
     {
-        public EvenireConfig(Uri uri)
+        public EvenireConfig(Uri uri, bool useGrpc)
         {
-            Uri = uri ?? throw new ArgumentNullException(nameof(uri));
+            this.Uri = uri ?? throw new ArgumentNullException(nameof(uri));
+            this.UseGrpc = useGrpc;  
         }
 
         public Uri Uri { get; }
+
+        public bool UseGrpc { get; } = true;
     }
 }

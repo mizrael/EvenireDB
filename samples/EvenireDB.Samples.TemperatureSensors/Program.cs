@@ -9,7 +9,7 @@ var connectionString = new Uri(builder.Configuration.GetConnectionString("evenir
 
 builder.Services.AddHostedService<SensorsFakeProducer>()
                 .Configure<Settings>(builder.Configuration.GetSection("Settings"))
-                .AddEvenireDB(new EvenireConfig(connectionString));
+                .AddEvenireDB(new EvenireConfig(connectionString, true));
 
 var app = builder.Build();
 
