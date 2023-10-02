@@ -21,7 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CDD60004
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{967C1ED1-EA6E-4C72-BB85-38D8D3057A5F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvenireDB.Samples.TemperatureSensors", "..\samples\EvenireDB.Samples.TemperatureSensors\EvenireDB.Samples.TemperatureSensors.csproj", "{B0B002EB-6E66-4D86-B03B-7CB2AABD865E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Samples.TemperatureSensors", "..\samples\EvenireDB.Samples.TemperatureSensors\EvenireDB.Samples.TemperatureSensors.csproj", "{B0B002EB-6E66-4D86-B03B-7CB2AABD865E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -12,11 +12,16 @@
 
 	<ItemGroup>
     <PackageReference Include="Asp.Versioning.Http" Version="7.1.0" />
+    <PackageReference Include="Grpc.AspNetCore" Version="2.32.0" />
 	<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\EvenireDB\EvenireDB.csproj" />
   </ItemGroup>
+
+	<ItemGroup>
+		<Protobuf Include="Protos\events.proto" GrpcServices="Server" />
+	</ItemGroup>
 
 </Project>

@@ -16,16 +16,14 @@ namespace EvenireDB.Server.Routes
             return app;
         }
 
-        private static async ValueTask<IEnumerable<EventDTO>> GetEvents(
+        private static async IAsyncEnumerable<EventDTO> GetEvents(
             [FromServices] EventsProvider provider,
             Guid streamId,
             [FromQuery(Name = "pos")] uint startPosition = 0,
             [FromQuery(Name = "dir")] Direction direction = Direction.Forward)
         {
-            var events = await provider.ReadAsync(streamId, direction: direction, startPosition: startPosition).ConfigureAwait(false);
-            return (events is null) ?
-                Array.Empty<EventDTO>() :
-                events.Select(@event => EventDTO.FromModel(@event));
+            await foreach (var @event in provider.ReadAsync(streamId, direction: direction, startPosition: startPosition))
+                yield return EventDTO.FromModel(@event);
         }
 
         private static async ValueTask<IResult> SaveEvents(

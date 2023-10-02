@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcEventsClient";
+
+package events;
+
+service EventsGrpcService {
+    rpc Read (ReadRequest) returns (stream EventResponse);
+}
+
+message ReadRequest {
+  string streamId = 1;
+  uint32 startPosition = 2;
+  uint32 direction = 3;
+}
+
+message EventResponse{
+	string eventId = 1;
+	string type = 2;
+	bytes data = 3;
+}

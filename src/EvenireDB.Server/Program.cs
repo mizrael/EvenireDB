@@ -14,6 +14,8 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnC
                      .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
                      .AddEnvironmentVariables();
 
+builder.Services.AddGrpc();
+
 var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelOptions
 {
     SingleWriter = false,
@@ -61,7 +63,9 @@ app.UseExceptionHandler(exceptionHandlerApp
     => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
 app.MapHealthChecks("/healthz");
 app.MapGet("/", () => "EvenireDB Server is running!");
+
 app.MapEventsRoutes();
+app.MapGrpcService<EvenireDB.Server.Grpc.EventsService>();
 
 string? listenUrl = null;
 if(!app.Environment.IsDevelopment())

@@ -1,6 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Polly;
-using Polly.Contrib.WaitAndRetry;
+﻿using GrpcEventsClient;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EvenireDB.Client
 {
@@ -10,13 +9,11 @@ namespace EvenireDB.Client
         {
             if (config is null)
                 throw new ArgumentNullException(nameof(config));
-            
-            var delay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 5);
-            services.AddHttpClient<IEventsClient, EventsClient>(client =>
+
+            services.AddGrpcClient<EventsGrpcService.EventsGrpcServiceClient>(o =>
             {
-                client.BaseAddress = config.Uri;
-            })
-            .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(delay));
+                o.Address = config.Uri;
+            });
 
             return services;
         }

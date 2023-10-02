@@ -20,7 +20,7 @@ namespace EvenireDB.Client.Tests
             await using var application = _serverFixture.CreateServer();
 
             using var client = application.CreateClient();
-            var sut = new EventsClient(client);
+            var sut = new HttpEventsClient(client);
             await sut.AppendAsync(streamId, expectedEvents);
 
             var receivedEvents = await sut.ReadAllAsync(streamId).ToListAsync();

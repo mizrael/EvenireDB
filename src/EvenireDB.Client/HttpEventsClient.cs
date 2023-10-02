@@ -5,29 +5,33 @@ using System.Runtime.CompilerServices;
 
 namespace EvenireDB.Client
 {
-    internal class EventsClient : IEventsClient
+    internal class HttpEventsClient : IEventsClient
     {
         private readonly HttpClient _httpClient;
 
-        public EventsClient(HttpClient httpClient)
+        public HttpEventsClient(HttpClient httpClient)
         {
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public async Task<IEnumerable<Event>> ReadAsync(
+        public async IAsyncEnumerable<Event> ReadAsync(
             Guid streamId,
             StreamPosition position,
             Direction direction = Direction.Forward,
-            CancellationToken cancellationToken = default)
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.GetAsync($"/api/v1/events/{streamId}?pos={position}&dir={(int)direction}", HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            var endpoint = $"/api/v1/events/{streamId}?pos={position}&dir={(int)direction}";
+            var response = await _httpClient.GetAsync(endpoint, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                                             .ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            var results = await response.Content.ReadFromJsonAsync<Event[]>(cancellationToken: cancellationToken);
-            return results ?? Enumerable.Empty<Event>();
+
+            var results = (await response.Content.ReadFromJsonAsync<Event[]>(cancellationToken: cancellationToken))
+                            ?? Array.Empty<Event>();
+            foreach(var item in results)
+                yield return item;
         }
 
-        public async Task AppendAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
+        public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.PostAsJsonAsync($"/api/v1/events/{streamId}", events, cancellationToken)
                                             .ConfigureAwait(false);
