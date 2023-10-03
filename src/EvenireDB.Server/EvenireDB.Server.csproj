@@ -20,5 +20,5 @@
 	  <ProjectReference Include="..\EvenireDB.Grpc\EvenireDB.Grpc.csproj" />
 	  <ProjectReference Include="..\EvenireDB\EvenireDB.csproj" />
 	</ItemGroup>
-	
+
 </Project>

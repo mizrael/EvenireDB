@@ -6,5 +6,6 @@ services:
     restart: always    
     ports:
       - 16281:16281
+      - 16282:16282
     volumes:
       - './volumes/eveniredb/data/:/data'
