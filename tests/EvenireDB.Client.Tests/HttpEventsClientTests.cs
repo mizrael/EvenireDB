@@ -1,6 +1,4 @@
 using EvenireDB.Server.Tests;
-using Grpc.Net.Client;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace EvenireDB.Client.Tests
 {
