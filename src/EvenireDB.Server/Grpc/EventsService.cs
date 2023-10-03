@@ -64,7 +64,7 @@ namespace EvenireDB.Server.Grpc
             }
             catch(ArgumentException ex)
             {
-                response.Error = new FailureResponse() { Code = ErrorCodes.Unknown, Message = ex.Message };
+                response.Error = new FailureResponse() { Code = ErrorCodes.BadRequest, Message = ex.Message };
             }
             catch (Exception ex)
             {
