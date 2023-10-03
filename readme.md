@@ -17,3 +17,11 @@ The basic idea behind Evenire is quite simple: events can be appended to stream 
 Reading can happen from the very beginning of a stream moving forward or from a specific point. This is the basic scenario, useful when you want to rehydrate the state of an [Aggregate](https://www.martinfowler.com/bliki/DDD_Aggregate.html).
 
 Another option is to read the events from the _end_ of the stream instead, moving backwards in time. This is interesting for example if you are recording data from sensors and you want to retrieve the latest state.
+
+# Setup
+
+As of now, there are two possible options for spinning up an Evenire server:
+- deploying the [Server project](https://github.com/mizrael/EvenireDB/tree/main/src/EvenireDB.Server) somewhere
+- building the [docker image](https://github.com/mizrael/EvenireDB/blob/main/Dockerfile) and deploying it somewhere
+
+These are both viable options, however, I would recommend opting for the Docker solution as it will package everything you need in the container. Building the image can be done using [this script](https://github.com/mizrael/EvenireDB/blob/main/scripts/dockerize.ps1).
