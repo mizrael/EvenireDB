@@ -1,3 +1,5 @@
+using EvenireDB.Common;
+
 namespace EvenireDB
 {
     public class EventFactory : IEventFactory

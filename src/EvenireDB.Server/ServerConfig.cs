@@ -18,5 +18,7 @@ internal record class ServerConfig
     public uint MaxEventDataSize { get; init; } = 500_000;
 
     public string? DataFolder { get; init; }
-    public int Port { get; init; } = 16281;
+
+    public int HttpPort { get; init; } = 16281;
+    public int GrpcPort { get; init; } = 16282;
 }

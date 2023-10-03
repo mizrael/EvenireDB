@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using EvenireDB.Common;
+using Microsoft.Extensions.Caching.Memory;
+using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 
 namespace EvenireDB
@@ -53,11 +55,11 @@ namespace EvenireDB
             return entry;
         }
 
-        public async ValueTask<IEnumerable<IEvent>> ReadAsync(
+        public async IAsyncEnumerable<IEvent> ReadAsync(
             Guid streamId,
             StreamPosition startPosition, 
             Direction direction = Direction.Forward,            
-            CancellationToken cancellationToken = default)
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             if (startPosition < 0)
                 throw new ArgumentOutOfRangeException(nameof(startPosition));
@@ -65,23 +67,22 @@ namespace EvenireDB
             CachedEvents entry = await EnsureCachedEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
             if (entry.Events == null || entry.Events.Count == 0)
-                return Array.Empty<IEvent>();
-
-            IEvent[] results;
+                yield break;
+                        
             uint totalCount = (uint)entry.Events.Count;
             uint pos = startPosition;
 
             if (direction == Direction.Forward)
             {
                 if (totalCount < startPosition)
-                    return Array.Empty<IEvent>();
+                    yield break;
 
                 uint j = 0, i = pos,
                     finalCount = Math.Min(_config.MaxPageSize, totalCount - i);
-                results = new IEvent[finalCount]; 
-                while (j != finalCount)
+             
+                while (j++ != finalCount)
                 {
-                    results[j++] = entry.Events[(int)i++];
+                    yield return entry.Events[(int)i++];
                 }
             }
             else
@@ -90,18 +91,16 @@ namespace EvenireDB
                     pos = totalCount - 1;
                
                 if (pos >= totalCount)
-                    return Array.Empty<IEvent>();
+                    yield break;
 
                 uint j = 0, i = pos,
                       finalCount = Math.Min(_config.MaxPageSize, i + 1);
-                results = new IEvent[finalCount];
-                while(j != finalCount)
+               
+                while(j++ != finalCount)
                 {
-                    results[j++] = entry.Events[(int)i--];
+                    yield return entry.Events[(int)i--];
                 }
             }
-
-            return results;
         }
 
         public async ValueTask<IOperationResult> AppendAsync(Guid streamId, IEnumerable<IEvent> incomingEvents, CancellationToken cancellationToken = default)

@@ -1,7 +1,9 @@
-﻿using System.Runtime.CompilerServices;
+﻿using EvenireDB.Common;
+using System.Runtime.CompilerServices;
 
 namespace EvenireDB
 {
+    //TODO: evaluate https://github.com/MessagePack-CSharp/MessagePack-CSharp
     internal readonly struct RawEventHeader
     {
         public readonly Guid EventId;

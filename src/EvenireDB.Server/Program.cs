@@ -1,9 +1,11 @@
 using EvenireDB;
 using EvenireDB.Server.Routes;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Options;
 using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
+
 builder.Services.AddHealthChecks();
 builder.Services.AddApiVersioning();
 builder.Services.AddProblemDetails(options =>
@@ -13,6 +15,16 @@ builder.Services.AddProblemDetails(options =>
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                      .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
                      .AddEnvironmentVariables();
+
+builder.WebHost.ConfigureKestrel((context, options) =>
+{
+    var serverConfig = context.Configuration.GetRequiredSection("Server").Get<ServerConfig>();
+
+    options.ListenAnyIP(serverConfig.GrpcPort, o => o.Protocols = HttpProtocols.Http2);
+    options.ListenAnyIP(serverConfig.HttpPort, o => o.Protocols = HttpProtocols.Http1);
+});
+
+builder.Services.AddGrpc();
 
 var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelOptions
 {
@@ -61,16 +73,11 @@ app.UseExceptionHandler(exceptionHandlerApp
     => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
 app.MapHealthChecks("/healthz");
 app.MapGet("/", () => "EvenireDB Server is running!");
+
 app.MapEventsRoutes();
+app.MapGrpcService<EvenireDB.Server.Grpc.EventsService>();
 
-string? listenUrl = null;
-if(!app.Environment.IsDevelopment())
-{
-    var serverConfig = app.Services.GetRequiredService<IOptions<ServerConfig>>().Value;
-    listenUrl = $"http://*:{serverConfig.Port}";
-}
-
-app.Run(listenUrl);
+app.Run();
 
 public partial class Program
 { }

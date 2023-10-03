@@ -1,4 +1,5 @@
-﻿using EvenireDB.Server.DTO;
+﻿using EvenireDB.Common;
+using EvenireDB.Server.DTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EvenireDB.Server.Routes
@@ -16,16 +17,14 @@ namespace EvenireDB.Server.Routes
             return app;
         }
 
-        private static async ValueTask<IEnumerable<EventDTO>> GetEvents(
+        private static async IAsyncEnumerable<EventDTO> GetEvents(
             [FromServices] EventsProvider provider,
             Guid streamId,
             [FromQuery(Name = "pos")] uint startPosition = 0,
             [FromQuery(Name = "dir")] Direction direction = Direction.Forward)
         {
-            var events = await provider.ReadAsync(streamId, direction: direction, startPosition: startPosition).ConfigureAwait(false);
-            return (events is null) ?
-                Array.Empty<EventDTO>() :
-                events.Select(@event => EventDTO.FromModel(@event));
+            await foreach (var @event in provider.ReadAsync(streamId, direction: direction, startPosition: startPosition))
+                yield return EventDTO.FromModel(@event);
         }
 
         private static async ValueTask<IResult> SaveEvents(
@@ -34,6 +33,9 @@ namespace EvenireDB.Server.Routes
             Guid streamId,
             [FromBody] EventDTO[]? dtos)
         {
+            if(dtos is null)
+                return Results.BadRequest();
+
             IEvent[] events;
 
             try
@@ -49,7 +51,7 @@ namespace EvenireDB.Server.Routes
             var result = await provider.AppendAsync(streamId, events);
             return result switch
             {
-                FailureResult { Code: FailureResult.ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),
+                FailureResult { Code: ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),
                 FailureResult => Results.StatusCode(500),
                 _ => Results.AcceptedAtRoute(nameof(GetEvents), new { streamId })
             };

@@ -1,9 +1,9 @@
-﻿namespace EvenireDB.Client
+﻿namespace EvenireDB.Common
 {
-    // to keep in sync with the version on the server
     public sealed class ErrorCodes
     {
         public const int Unknown = -1;
         public const int DuplicateEvent = -2;
+        public const int BadRequest = -3;
     }
 }

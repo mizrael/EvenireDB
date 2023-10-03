@@ -10,13 +10,23 @@ namespace EvenireDB.Client
         {
             if (config is null)
                 throw new ArgumentNullException(nameof(config));
-            
-            var delay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 5);
-            services.AddHttpClient<IEventsClient, EventsClient>(client =>
+
+            if (config.UseGrpc)
             {
-                client.BaseAddress = config.Uri;
-            })
-            .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(delay));
+                services.AddGrpcClient<GrpcEvents.EventsGrpcService.EventsGrpcServiceClient>(o =>
+                {
+                    o.Address = config.Uri;
+                });
+                services.AddTransient<IEventsClient, GrpcEventsClient>();
+            }
+            else
+            {
+                var delay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 5);
+                services.AddHttpClient<IEventsClient, HttpEventsClient>(client => {
+                    client.BaseAddress = config.Uri;
+                })
+                .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(delay));                    
+            }
 
             return services;
         }

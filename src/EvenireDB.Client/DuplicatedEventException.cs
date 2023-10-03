@@ -1,4 +1,6 @@
-﻿namespace EvenireDB.Client
+﻿using EvenireDB.Common;
+
+namespace EvenireDB.Client
 {
     public class DuplicatedEventException : ClientException
     {

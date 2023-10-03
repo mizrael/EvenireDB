@@ -1,6 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using EvenireDB;
+using EvenireDB.Common;
 using Microsoft.Extensions.Caching.Memory;
 using System.Threading.Channels;
 
@@ -43,7 +44,7 @@ public class EventsProviderBenckmarks
     public async Task ReadAsync_Baseline()
     {
         int count = 0;
-        var events = await _sut.ReadAsync(_streamId, StreamPosition.Start).ConfigureAwait(false);
+        var events = await _sut.ReadAsync(_streamId, StreamPosition.Start).ToListAsync().ConfigureAwait(false);
         foreach (var @evt in events)
             count++;
     }

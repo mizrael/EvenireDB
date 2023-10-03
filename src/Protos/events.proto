@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+option csharp_namespace = "GrpcEvents";
+
+package events;
+
+service EventsGrpcService {
+  rpc Read (ReadRequest) returns (stream Event);
+  rpc Append(AppendRequest) returns(AppendResponse);
+}
+
+message ReadRequest {
+  string streamId = 1;
+  uint32 startPosition = 2;
+  uint32 direction = 3;
+}
+
+message AppendRequest {
+	string streamId = 1;
+	repeated Event events = 2;
+}
+
+message AppendResponse {	
+	string streamId = 1;
+	FailureResponse error = 2;
+}
+
+message FailureResponse{
+	string message = 1;
+	int32 code = 2;
+}
+
+message Event{
+	string id = 1;
+	string type = 2;
+	bytes data = 3;
+}
