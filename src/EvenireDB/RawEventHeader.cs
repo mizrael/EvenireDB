@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using EvenireDB.Common;
+using System.Runtime.CompilerServices;
 
 namespace EvenireDB
 {

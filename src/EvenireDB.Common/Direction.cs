@@ -1,4 +1,4 @@
-namespace EvenireDB.Client
+namespace EvenireDB.Common
 {
     public enum Direction
     {

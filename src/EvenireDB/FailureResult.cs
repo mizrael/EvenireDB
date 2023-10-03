@@ -1,4 +1,6 @@
-﻿namespace EvenireDB
+﻿using EvenireDB.Common;
+
+namespace EvenireDB
 {
     public readonly struct FailureResult : IOperationResult
     {
@@ -16,11 +18,5 @@
                 ErrorCodes.DuplicateEvent,
                 (@event is null) ? "one of the incoming events is duplicate." :
                 $"event '{@event.Id}' is already in the stream.");
-
-        public sealed class ErrorCodes
-        {
-            public const int Unknown = -1;
-            public const int DuplicateEvent = -2;
-        }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Caching.Memory;
+﻿using EvenireDB.Common;
+using Microsoft.Extensions.Caching.Memory;
 using System.Threading.Channels;
 
 namespace EvenireDB.Tests
@@ -199,7 +200,7 @@ namespace EvenireDB.Tests
             result.Should().BeOfType<FailureResult>();
 
             var failure = (FailureResult)result;
-            failure.Code.Should().Be(FailureResult.ErrorCodes.DuplicateEvent);
+            failure.Code.Should().Be(ErrorCodes.DuplicateEvent);
             failure.Message.Should().Contain(expectedEvents[0].Id.ToString());
         }
 

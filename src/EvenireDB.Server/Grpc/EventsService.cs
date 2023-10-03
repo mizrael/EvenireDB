@@ -1,4 +1,5 @@
-﻿using Grpc.Core;
+﻿using EvenireDB.Common;
+using Grpc.Core;
 using GrpcEvents;
 
 namespace EvenireDB.Server.Grpc
@@ -37,30 +38,40 @@ namespace EvenireDB.Server.Grpc
         public override async Task<AppendResponse> Append(AppendRequest request, ServerCallContext context)
         {
             var events = new List<EvenireDB.IEvent>();
-            foreach(var incoming in request.Events)
-            {
-                var eventId = Guid.Parse(incoming.Id);
-                var data = incoming.Data.ToArray(); // TODO: is there a way to avoid the copy?
-                var @event = _eventFactory.Create(eventId, incoming.Type, data);
-                events.Add(@event);
-            }
-
-            var streamId = Guid.Parse(request.StreamId);
-            var result = await _provider.AppendAsync(streamId, events);
-
             var response = new AppendResponse() { StreamId = request.StreamId };
 
-            if(result is FailureResult failure)
+            try
             {
-                response.Error = new FailureResponse()
+                foreach (var incoming in request.Events)
                 {
-                    Code = failure.Code,
-                    Message = failure.Message,
-                };
-            }
-            
-            return response;
+                    var eventId = Guid.Parse(incoming.Id);
+                    var data = incoming.Data.ToArray(); // TODO: is there a way to avoid the copy?
+                    var @event = _eventFactory.Create(eventId, incoming.Type, data);
+                    events.Add(@event);
+                }
 
+                var streamId = Guid.Parse(request.StreamId);
+                var result = await _provider.AppendAsync(streamId, events);                
+
+                if (result is FailureResult failure)
+                {
+                    response.Error = new FailureResponse()
+                    {
+                        Code = failure.Code,
+                        Message = failure.Message,
+                    };
+                }
+            }
+            catch(ArgumentException ex)
+            {
+                response.Error = new FailureResponse() { Code = ErrorCodes.Unknown, Message = ex.Message };
+            }
+            catch (Exception ex)
+            {
+                response.Error = new FailureResponse() { Code = ErrorCodes.Unknown, Message = ex.Message };
+            }
+
+            return response;
         }
     }
 }

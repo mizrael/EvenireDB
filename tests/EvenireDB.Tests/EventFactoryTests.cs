@@ -1,3 +1,5 @@
+using EvenireDB.Common;
+
 namespace EvenireDB.Tests
 {
     public class EventFactoryTests

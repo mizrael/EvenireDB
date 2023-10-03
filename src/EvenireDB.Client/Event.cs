@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using EvenireDB.Common;
+using System.Text.Json;
 
 namespace EvenireDB.Client
 {

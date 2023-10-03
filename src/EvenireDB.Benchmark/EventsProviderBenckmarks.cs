@@ -1,6 +1,7 @@
 ﻿using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Engines;
 using EvenireDB;
+using EvenireDB.Common;
 using Microsoft.Extensions.Caching.Memory;
 using System.Threading.Channels;
 

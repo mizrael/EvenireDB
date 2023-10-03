@@ -1,4 +1,5 @@
-﻿using EvenireDB.Server.DTO;
+﻿using EvenireDB.Common;
+using EvenireDB.Server.DTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EvenireDB.Server.Routes
@@ -50,7 +51,7 @@ namespace EvenireDB.Server.Routes
             var result = await provider.AppendAsync(streamId, events);
             return result switch
             {
-                FailureResult { Code: FailureResult.ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),
+                FailureResult { Code: ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),
                 FailureResult => Results.StatusCode(500),
                 _ => Results.AcceptedAtRoute(nameof(GetEvents), new { streamId })
             };

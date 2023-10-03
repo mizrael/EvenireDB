@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes
 {
+
     public class EventsV1EndpointTests : IClassFixture<ServerFixture>
     {
         private readonly static byte[] _defaultEventData = new byte[] { 0x42 };
@@ -23,7 +24,7 @@ namespace EvenireDB.Server.Tests.Routes
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
             var events = await response.Content.ReadFromJsonAsync<EventDTO[]>();
-            events.Should().NotBeNull().And.BeEmpty();  
+            events.Should().NotBeNull().And.BeEmpty();
         }
 
         [Fact]
@@ -102,7 +103,7 @@ namespace EvenireDB.Server.Tests.Routes
             using var client = application.CreateClient();
             await client.PostAsJsonAsync<EventDTO[]>($"/api/v1/events/{streamId}", dtos);
 
-            var response = await client.GetAsync($"/api/v1/events/{streamId}");            
+            var response = await client.GetAsync($"/api/v1/events/{streamId}");
             var fetchedEvents = await response.Content.ReadFromJsonAsync<EventDTO[]>();
             fetchedEvents.Should().BeEquivalentTo(dtos);
         }

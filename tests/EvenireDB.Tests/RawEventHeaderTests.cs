@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using EvenireDB.Common;
+using System.Text;
 
 namespace EvenireDB.Tests
 {
