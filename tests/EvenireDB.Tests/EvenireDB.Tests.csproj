@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -27,6 +27,7 @@
   </ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\src\EvenireDB.Common\EvenireDB.Common.csproj" />
 		<ProjectReference Include="..\..\src\EvenireDB\EvenireDB.csproj" />
 	</ItemGroup>
 

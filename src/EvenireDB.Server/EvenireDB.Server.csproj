@@ -17,6 +17,7 @@
   </ItemGroup>
 
 	<ItemGroup>
+	  <ProjectReference Include="..\EvenireDB.Common\EvenireDB.Common.csproj" />
 	  <ProjectReference Include="..\EvenireDB.Grpc\EvenireDB.Grpc.csproj" />
 	  <ProjectReference Include="..\EvenireDB\EvenireDB.csproj" />
 	</ItemGroup>

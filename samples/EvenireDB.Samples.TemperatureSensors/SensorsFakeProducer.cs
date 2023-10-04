@@ -22,7 +22,8 @@ public class SensorsFakeProducer : BackgroundService
                 var reading = new ReadingReceived(Random.Shared.NextDouble() * 100, DateTimeOffset.UtcNow);
                 await _eventsClient.AppendAsync(sensorId, new[]
                 {
-                    Event.Create(reading)
+                    Event.Create(reading),
+                    Event.Create(new{ Bar = "Baz" }, "Event type 1"),
                 }, stoppingToken);
             }
             await Task.Delay(_delay);
