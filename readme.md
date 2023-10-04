@@ -46,7 +46,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = new Uri(builder.Configuration.GetConnectionString("evenire"));
 
-builder.Services.AddEvenireDB(new EvenireConfig(connectionString, true));
+builder.Services.AddEvenireDB(new EvenireConfig(connectionString, useGrpc: true));
 ```
 
 ## Writing events
