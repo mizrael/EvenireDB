@@ -25,3 +25,50 @@ As of now, there are two possible options for spinning up an Evenire server:
 - building the [docker image](https://github.com/mizrael/EvenireDB/blob/main/Dockerfile) and deploying it somewhere
 
 These are both viable options, however, I would recommend opting for the Docker solution as it will package everything you need in the container. Building the image can be done using [this script](https://github.com/mizrael/EvenireDB/blob/main/scripts/dockerize.ps1).
+
+Once you have the image ready, you can run it in a Container by running `docker compose up`.
+The [Docker Compose file](https://github.com/mizrael/EvenireDB/blob/main/docker-compose.yml) will export two ports, `16281` and `16282`, which are used by the .NET Client.
+
+# Client configuration
+
+Once your server is up, you can start using it to store your events. If you are writing a .NET application, you can leverage [the Client library](https://github.com/mizrael/EvenireDB/tree/main/src/EvenireDB.Client) I provided.
+
+Configuration is pretty easy, just add this to your `Program.cs` or `Startup.cs` file:
+
+```csharp
+var builder = WebApplication.CreateBuilder(args);
+
+var connectionString = new Uri(builder.Configuration.GetConnectionString("evenire"));
+
+builder.Services.AddEvenireDB(new EvenireConfig(connectionString, true));
+```
+
+## Writing events
+
+Once you have added the Client to your IoC Container, just inject `IEventsClient` into your classes and start making calls to it:
+
+```csharp
+var streamId = Guid.NewGuid();
+
+await _eventsClient.AppendAsync(streamId, new[]
+{
+    Event.Create(new{ Foo = "bar" }, "Event type 1"),
+    Event.Create(new{ Bar = "Baz" }, "Event type 1"),
+});
+```
+
+## Reading events
+
+Reading too can be done trough an `IEventsClient` instance:
+
+```csharp
+var streamId = Guid.NewGuid();
+
+// write some events for streamId...
+
+await foreach(var @event in client.ReadAsync(streamId, StreamPosition.Start, Direction.Forward).ConfigureAwait(false)){
+  // do something with the event
+}
+```
+
+`ReadAsync` can be configured to fetch the events from `StreamPosition.Start`, `StreamPosition.End` or a specific point in the stream. You can also specify the direction you want to move (forward or backward).
