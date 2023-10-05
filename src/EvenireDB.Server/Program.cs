@@ -2,6 +2,7 @@ using EvenireDB;
 using EvenireDB.Server.Routes;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.Extensions.Options;
+using System.Reflection;
 using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -68,11 +69,13 @@ builder.Services
     .AddSingleton<IEventsRepository, FileEventsRepository>()
     .AddHostedService<IncomingEventsPersistenceWorker>();
 
+var version = Assembly.GetExecutingAssembly().GetName().Version;
+
 var app = builder.Build();
 app.UseExceptionHandler(exceptionHandlerApp
     => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
 app.MapHealthChecks("/healthz");
-app.MapGet("/", () => "EvenireDB Server is running!");
+app.MapGet("/", () => $"EvenireDB Server v{version} is running!");
 
 app.MapEventsRoutes();
 app.MapGrpcService<EvenireDB.Server.Grpc.EventsService>();
