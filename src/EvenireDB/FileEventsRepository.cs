@@ -131,9 +131,8 @@ namespace EvenireDB
 
                     var eventType = _eventTypes.GetOrAdd(@event.Type, _ =>
                     {
-                        var src = Encoding.UTF8.GetBytes(@event.Type);
-                        var dest = new byte[Constants.MAX_EVENT_TYPE_LENGTH];
-                        Array.Copy(src, dest, src.Length);
+                        var dest = new byte[Constants.MAX_EVENT_TYPE_LENGTH]; 
+                        Encoding.UTF8.GetBytes(@event.Type, dest);
                         return dest;
                     });
 
@@ -146,7 +145,7 @@ namespace EvenireDB
                     );
                     header.ToBytes(ref headerBuffer);
                     await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
-                                         .ConfigureAwait(false);
+                                       .ConfigureAwait(false);
 
                     await dataStream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);
                 }

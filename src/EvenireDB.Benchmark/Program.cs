@@ -2,7 +2,7 @@
 using EvenireDB;
 using ObjectLayoutInspector;
 
-//BenchmarkRunner.Run<EventsProviderBenckmarks>();
+BenchmarkRunner.Run<GetBytesBenchmark>();
 
-TypeLayout.PrintLayout<RawEventHeader>();
+//TypeLayout.PrintLayout<RawEventHeader>();
 
