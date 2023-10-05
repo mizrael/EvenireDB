@@ -1,4 +1,8 @@
 ﻿using BenchmarkDotNet.Running;
+using EvenireDB;
+using ObjectLayoutInspector;
 
-BenchmarkRunner.Run<EventsProviderBenckmarks>();
+//BenchmarkRunner.Run<EventsProviderBenckmarks>();
+
+TypeLayout.PrintLayout<RawEventHeader>();
 
