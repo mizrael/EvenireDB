@@ -8,3 +8,4 @@ publish/
 .DS_Store
 volumes/
 .fake
+.csproj.user

@@ -18,7 +18,6 @@ public class IncomingEventsPersistenceWorker : BackgroundService
     {
         await Task.Factory.StartNew(async () =>
         {
-            // TODO: handle exceptions, otherwise the reader will fail
             await this.ExecuteAsyncCore(cancellationToken).ConfigureAwait(false);
         }, cancellationToken);
     }

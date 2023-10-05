@@ -23,7 +23,6 @@ public class SensorsFakeProducer : BackgroundService
                 await _eventsClient.AppendAsync(sensorId, new[]
                 {
                     Event.Create(reading),
-                    Event.Create(new{ Bar = "Baz" }, "Event type 1"),
                 }, stoppingToken);
             }
             await Task.Delay(_delay);
