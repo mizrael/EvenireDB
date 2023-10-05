@@ -31,7 +31,7 @@ namespace EvenireDB
         => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
 
         public async IAsyncEnumerable<IEvent> ReadAsync(
-            Guid streamId, 
+            Guid streamId,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
@@ -41,32 +41,37 @@ namespace EvenireDB
 
             using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
-            int headerBufferLen = RawEventHeader.SIZE * (int)_config.MaxPageSize;
-            var headersBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
-            
             var headers = new List<RawEventHeader>();
             int dataBufferSize = 0;
 
-            while (true)
+            int headerBufferLen = RawEventHeader.SIZE * (int)_config.MaxPageSize;
+            var headersBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
+
+            try
             {
-                int bytesRead = await headersStream.ReadAsync(headersBuffer, 0, headerBufferLen, cancellationToken)
-                                                   .ConfigureAwait(false);
-                if (bytesRead == 0)
-                    break;
-
-                int offset = 0;
-                while (offset < bytesRead)
+                while (true)
                 {
-                    var header = new RawEventHeader(headersBuffer.AsMemory(offset, RawEventHeader.SIZE));                                      
-                    headers.Add(header);
+                    int bytesRead = await headersStream.ReadAsync(headersBuffer, 0, headerBufferLen, cancellationToken)
+                                                       .ConfigureAwait(false);
+                    if (bytesRead == 0)
+                        break;
 
-                    dataBufferSize += header.EventDataLength;
-                    offset += RawEventHeader.SIZE;
+                    int offset = 0;
+                    while (offset < bytesRead)
+                    {
+                        var header = new RawEventHeader(headersBuffer.AsMemory(offset, RawEventHeader.SIZE));
+                        headers.Add(header);
+
+                        dataBufferSize += header.EventDataLength;
+                        offset += RawEventHeader.SIZE;
+                    }
                 }
             }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(headersBuffer);
+            }
 
-            ArrayPool<byte>.Shared.Return(headersBuffer);
-            
             // we exit early if no headers found
             if (headers.Count == 0)
                 yield break;
@@ -77,27 +82,33 @@ namespace EvenireDB
             dataStream.Position = headers[0].DataPosition;
 
             var dataBuffer = ArrayPool<byte>.Shared.Rent(dataBufferSize);
-            await dataStream.ReadAsync(dataBuffer, 0, dataBufferSize, cancellationToken)
-                            .ConfigureAwait(false);
 
-            for (int i = 0; i < headers.Count; i++)
+            try
             {
-                // have to create a span to ensure that we're parsing the right buffer size
-                // as ArrayPool might return a buffer with size the closest pow(2)
-                var eventTypeName = Encoding.UTF8.GetString(headers[i].EventType, 0, headers[i].EventTypeLength);
+                await dataStream.ReadAsync(dataBuffer, 0, dataBufferSize, cancellationToken)
+                                .ConfigureAwait(false);
 
-                var eventData = new byte[headers[i].EventDataLength];
+                for (int i = 0; i < headers.Count; i++)
+                {
+                    // have to create a span to ensure that we're parsing the right buffer size
+                    // as ArrayPool might return a buffer with size the closest pow(2)
+                    var eventTypeName = Encoding.UTF8.GetString(headers[i].EventType, 0, headers[i].EventTypeLength);
 
-                // if skip is specified, when calculating the source offset we need to subtract the position of the first block of data
-                // because the stream position was already set after opening it
-                long srcOffset = headers[i].DataPosition - headers[0].DataPosition;
-                Array.Copy(dataBuffer, srcOffset, eventData, 0, headers[i].EventDataLength);
+                    var eventData = new byte[headers[i].EventDataLength];
 
-                var @event = _factory.Create(headers[i].EventId, eventTypeName, eventData);
-                yield return @event;
+                    // if skip is specified, when calculating the source offset we need to subtract the position of the first block of data
+                    // because the stream position was already set after opening it
+                    long srcOffset = headers[i].DataPosition - headers[0].DataPosition;
+                    Array.Copy(dataBuffer, srcOffset, eventData, 0, headers[i].EventDataLength);
+
+                    var @event = _factory.Create(headers[i].EventId, eventTypeName, eventData);
+                    yield return @event;
+                }
             }
-
-            ArrayPool<byte>.Shared.Return(dataBuffer);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(dataBuffer);
+            }            
         }
 
         public async ValueTask AppendAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
@@ -112,33 +123,38 @@ namespace EvenireDB
 
             byte[] headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
 
-            for (int i = 0; i < eventsCount; i++)
+            try
             {
-                var @event = events.ElementAt(i);
-
-                var eventType = _eventTypes.GetOrAdd(@event.Type, _ =>
+                for (int i = 0; i < eventsCount; i++)
                 {
-                    var src = Encoding.UTF8.GetBytes(@event.Type);
-                    var dest = new byte[Constants.MAX_EVENT_TYPE_LENGTH];
-                    Array.Copy(src, dest, src.Length);
-                    return dest;
-                });
+                    var @event = events.ElementAt(i);
 
-                var header = new RawEventHeader(
-                    eventId: @event.Id,
-                    eventType: eventType,
-                    dataPosition: dataStream.Position,
-                    eventDataLength: @event.Data.Length,
-                    eventTypeLength: (short)@event.Type.Length
-                );
-                header.ToBytes(ref headerBuffer);
-                await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
-                                     .ConfigureAwait(false);
+                    var eventType = _eventTypes.GetOrAdd(@event.Type, _ =>
+                    {
+                        var src = Encoding.UTF8.GetBytes(@event.Type);
+                        var dest = new byte[Constants.MAX_EVENT_TYPE_LENGTH];
+                        Array.Copy(src, dest, src.Length);
+                        return dest;
+                    });
 
-                await dataStream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);
+                    var header = new RawEventHeader(
+                        eventId: @event.Id,
+                        eventType: eventType,
+                        dataPosition: dataStream.Position,
+                        eventDataLength: @event.Data.Length,
+                        eventTypeLength: (short)@event.Type.Length
+                    );
+                    header.ToBytes(ref headerBuffer);
+                    await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
+                                         .ConfigureAwait(false);
+
+                    await dataStream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);
+                }
             }
-
-            ArrayPool<byte>.Shared.Return(headerBuffer);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(headerBuffer);
+            }            
 
             await dataStream.FlushAsync().ConfigureAwait(false);
             await headersStream.FlushAsync().ConfigureAwait(false);

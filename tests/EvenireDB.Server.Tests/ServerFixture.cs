@@ -38,8 +38,12 @@ namespace EvenireDB.Server.Tests
                 instance.Dispose();
             _instances.Clear();
 
-            if(Directory.Exists("./data"))
-                Directory.Delete("./data", true);
+            if (Directory.Exists("./data"))
+                lock (this)
+                {
+                    if (Directory.Exists("./data"))
+                        Directory.Delete("./data", true);
+                }
 
             return Task.CompletedTask;
         }
