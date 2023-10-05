@@ -32,17 +32,17 @@ namespace EvenireDB
             // event index
             Array.Copy(this.EventId.ToByteArray(), 0, buffer, EVENT_ID_POS, TypeSizes.GUID);
 
-            // offset in the main stream
-            Array.Copy(BitConverter.GetBytes(this.DataPosition), 0, buffer, OFFSET_POS, sizeof(long));
+            // offset in the main stream            
+            Unsafe.As<byte, long>(ref buffer[OFFSET_POS]) = this.DataPosition;
 
             // event type
             Array.Copy(this.EventType, 0, buffer, EVENT_TYPE_NAME_POS, Constants.MAX_EVENT_TYPE_LENGTH);
 
             // event type length
-            Array.Copy(BitConverter.GetBytes(this.EventTypeLength), 0, buffer, EVENT_TYPE_NAME_LENGTH_POS, sizeof(short));
+            Unsafe.As<byte, short>(ref buffer[EVENT_TYPE_NAME_LENGTH_POS]) = this.EventTypeLength;
 
             // event data length
-            Array.Copy(BitConverter.GetBytes(this.EventDataLength), 0, buffer, EVENT_DATA_LENGTH_POS, sizeof(int));
+            Unsafe.As<byte, int>(ref buffer[EVENT_DATA_LENGTH_POS]) = this.EventDataLength;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

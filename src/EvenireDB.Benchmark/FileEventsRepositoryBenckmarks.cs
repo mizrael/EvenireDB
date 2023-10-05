@@ -1,5 +1,8 @@
 ﻿using BenchmarkDotNet.Attributes;
 using EvenireDB;
+using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using System.Buffers;
+using System.Runtime.CompilerServices;
 
 public class FileEventsRepositoryBenckmarks
 {

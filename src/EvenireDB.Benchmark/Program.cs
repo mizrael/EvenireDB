@@ -1,8 +1,6 @@
 ﻿using BenchmarkDotNet.Running;
-using EvenireDB;
-using ObjectLayoutInspector;
 
-BenchmarkRunner.Run<GetBytesBenchmark>();
+BenchmarkRunner.Run<RawEventHeaderSerializationBenchmark>();
 
 //TypeLayout.PrintLayout<RawEventHeader>();
 
