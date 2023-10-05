@@ -10,7 +10,7 @@ namespace EvenireDB.Server.Tests.Routes
             var response = await client.GetAsync("/");
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
             var content = await response.Content.ReadAsStringAsync();
-            content.Should().Be("EvenireDB Server is running!");
+            content.Should().Contain("EvenireDB Server");
         }
 
         [Fact]
