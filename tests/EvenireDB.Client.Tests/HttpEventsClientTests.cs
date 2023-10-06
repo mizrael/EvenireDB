@@ -35,11 +35,10 @@ namespace EvenireDB.Client.Tests
             var sut = new HttpEventsClient(client);
             await sut.AppendAsync(streamId, inputEvents);
 
-            var expectedEvents = inputEvents.Reverse().Take(100);
+            var expectedEvents = inputEvents.Reverse().Take(100).ToArray();
 
-            var receivedEvents = await sut.ReadAsync(streamId, position: StreamPosition.End, direction: Direction.Backward).ToListAsync();
-            receivedEvents.Should().HaveCount(100)
-                .And.BeEquivalentTo(expectedEvents);
+            var receivedEvents = await sut.ReadAsync(streamId, position: StreamPosition.End, direction: Direction.Backward).ToArrayAsync();
+            TestUtils.IsEquivalent(receivedEvents, expectedEvents);
         }
 
         [Fact]
@@ -53,8 +52,9 @@ namespace EvenireDB.Client.Tests
             using var client = application.CreateClient();
             var sut = new HttpEventsClient(client);
             await sut.AppendAsync(streamId, expectedEvents);
-            var receivedEvents = await sut.ReadAsync(streamId).ToListAsync();
-            receivedEvents.Should().BeEquivalentTo(expectedEvents);
+            var receivedEvents = await sut.ReadAsync(streamId).ToArrayAsync();
+            
+            TestUtils.IsEquivalent(receivedEvents, expectedEvents);
         }
 
         [Fact]

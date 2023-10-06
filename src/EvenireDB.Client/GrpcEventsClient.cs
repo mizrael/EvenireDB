@@ -26,7 +26,7 @@ namespace EvenireDB.Client
                 {
                     Id = @event.Id.ToString(),
                     Type = @event.Type,
-                    Data = Google.Protobuf.ByteString.CopyFrom(@event.Data) //TODO: is there a way to avoid the copy?
+                    Data = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(@event.Data)
                 });
             }
 
@@ -58,7 +58,8 @@ namespace EvenireDB.Client
             await foreach(var item in response.ResponseStream.ReadAllAsync().ConfigureAwait(false))
             {
                 var eventId = Guid.Parse(item.Id);
-                yield return new Event(eventId, item.Type, item.Data.ToArray()); //TODO: is there a way to avoid the copy?
+                
+                yield return new Event(eventId, item.Type, item.Data.Memory); 
             }
         }
     }

@@ -2,7 +2,7 @@
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 
-[assembly:InternalsVisibleTo("EvenireDB.Client.Tests")]
+[assembly: InternalsVisibleTo("EvenireDB.Client.Tests")]
 
 namespace EvenireDB.Client
 {
