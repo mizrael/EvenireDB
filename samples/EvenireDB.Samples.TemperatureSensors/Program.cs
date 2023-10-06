@@ -60,7 +60,7 @@ public record Sensor
     public static Sensor Create(Guid id, IEnumerable<Event> events)
     {
         var readings = events.Where(evt => evt.Type == "ReadingReceived")
-                             .Select(evt => JsonSerializer.Deserialize<Reading>(evt.Data))
+                             .Select(evt => JsonSerializer.Deserialize<Reading>(evt.Data.Span))
                              .ToArray();
 
         return new Sensor(id, readings);

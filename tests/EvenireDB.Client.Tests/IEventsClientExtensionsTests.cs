@@ -11,21 +11,24 @@ namespace EvenireDB.Client.Tests
             _serverFixture = serverFixture;
         }
 
+        private GrpcEventsClient CreateSut()
+        {
+            var channel = _serverFixture.CreateGrpcChannel();
+            var client = new GrpcEvents.EventsGrpcService.EventsGrpcServiceClient(channel);
+            return new GrpcEventsClient(client);
+        }
+
         [Fact]
         public async Task ReadAllAsync_should_read_entire_stream()
         {
             var streamId = Guid.NewGuid();
             var expectedEvents = TestUtils.BuildEvents(242);
 
-            await using var application = _serverFixture.CreateServer();
-
-            using var client = application.CreateClient();
-            var sut = new HttpEventsClient(client);
+            var sut = CreateSut();
             await sut.AppendAsync(streamId, expectedEvents);
 
-            var receivedEvents = await sut.ReadAllAsync(streamId).ToListAsync();
-            receivedEvents.Should().HaveCount(242)
-                .And.BeEquivalentTo(expectedEvents);
+            var receivedEvents = await sut.ReadAllAsync(streamId).ToArrayAsync();
+            TestUtils.IsEquivalent(receivedEvents, expectedEvents);
         }
     }
 }

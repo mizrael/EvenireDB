@@ -105,7 +105,15 @@ namespace EvenireDB.Server.Tests.Routes
 
             var response = await client.GetAsync($"/api/v1/events/{streamId}");
             var fetchedEvents = await response.Content.ReadFromJsonAsync<EventDTO[]>();
-            fetchedEvents.Should().BeEquivalentTo(dtos);
+            fetchedEvents.Should().NotBeNull()
+                         .And.HaveCount(dtos.Length);
+
+            for (int i = 0; i != fetchedEvents.Length; i++)
+            {
+                fetchedEvents[i].Id.Should().Be(dtos[i].Id);
+                fetchedEvents[i].Type.Should().Be(dtos[i].Type);
+                fetchedEvents[i].Data.ToArray().Should().BeEquivalentTo(dtos[i].Data.ToArray());
+            }
         }
 
         private EventDTO[] BuildEventsDTOs(int count, byte[]? data)
