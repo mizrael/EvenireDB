@@ -27,7 +27,7 @@ namespace EvenireDB.Server.Grpc
             {
                 var dto = new GrpcEvents.Event()
                 {
-                    Data = Google.Protobuf.ByteString.CopyFrom(@event.Data), // TODO: is there a way to avoid the copy?
+                    Data = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(@event.Data), 
                     Type = @event.Type,
                     Id = @event.Id.ToString() // TODO: probably bytes would be faster
                 };
@@ -44,9 +44,8 @@ namespace EvenireDB.Server.Grpc
             {
                 foreach (var incoming in request.Events)
                 {
-                    var eventId = Guid.Parse(incoming.Id);
-                    var data = incoming.Data.ToArray(); // TODO: is there a way to avoid the copy?
-                    var @event = _eventFactory.Create(eventId, incoming.Type, data);
+                    var eventId = Guid.Parse(incoming.Id);                    
+                    var @event = _eventFactory.Create(eventId, incoming.Type, incoming.Data.Memory);
                     events.Add(@event);
                 }
 

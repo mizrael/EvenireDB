@@ -5,6 +5,6 @@ namespace EvenireDB
     {
         Guid Id { get; }
         string Type { get; }
-        byte[] Data { get; }
+        ReadOnlyMemory<byte> Data { get; }
     }
 }
