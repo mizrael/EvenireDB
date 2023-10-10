@@ -4,7 +4,7 @@ using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
 using System.Buffers;
 using System.Runtime.CompilerServices;
 
-public class FileEventsRepositoryBenckmarks
+public class FileEventsRepositoryWriteBenckmarks
 {
     private readonly static byte[] _data = Enumerable.Repeat((byte)42, 100).ToArray();
 

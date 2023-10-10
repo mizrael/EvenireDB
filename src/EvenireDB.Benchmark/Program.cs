@@ -1,6 +1,6 @@
 ﻿using BenchmarkDotNet.Running;
 
-BenchmarkRunner.Run<RawEventHeaderSerializationBenchmark>();
+BenchmarkRunner.Run<GetBytesBenchmark>();
 
 //TypeLayout.PrintLayout<RawEventHeader>();
 
