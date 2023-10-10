@@ -33,7 +33,7 @@ namespace EvenireDB
         public async IAsyncEnumerable<IEvent> ReadAsync(
             Guid streamId,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
+{
             string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
             string dataPath = GetStreamPath(streamId, DataFileSuffix);
             if (!File.Exists(headersPath) || !File.Exists(dataPath))
@@ -46,12 +46,13 @@ namespace EvenireDB
 
             int headerBufferLen = RawEventHeader.SIZE * (int)_config.MaxPageSize;
             var headersBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
+            var headersBufferMem = headersBuffer.AsMemory(0, headerBufferLen);
 
             try
             {
                 while (true)
                 {
-                    int bytesRead = await headersStream.ReadAsync(headersBuffer, 0, headerBufferLen, cancellationToken)
+                    int bytesRead = await headersStream.ReadAsync(headersBufferMem, cancellationToken)
                                                        .ConfigureAwait(false);
                     if (bytesRead == 0)
                         break;
@@ -59,7 +60,7 @@ namespace EvenireDB
                     int offset = 0;
                     while (offset < bytesRead)
                     {
-                        var header = new RawEventHeader(headersBuffer.AsMemory(offset, RawEventHeader.SIZE));
+                        var header = new RawEventHeader(headersBufferMem.Slice(offset, RawEventHeader.SIZE));
                         headers.Add(header);
 
                         dataBufferSize += header.EventDataLength;
@@ -82,26 +83,31 @@ namespace EvenireDB
             dataStream.Position = headers[0].DataPosition;
 
             var dataBuffer = ArrayPool<byte>.Shared.Rent(dataBufferSize);
-
+            var dataBufferMem = dataBuffer.AsMemory(0, dataBufferSize);
+            
             try
             {
-                await dataStream.ReadAsync(dataBuffer, 0, dataBufferSize, cancellationToken)
+                await dataStream.ReadAsync(dataBufferMem, cancellationToken)
                                 .ConfigureAwait(false);
 
+                var encoding = Encoding.UTF8;
                 for (int i = 0; i < headers.Count; i++)
                 {
-                    // have to create a span to ensure that we're parsing the right buffer size
-                    // as ArrayPool might return a buffer with size the closest pow(2)
-                    var eventTypeName = Encoding.UTF8.GetString(headers[i].EventType, 0, headers[i].EventTypeLength);
+                    //TODO: optimize ?
+                    var eventTypeName = encoding.GetString(headers[i].EventType, 0, headers[i].EventTypeLength);
 
-                    var eventData = new byte[headers[i].EventDataLength];
+                    var destEventData = new byte[headers[i].EventDataLength];
 
                     // if skip is specified, when calculating the source offset we need to subtract the position of the first block of data
                     // because the stream position was already set after opening it
                     long srcOffset = headers[i].DataPosition - headers[0].DataPosition;
-                    Array.Copy(dataBuffer, srcOffset, eventData, 0, headers[i].EventDataLength);
+                    
+                    // need to copy the memory here as the source array is rented 
+                    // AND we need to give the event data to the calling client
+                    dataBufferMem.Slice((int)srcOffset, headers[i].EventDataLength)
+                                 .CopyTo(destEventData);
 
-                    var @event = _factory.Create(headers[i].EventId, eventTypeName, eventData);
+                    var @event = _factory.Create(headers[i].EventId, eventTypeName, destEventData);
                     yield return @event;
                 }
             }
@@ -129,10 +135,10 @@ namespace EvenireDB
                 {
                     var @event = events.ElementAt(i);
 
-                    var eventType = _eventTypes.GetOrAdd(@event.Type, _ =>
+                    var eventType = _eventTypes.GetOrAdd(@event.Type, static type =>
                     {
                         var dest = new byte[Constants.MAX_EVENT_TYPE_LENGTH]; 
-                        Encoding.UTF8.GetBytes(@event.Type, dest);
+                        Encoding.UTF8.GetBytes(type, dest);
                         return dest;
                     });
 
