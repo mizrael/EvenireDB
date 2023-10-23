@@ -1,7 +1,10 @@
 internal record class ServerConfig
 {
-    public TimeSpan CacheDuration { get; init; } = TimeSpan.FromHours(4);
-    
+    /// <summary>
+    /// max number of streams to cache in memory
+    /// </summary>
+    public uint CacheCapacity { get; init; } = 1000;
+
     /// <summary>
     /// max page size returned to clients
     /// </summary>

@@ -55,7 +55,38 @@ namespace EvenireDB.Tests
             await Task.WhenAny(tasks);
 
             flags.Count(f => f).Should().Be(1);
-            results.All(r => r == results[0]);
+            results.All(r => r == results[0]).Should().BeTrue();
+        }
+
+        [Fact]
+        public void Update_should_throw_when_key_not_existing()
+        {
+            var cache = new LRUCache<string, int>(1);
+            Assert.Throws<KeyNotFoundException>(() => cache.Update("key", 1));
+        }
+
+        [Fact]
+        public async Task Update_should_update_value()
+        {
+            var cache = new LRUCache<string, int>(1);
+            await cache.GetOrAddAsync("key", (_,_) => ValueTask.FromResult(1));
+            
+            cache.Update("key", 2);
+            var result = await cache.GetOrAddAsync("key", (_, _) => ValueTask.FromResult(1));
+            result.Should().Be(2);
+        }
+
+        [Fact]
+        public async Task Update_should_not_increase_size()
+        {
+            var cache = new LRUCache<string, int>(1);
+            await cache.GetOrAddAsync("key", (_,_) => ValueTask.FromResult(1));
+            
+            cache.Update("key", 2);
+            cache.Count.Should().Be(1);
+
+            cache.Update("key", 2);
+            cache.Count.Should().Be(1);
         }
     }
 }

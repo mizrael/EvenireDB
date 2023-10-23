@@ -2,7 +2,7 @@
 using BenchmarkDotNet.Engines;
 using EvenireDB;
 using EvenireDB.Common;
-using Microsoft.Extensions.Caching.Memory;
+using EvenireDB.Utils;
 using System.Threading.Channels;
 
 public class EventsProviderBenckmarks
@@ -14,7 +14,7 @@ public class EventsProviderBenckmarks
     private EventsProvider _sut;
 
     [Params(10, 100, 1000)]
-    public int EventsCount;
+    public uint EventsCount;
 
     [GlobalSetup]
     public void GlobalSetup()
@@ -29,14 +29,13 @@ public class EventsProviderBenckmarks
         var repoConfig = new FileEventsRepositoryConfig(dataPath);
         var repo = new FileEventsRepository(repoConfig, factory);
 
-        var options = new MemoryCacheOptions();
-        var cache = new MemoryCache(options);
+        var cache = new LRUCache<Guid, CachedEvents>(this.EventsCount);
 
         var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
 
         _sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
-        var events = Enumerable.Range(0, this.EventsCount).Select(i => factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
+        var events = Enumerable.Range(0, (int)this.EventsCount).Select(i => factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
         Task.WaitAll(_sut.AppendAsync(_streamId, events).AsTask());
     }
 

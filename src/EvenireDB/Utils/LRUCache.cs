@@ -1,12 +1,13 @@
 namespace EvenireDB.Utils
 {
-    public class LRUCache<TKey, TValue> : IDisposable
-        where TKey : notnull
+    // TODO: drop entries if memory consumption is approaching a threshold
+    // TODO: add item expiration
+    public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TKey : notnull
     {
         private class Node
         {
             public TKey Key { get; init; }
-            public TValue Value { get; init; }
+            public TValue Value { get; set; }
             public Node? Next { get; set; }
             public Node? Previous { get; set; }
         }
@@ -16,7 +17,7 @@ namespace EvenireDB.Utils
         private Node? _head;
         private Node? _tail;
 
-        private object _lock = new ();        
+        private object _lock = new();
         private readonly Dictionary<TKey, SemaphoreSlim> _semaphores;
 
         private bool _disposed;
@@ -28,8 +29,21 @@ namespace EvenireDB.Utils
             _semaphores = new Dictionary<TKey, SemaphoreSlim>((int)capacity);
         }
 
+        public void Update(TKey key, TValue value)
+        {
+            if (!_cache.ContainsKey(key))
+                throw new KeyNotFoundException($"invalid key: {key}");
+
+            SemaphoreSlim semaphore = GetSemaphore(key);
+            semaphore.Wait();
+
+            _cache[key].Value = value;
+
+            semaphore.Release();
+        }
+
         public async ValueTask<TValue> GetOrAddAsync(
-            TKey key, 
+            TKey key,
             Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,
             CancellationToken cancellationToken = default)
         {
@@ -45,15 +59,15 @@ namespace EvenireDB.Utils
             }
             else
             {
-                MoveToHead(node);                
+                MoveToHead(node);
             }
 
             return node.Value;
         }
 
         private async Task<LRUCache<TKey, TValue>.Node?> AddAsync(
-            TKey key, 
-            Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,             
+            TKey key,
+            Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,
             CancellationToken cancellationToken)
         {
             var value = await valueFactory(key, cancellationToken).ConfigureAwait(false);
@@ -90,7 +104,7 @@ namespace EvenireDB.Utils
                     semaphore = new SemaphoreSlim(1, 1);
                     _semaphores.Add(key, semaphore);
                 }
-                    
+
                 return semaphore;
             }
         }

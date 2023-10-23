@@ -1,5 +1,4 @@
 ﻿using EvenireDB.Common;
-using Microsoft.Extensions.Caching.Memory;
 using System.Threading.Channels;
 
 namespace EvenireDB.Tests
@@ -12,7 +11,7 @@ namespace EvenireDB.Tests
         public async Task ReadAsync_should_return_empty_collection_when_data_not_available()
         {
             var repo = Substitute.For<IEventsRepository>();
-            var cache = Substitute.For<IMemoryCache>();
+            var cache = Substitute.For<ICache<Guid, CachedEvents>>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
@@ -26,16 +25,15 @@ namespace EvenireDB.Tests
         {
             var streamId = Guid.NewGuid();
 
-            var expectedEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
-                .ToArray();
+            List<IEvent> sourceEvents = Enumerable.Range(0, 242)
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .ToList();
+
+            var cache = Substitute.For<ICache<Guid, CachedEvents>>();
+            cache.GetOrAddAsync(streamId, Arg.Any<Func<Guid, CancellationToken, ValueTask<CachedEvents>>>(), Arg.Any<CancellationToken>())
+                 .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var repo = Substitute.For<IEventsRepository>();
-            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
-                .Returns(expectedEvents.ToAsyncEnumerable());
-
-            var cache = Substitute.For<IMemoryCache>();
-
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
@@ -43,7 +41,7 @@ namespace EvenireDB.Tests
                                     .ToListAsync();
             events.Should().NotBeNullOrEmpty()
                            .And.HaveCount((int)EventsProviderConfig.Default.MaxPageSize)
-                           .And.BeEquivalentTo(expectedEvents.Take((int)EventsProviderConfig.Default.MaxPageSize));
+                           .And.BeEquivalentTo(sourceEvents.Take((int)EventsProviderConfig.Default.MaxPageSize));
         }
 
         [Fact]
@@ -51,15 +49,15 @@ namespace EvenireDB.Tests
         {
             var streamId = Guid.NewGuid();
 
-            var sourceEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
-                .ToArray();
+            List<IEvent> sourceEvents = Enumerable.Range(0, 242)
+                .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToList();
+
+            var cache = Substitute.For<ICache<Guid, CachedEvents>>();
+            cache.GetOrAddAsync(streamId, Arg.Any<Func<Guid, CancellationToken, ValueTask<CachedEvents>>>(), Arg.Any<CancellationToken>())
+                 .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var repo = Substitute.For<IEventsRepository>();
-            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
-                .Returns(sourceEvents.ToAsyncEnumerable());
-
-            var cache = Substitute.For<IMemoryCache>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
@@ -77,22 +75,23 @@ namespace EvenireDB.Tests
         {
             var streamId = Guid.NewGuid();
 
-            var sourceEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
-                .ToArray();
+            List<IEvent> sourceEvents = Enumerable.Range(0, 242)
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .ToList();
+
+            var cache = Substitute.For<ICache<Guid, CachedEvents>>();
+            cache.GetOrAddAsync(streamId, Arg.Any<Func<Guid, CancellationToken, ValueTask<CachedEvents>>>(), Arg.Any<CancellationToken>())
+                 .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var repo = Substitute.For<IEventsRepository>();
-            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
-                .Returns(sourceEvents.ToAsyncEnumerable());
-
-            var cache = Substitute.For<IMemoryCache>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
             var offset = 11;
-            StreamPosition startPosition = (uint)(sourceEvents.Length - offset);
+            StreamPosition startPosition = (uint)(sourceEvents.Count - offset);
 
-            var expectedEvents = sourceEvents.Reverse().Skip(offset-1).Take((int)EventsProviderConfig.Default.MaxPageSize);
+            IEnumerable<IEvent> expectedEvents = sourceEvents;
+            expectedEvents = expectedEvents.Reverse().Skip(offset-1).Take((int)EventsProviderConfig.Default.MaxPageSize);
 
             var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Backward)
                                         .ToListAsync();
@@ -106,15 +105,15 @@ namespace EvenireDB.Tests
         {
             var streamId = Guid.NewGuid();
 
-            var sourceEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
-                .ToArray();
+            List<IEvent> sourceEvents = Enumerable.Range(0, 242)
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .ToList();
+
+            var cache = Substitute.For<ICache<Guid, CachedEvents>>();
+            cache.GetOrAddAsync(streamId, Arg.Any<Func<Guid, CancellationToken, ValueTask<CachedEvents>>>(), Arg.Any<CancellationToken>())
+                 .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var repo = Substitute.For<IEventsRepository>();
-            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
-                .Returns(sourceEvents.ToAsyncEnumerable());
-
-            var cache = Substitute.For<IMemoryCache>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
@@ -134,15 +133,15 @@ namespace EvenireDB.Tests
         {
             var streamId = Guid.NewGuid();
 
-            var sourceEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
-                .ToArray();
+            List<IEvent> sourceEvents = Enumerable.Range(0, 242)
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .ToList();
+
+            var cache = Substitute.For<ICache<Guid, CachedEvents>>();
+            cache.GetOrAddAsync(streamId, Arg.Any<Func<Guid, CancellationToken, ValueTask<CachedEvents>>>(), Arg.Any<CancellationToken>())
+                 .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var repo = Substitute.For<IEventsRepository>();
-            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
-                .Returns(sourceEvents.ToAsyncEnumerable());
-
-            var cache = Substitute.For<IMemoryCache>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
@@ -160,15 +159,15 @@ namespace EvenireDB.Tests
         {
             var streamId = Guid.NewGuid();
 
-            var sourceEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
-                .ToArray();
+            List<IEvent> sourceEvents = Enumerable.Range(0, 242)
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .ToList();
+
+            var cache = Substitute.For<ICache<Guid, CachedEvents>>();
+            cache.GetOrAddAsync(streamId, Arg.Any<Func<Guid, CancellationToken, ValueTask<CachedEvents>>>(), Arg.Any<CancellationToken>())
+                 .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var repo = Substitute.For<IEventsRepository>();
-            repo.ReadAsync(streamId, Arg.Any<CancellationToken>())
-                .Returns(sourceEvents.ToAsyncEnumerable());
-
-            var cache = Substitute.For<IMemoryCache>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
@@ -192,7 +191,7 @@ namespace EvenireDB.Tests
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
-            var cache = new MemoryCache(new MemoryCacheOptions());
+            var cache = new LRUCache<Guid, CachedEvents>(1000);
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
             await sut.AppendAsync(streamId, expectedEvents);
@@ -214,7 +213,7 @@ namespace EvenireDB.Tests
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
-            var cache = new MemoryCache(new MemoryCacheOptions());
+            var cache = new LRUCache<Guid, CachedEvents>(1000);
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
 
