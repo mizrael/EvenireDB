@@ -29,7 +29,7 @@ internal record class ServerConfig
     /// max allowed memory allocated by the process. If exceeded, the system will try to recover
     /// some memory by dropping some cached streams
     /// </summary>
-    public long MaxAllowedAllocatedBytes { get; init; } = 1_000_000_000;
+    public long MaxAllowedAllocatedBytes { get; init; } = 1_000_000_000; // TODO: consider making this a function of max allowed streams count and max event data size
 
     public TimeSpan MemoryWatcherInterval { get; init; } = TimeSpan.FromMinutes(2);
 }
