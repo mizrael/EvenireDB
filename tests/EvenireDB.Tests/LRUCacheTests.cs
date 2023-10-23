@@ -5,30 +5,30 @@ namespace EvenireDB.Tests
         [Fact]
         public async Task GetOrAddAsync_should_add_when_not_existing()
         {
-            var cache = new LRUCache<string, string>(1);
-            cache.Count.Should().Be(0);
+            var sut = new LRUCache<string, string>(1);
+            sut.Count.Should().Be(0);
 
-            var value = await cache.GetOrAddAsync("key", (_, _) => new ValueTask<string>("value"));
+            var value = await sut.GetOrAddAsync("key", (_, _) => new ValueTask<string>("value"));
             value.Should().Be("value");
 
-            cache.Count.Should().Be(1);
+            sut.Count.Should().Be(1);
         }
 
         [Fact]
         public async Task GetOrAddAsync_should_keep_capacity()
         {
-            var cache = new LRUCache<string, string>(1);
-            cache.Count.Should().Be(0);
+            var sut = new LRUCache<string, string>(1);
+            sut.Count.Should().Be(0);
 
-            var value = await cache.GetOrAddAsync("key", (_, _) => new ValueTask<string>("value"));
+            var value = await sut.GetOrAddAsync("key", (_, _) => new ValueTask<string>("value"));
             value.Should().Be("value");
 
-            cache.Count.Should().Be(1);
+            sut.Count.Should().Be(1);
 
-            value = await cache.GetOrAddAsync("key2", (_, _) => new ValueTask<string>("value2"));
+            value = await sut.GetOrAddAsync("key2", (_, _) => new ValueTask<string>("value2"));
             value.Should().Be("value2");
 
-            cache.Count.Should().Be(1);
+            sut.Count.Should().Be(1);
         }
 
         [Theory]
@@ -39,7 +39,7 @@ namespace EvenireDB.Tests
         [InlineData(100)]
         public async Task GetOrAddAsync_should_be_atomic(int count)
         {
-            var cache = new LRUCache<string, int>(1);
+            var sut = new LRUCache<string, int>(1);
             var key = "lorem";
 
             var flags = new bool[count];
@@ -47,7 +47,7 @@ namespace EvenireDB.Tests
             var tasks = Enumerable.Range(0, count)
                 .Select(async i =>
                 {
-                    results[i] = await cache.GetOrAddAsync(key, (_, _) => {
+                    results[i] = await sut.GetOrAddAsync(key, (_, _) => {
                             flags[i] = true;
                             return ValueTask.FromResult(i);
                         });
@@ -59,34 +59,61 @@ namespace EvenireDB.Tests
         }
 
         [Fact]
+        public async Task GetOrAdd_should_remove_old_items_when_capacity_reached()
+        {
+            var sut = new LRUCache<string, int>(1);
+
+            await sut.GetOrAddAsync("key1", (_, _) => ValueTask.FromResult(1));
+            sut.Count.Should().Be(1);
+
+            await sut.GetOrAddAsync("key2", (_, _) => ValueTask.FromResult(1));
+            sut.Count.Should().Be(1);
+
+            sut.ContainsKey("key1").Should().BeFalse();
+        }
+
+        [Fact]
         public void Update_should_throw_when_key_not_existing()
         {
-            var cache = new LRUCache<string, int>(1);
-            Assert.Throws<KeyNotFoundException>(() => cache.Update("key", 1));
+            var sut = new LRUCache<string, int>(1);
+            Assert.Throws<KeyNotFoundException>(() => sut.Update("key", 1));
         }
 
         [Fact]
         public async Task Update_should_update_value()
         {
-            var cache = new LRUCache<string, int>(1);
-            await cache.GetOrAddAsync("key", (_,_) => ValueTask.FromResult(1));
+            var sut = new LRUCache<string, int>(1);
+            await sut.GetOrAddAsync("key", (_,_) => ValueTask.FromResult(1));
             
-            cache.Update("key", 2);
-            var result = await cache.GetOrAddAsync("key", (_, _) => ValueTask.FromResult(1));
+            sut.Update("key", 2);
+            var result = await sut.GetOrAddAsync("key", (_, _) => ValueTask.FromResult(1));
             result.Should().Be(2);
         }
 
         [Fact]
         public async Task Update_should_not_increase_size()
         {
-            var cache = new LRUCache<string, int>(1);
-            await cache.GetOrAddAsync("key", (_,_) => ValueTask.FromResult(1));
+            var sut = new LRUCache<string, int>(1);
+            await sut.GetOrAddAsync("key", (_,_) => ValueTask.FromResult(1));
             
-            cache.Update("key", 2);
-            cache.Count.Should().Be(1);
+            sut.Update("key", 2);
+            sut.Count.Should().Be(1);
 
-            cache.Update("key", 2);
-            cache.Count.Should().Be(1);
+            sut.Update("key", 2);
+            sut.Count.Should().Be(1);
+        }
+
+        [Fact]
+        public async Task Update_should_put_item_on_front()
+        {
+            var sut = new LRUCache<string, int>(2);
+            await sut.GetOrAddAsync("key1", (_, _) => ValueTask.FromResult(1));
+            await sut.GetOrAddAsync("key2", (_, _) => ValueTask.FromResult(2));
+
+            sut.Update("key1", 42);
+
+            await sut.GetOrAddAsync("key3", (_, _) => ValueTask.FromResult(3));
+            sut.ContainsKey("key2").Should().BeFalse();
         }
     }
 }

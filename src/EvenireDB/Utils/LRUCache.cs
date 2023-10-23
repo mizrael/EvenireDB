@@ -1,3 +1,5 @@
+using System.Xml.Linq;
+
 namespace EvenireDB.Utils
 {
     // TODO: drop entries if memory consumption is approaching a threshold
@@ -29,6 +31,9 @@ namespace EvenireDB.Utils
             _semaphores = new Dictionary<TKey, SemaphoreSlim>((int)capacity);
         }
 
+        public bool ContainsKey(TKey key)
+        => _cache.ContainsKey(key);
+
         public void Update(TKey key, TValue value)
         {
             if (!_cache.ContainsKey(key))
@@ -38,6 +43,7 @@ namespace EvenireDB.Utils
             semaphore.Wait();
 
             _cache[key].Value = value;
+            MoveToHead(_cache[key]);
 
             semaphore.Release();
         }
