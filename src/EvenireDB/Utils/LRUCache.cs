@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace EvenireDB.Utils
 {
     // TODO: drop entries if memory consumption is approaching a threshold
@@ -17,7 +19,8 @@ namespace EvenireDB.Utils
         private Node? _head;
         private Node? _tail;
 
-        private object _moveToHeadLock = new(); 
+        private object _moveToHeadLock = new();
+        private object _dropLock = new();
         private object _getSemaphoresLock = new();
         
         private readonly Dictionary<TKey, SemaphoreSlim> _semaphores;
@@ -31,19 +34,55 @@ namespace EvenireDB.Utils
             _semaphores = new Dictionary<TKey, SemaphoreSlim>((int)capacity);
         }
 
+        public void DropOldest(uint maxCount)
+        {
+            if (this.Count == 0)
+                return;
+
+            uint countToRemove = Math.Min(maxCount, this.Count);
+
+            lock (_dropLock)
+            {
+                if (countToRemove == this.Count)
+                {
+                    _head = null;
+                    _tail = null;
+                    _cache.Clear();
+                    _semaphores.Clear();
+                    return;
+                }                
+
+                var curr = _tail;
+                while (countToRemove > 0 && curr != null)
+                {
+                    _cache.Remove(curr.Key);
+                    _semaphores.Remove(curr.Key);
+
+                    curr = curr.Previous;
+                    countToRemove--;
+                }
+
+                curr.Next = null;
+            }
+        }
+
         public bool ContainsKey(TKey key)
         => _cache.ContainsKey(key);
 
-        public void Update(TKey key, TValue value)
+        public void AddOrUpdate(TKey key, TValue value)
         {
-            if (!_cache.TryGetValue(key, out var node))
-                throw new KeyNotFoundException($"invalid key: {key}");
-
             SemaphoreSlim semaphore = GetSemaphore(key);
             semaphore.Wait();
 
-            node.Value = value;
-            MoveToHead(node);
+            if (_cache.TryGetValue(key, out var node))
+            {
+                node.Value = value;
+                MoveToHead(node);
+            }
+            else
+            {
+                Add(key, value);
+            }
 
             semaphore.Release();
         }
@@ -71,12 +110,17 @@ namespace EvenireDB.Utils
             return node.Value;
         }
 
-        private async ValueTask<LRUCache<TKey, TValue>.Node?> AddAsync(
+        private async ValueTask<Node> AddAsync(
             TKey key,
             Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,
             CancellationToken cancellationToken)
         {
             var value = await valueFactory(key, cancellationToken).ConfigureAwait(false);
+            return Add(key, value);
+        }
+
+        private Node Add(TKey key, TValue value)
+        {
             if (_cache.Count == _capacity)
             {
                 _cache.Remove(_tail.Key);
@@ -142,7 +186,7 @@ namespace EvenireDB.Utils
             }
         }
 
-        public int Count => _cache.Count;
+        public uint Count => (uint)_cache.Count;
 
         protected virtual void Dispose(bool disposing)
         {

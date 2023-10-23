@@ -1,4 +1,5 @@
 using EvenireDB;
+using EvenireDB.Server;
 using EvenireDB.Server.Routes;
 using EvenireDB.Utils;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -40,7 +41,7 @@ builder.Services
     .AddSingleton<ICache<Guid, CachedEvents>>(ctx =>
     {
         var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
-        return new LRUCache<Guid, CachedEvents>(serverConfig.CacheCapacity);
+        return new LRUCache<Guid, CachedEvents>(serverConfig.MaxInMemoryStreamsCount);
     })
     .AddSingleton(ctx =>
     {
@@ -72,7 +73,12 @@ builder.Services
         return new FileEventsRepositoryConfig(dataPath, serverConfig.MaxEventsPageSizeFromDisk);
     })
     .AddSingleton<IEventsRepository, FileEventsRepository>()
-    .AddHostedService<IncomingEventsPersistenceWorker>();
+    .AddHostedService<IncomingEventsPersistenceWorker>()
+    .AddSingleton(ctx =>
+    {
+        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
+        return new MemoryWatcherSettings(serverConfig.MemoryWatcherInterval, serverConfig.MaxAllowedAllocatedBytes);
+    }).AddHostedService<MemoryWatcher>();
 
 var version = Assembly.GetExecutingAssembly().GetName().Version;
 

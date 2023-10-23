@@ -1,5 +1,6 @@
 ﻿using EvenireDB.Common;
 using EvenireDB.Utils;
+using Microsoft.Extensions.Logging;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 
@@ -15,21 +16,26 @@ namespace EvenireDB
         private readonly EventsProviderConfig _config;
         private readonly ChannelWriter<IncomingEventsGroup> _writer;
         private readonly IEventsRepository _repo;
+        private readonly ILogger<EventsProvider> _logger;
 
         public EventsProvider(
-            EventsProviderConfig config, 
-            IEventsRepository repo, 
-            ICache<Guid, CachedEvents> cache, 
-            ChannelWriter<IncomingEventsGroup> writer)
+            EventsProviderConfig config,
+            IEventsRepository repo,
+            ICache<Guid, CachedEvents> cache,
+            ChannelWriter<IncomingEventsGroup> writer,
+            ILogger<EventsProvider> logger)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _config = config ?? throw new ArgumentNullException(nameof(config));
             _writer = writer ?? throw new ArgumentNullException(nameof(writer));
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         private async ValueTask<CachedEvents> EventsFactory(Guid streamId, CancellationToken cancellationToken)
         {
+            _logger.ReadingStreamFromRepository(streamId);
+
             var persistedEvents = new List<IEvent>();
             await foreach (var @event in _repo.ReadAsync(streamId, cancellationToken))
                 persistedEvents.Add(@event);
@@ -119,7 +125,7 @@ namespace EvenireDB
         private void UpdateCache(Guid streamId, IEnumerable<IEvent> incomingEvents, CachedEvents entry)
         {
             entry.Events.AddRange(incomingEvents);
-            _cache.Update(streamId, entry);
+            _cache.AddOrUpdate(streamId, entry);
         }
 
         private static bool HasDuplicateEvent(IEnumerable<IEvent> incomingEvents, CachedEvents entry, out IEvent? duplicate)

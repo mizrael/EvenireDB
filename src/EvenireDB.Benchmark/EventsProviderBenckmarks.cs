@@ -3,6 +3,7 @@ using BenchmarkDotNet.Engines;
 using EvenireDB;
 using EvenireDB.Common;
 using EvenireDB.Utils;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Threading.Channels;
 
 public class EventsProviderBenckmarks
@@ -30,10 +31,11 @@ public class EventsProviderBenckmarks
         var repo = new FileEventsRepository(repoConfig, factory);
 
         var cache = new LRUCache<Guid, CachedEvents>(this.EventsCount);
+        var logger = new NullLogger<EventsProvider>();
 
         var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
 
-        _sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer);
+        _sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
         var events = Enumerable.Range(0, (int)this.EventsCount).Select(i => factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
         Task.WaitAll(_sut.AppendAsync(_streamId, events).AsTask());
