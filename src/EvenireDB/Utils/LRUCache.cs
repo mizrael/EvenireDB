@@ -1,3 +1,4 @@
+using System.Threading;
 using System.Xml.Linq;
 
 namespace EvenireDB.Utils
@@ -19,7 +20,9 @@ namespace EvenireDB.Utils
         private Node? _head;
         private Node? _tail;
 
-        private object _lock = new();
+        private object _moveToHeadLock = new(); 
+        private object _getSemaphoresLock = new();
+        
         private readonly Dictionary<TKey, SemaphoreSlim> _semaphores;
 
         private bool _disposed;
@@ -80,6 +83,7 @@ namespace EvenireDB.Utils
             if (_cache.Count == _capacity)
             {
                 _cache.Remove(_tail.Key);
+                _semaphores.Remove(_tail.Key);
 
                 _tail = _tail.Previous;
 
@@ -103,7 +107,7 @@ namespace EvenireDB.Utils
             if (_semaphores.TryGetValue(key, out var semaphore))
                 return semaphore;
 
-            lock (_lock)
+            lock (_getSemaphoresLock)
             {
                 if (!_semaphores.TryGetValue(key, out semaphore))
                 {
@@ -117,25 +121,28 @@ namespace EvenireDB.Utils
 
         private void MoveToHead(Node node)
         {
-            if (node == _head)
-                return;
+            lock (_moveToHeadLock)
+            {
+                if (node == _head)
+                    return;
 
-            if (node.Previous != null)
-                node.Previous.Next = node.Next;
+                if (node.Previous != null)
+                    node.Previous.Next = node.Next;
 
-            if (node.Next != null)
-                node.Next.Previous = node.Previous;
+                if (node.Next != null)
+                    node.Next.Previous = node.Previous;
 
-            if (_tail == node)
-                _tail = node.Previous;
+                if (_tail == node)
+                    _tail = node.Previous;
 
-            node.Previous = null;
-            node.Next = _head;
+                node.Previous = null;
+                node.Next = _head;
 
-            if (_head != null)
-                _head.Previous = node;
+                if (_head != null)
+                    _head.Previous = node;
 
-            _head = node;
+                _head = node;
+            }
         }
 
         public int Count => _cache.Count;

@@ -73,6 +73,19 @@ namespace EvenireDB.Tests
         }
 
         [Fact]
+        public async Task GetOrAdd_should_put_item_on_front()
+        {
+            var sut = new LRUCache<string, int>(2);
+            await sut.GetOrAddAsync("key1", (_, _) => ValueTask.FromResult(1));
+            await sut.GetOrAddAsync("key2", (_, _) => ValueTask.FromResult(2));
+
+            await sut.GetOrAddAsync("key1", null);
+
+            await sut.GetOrAddAsync("key3", (_, _) => ValueTask.FromResult(3));
+            sut.ContainsKey("key2").Should().BeFalse();
+        }
+
+        [Fact]
         public void Update_should_throw_when_key_not_existing()
         {
             var sut = new LRUCache<string, int>(1);
