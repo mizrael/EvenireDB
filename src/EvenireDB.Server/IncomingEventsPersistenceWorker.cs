@@ -1,47 +1,44 @@
-﻿using EvenireDB;
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 
-public class IncomingEventsPersistenceWorker : BackgroundService
+namespace EvenireDB.Server
 {
-    private readonly ChannelReader<IncomingEventsGroup> _reader;
-    private readonly IEventsRepository _repo;
-    private readonly ILogger<IncomingEventsPersistenceWorker> _logger;
-
-    public IncomingEventsPersistenceWorker(ChannelReader<IncomingEventsGroup> reader, IEventsRepository repo, ILogger<IncomingEventsPersistenceWorker> logger)
+    public class IncomingEventsPersistenceWorker : BackgroundService
     {
-        _reader = reader ?? throw new ArgumentNullException(nameof(reader));
-        _repo = repo ?? throw new ArgumentNullException(nameof(repo));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    }
+        private readonly ChannelReader<IncomingEventsGroup> _reader;
+        private readonly IEventsRepository _repo;
+        private readonly ILogger<IncomingEventsPersistenceWorker> _logger;
 
-    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
-    {
-        await Task.Factory.StartNew(async () =>
+        public IncomingEventsPersistenceWorker(ChannelReader<IncomingEventsGroup> reader, IEventsRepository repo, ILogger<IncomingEventsPersistenceWorker> logger)
         {
-            await this.ExecuteAsyncCore(cancellationToken).ConfigureAwait(false);
-        }, cancellationToken);
-    }
+            _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            _repo = repo ?? throw new ArgumentNullException(nameof(repo));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        }
 
-    private async Task ExecuteAsyncCore(CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested || await _reader.WaitToReadAsync(cancellationToken))
+        protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
-            while (_reader.TryRead(out IncomingEventsGroup? group) && group is not null)
+            await Task.Factory.StartNew(async () =>
             {
-                try
+                await ExecuteAsyncCore(cancellationToken).ConfigureAwait(false);
+            }, cancellationToken);
+        }
+
+        private async Task ExecuteAsyncCore(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested || await _reader.WaitToReadAsync(cancellationToken))
+            {
+                while (_reader.TryRead(out IncomingEventsGroup? group) && group is not null)
                 {
-                    await _repo.AppendAsync(group.AggregateId, group.Events, cancellationToken)
-                           .ConfigureAwait(false);
+                    try
+                    {
+                        await _repo.AppendAsync(group.AggregateId, group.Events, cancellationToken)
+                               .ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.EventsGroupPersistenceError(group.AggregateId, ex.Message);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(
-                        ex,
-                        "an error has occurred while persisting events group for aggregate {AggregateId}: {Error}",
-                        group.AggregateId,
-                        ex.Message);
-                }
-                
             }
         }
     }
