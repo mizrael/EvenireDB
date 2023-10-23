@@ -1,6 +1,3 @@
-using System.Threading;
-using System.Xml.Linq;
-
 namespace EvenireDB.Utils
 {
     // TODO: drop entries if memory consumption is approaching a threshold
@@ -39,14 +36,14 @@ namespace EvenireDB.Utils
 
         public void Update(TKey key, TValue value)
         {
-            if (!_cache.ContainsKey(key))
+            if (!_cache.TryGetValue(key, out var node))
                 throw new KeyNotFoundException($"invalid key: {key}");
 
             SemaphoreSlim semaphore = GetSemaphore(key);
             semaphore.Wait();
 
-            _cache[key].Value = value;
-            MoveToHead(_cache[key]);
+            node.Value = value;
+            MoveToHead(node);
 
             semaphore.Release();
         }
@@ -74,7 +71,7 @@ namespace EvenireDB.Utils
             return node.Value;
         }
 
-        private async Task<LRUCache<TKey, TValue>.Node?> AddAsync(
+        private async ValueTask<LRUCache<TKey, TValue>.Node?> AddAsync(
             TKey key,
             Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,
             CancellationToken cancellationToken)
