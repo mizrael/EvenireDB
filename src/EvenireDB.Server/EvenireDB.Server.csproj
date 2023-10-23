@@ -4,18 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-	<Version>0.1.0.0</Version>
+	  <Version>0.1.0.0</Version>
   </PropertyGroup>
-
-	<PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-		<Optimize>true</Optimize>
-	</PropertyGroup>
 
 	<ItemGroup>
     <PackageReference Include="Asp.Versioning.Http" Version="7.1.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.32.0" />
     <PackageReference Include="Google.Protobuf" Version="3.24.4" />
-	<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
   </ItemGroup>
 
 	<ItemGroup>

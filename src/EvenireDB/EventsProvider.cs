@@ -1,24 +1,26 @@
 ﻿using EvenireDB.Common;
-using Microsoft.Extensions.Caching.Memory;
+using EvenireDB.Utils;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 
 namespace EvenireDB
 {
+    public record CachedEvents(List<IEvent> Events, SemaphoreSlim Semaphore);
+
     // TODO: logging
     // TODO: append to a transaction log
-    // TODO: consider dumping to disk when memory consumption is approaching a threshold (check IMemoryCache.GetCurrentStatistics() )
     public class EventsProvider
     {
-        private readonly IMemoryCache _cache;
+        private readonly ICache<Guid, CachedEvents> _cache;
         private readonly EventsProviderConfig _config;
         private readonly ChannelWriter<IncomingEventsGroup> _writer;
         private readonly IEventsRepository _repo;
-        private readonly static SemaphoreSlim _lock = new(1,1);
 
-        internal record CachedEvents(List<IEvent> Events, SemaphoreSlim Semaphore);
-
-        public EventsProvider(EventsProviderConfig config, IEventsRepository repo, IMemoryCache cache, ChannelWriter<IncomingEventsGroup> writer)
+        public EventsProvider(
+            EventsProviderConfig config, 
+            IEventsRepository repo, 
+            ICache<Guid, CachedEvents> cache, 
+            ChannelWriter<IncomingEventsGroup> writer)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -26,34 +28,16 @@ namespace EvenireDB
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
         }
 
-        private async ValueTask<CachedEvents> EnsureCachedEventsAsync(Guid streamId, CancellationToken cancellationToken)
+        private async ValueTask<CachedEvents> EventsFactory(Guid streamId, CancellationToken cancellationToken)
         {
-            var key = streamId.ToString();
-
-            var entry = _cache.Get<CachedEvents>(key);
-            if (entry is not null)
-                return entry;
-
-            _lock.Wait(cancellationToken);
-            try
-            {
-                entry = _cache.Get<CachedEvents>(key);
-                if (entry is null)
-                {
-                    var persistedEvents = new List<IEvent>();
-                    await foreach(var @event in _repo.ReadAsync(streamId, cancellationToken))
-                        persistedEvents.Add(@event);
-                    entry = new CachedEvents(persistedEvents, new SemaphoreSlim(1, 1));
-
-                    _cache.Set(key, entry, _config.CacheDuration);
-                }
-            }
-            finally
-            {
-                _lock.Release();
-            }
-            return entry;
+            var persistedEvents = new List<IEvent>();
+            await foreach (var @event in _repo.ReadAsync(streamId, cancellationToken))
+                persistedEvents.Add(@event);
+            return new CachedEvents(persistedEvents, new SemaphoreSlim(1));
         }
+
+        private ValueTask<CachedEvents> EnsureCachedEventsAsync(Guid streamId, CancellationToken cancellationToken)
+        => _cache.GetOrAddAsync(streamId, this.EventsFactory, cancellationToken);
 
         public async IAsyncEnumerable<IEvent> ReadAsync(
             Guid streamId,
@@ -66,7 +50,7 @@ namespace EvenireDB
 
             CachedEvents entry = await EnsureCachedEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
-            if (entry.Events == null || entry.Events.Count == 0)
+            if (entry?.Events == null || entry.Events.Count == 0)
                 yield break;
                         
             uint totalCount = (uint)entry.Events.Count;
@@ -105,8 +89,7 @@ namespace EvenireDB
 
         public async ValueTask<IOperationResult> AppendAsync(Guid streamId, IEnumerable<IEvent> incomingEvents, CancellationToken cancellationToken = default)
         {
-            if (incomingEvents is null)
-                throw new ArgumentNullException(nameof(incomingEvents));
+            ArgumentNullException.ThrowIfNull(incomingEvents, nameof(incomingEvents));
 
             if (!incomingEvents.Any())
                 return new SuccessResult();
@@ -136,7 +119,7 @@ namespace EvenireDB
         private void UpdateCache(Guid streamId, IEnumerable<IEvent> incomingEvents, CachedEvents entry)
         {
             entry.Events.AddRange(incomingEvents);
-            _cache.Set(streamId.ToString(), entry, _config.CacheDuration);
+            _cache.Update(streamId, entry);
         }
 
         private static bool HasDuplicateEvent(IEnumerable<IEvent> incomingEvents, CachedEvents entry, out IEvent? duplicate)

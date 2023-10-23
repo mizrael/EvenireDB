@@ -1,9 +1,7 @@
 namespace EvenireDB
 {
-    public record EventsProviderConfig(
-        TimeSpan CacheDuration, 
-        uint MaxPageSize)
+    public record EventsProviderConfig(uint MaxPageSize)
     {
-        public readonly static EventsProviderConfig Default = new(TimeSpan.FromHours(4), 100);
+        public readonly static EventsProviderConfig Default = new(100);
     }
 }
