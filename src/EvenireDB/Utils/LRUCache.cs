@@ -1,6 +1,6 @@
 namespace EvenireDB.Utils
 {
-    public class LRUCache<TKey, TValue>
+    public class LRUCache<TKey, TValue> : IDisposable
         where TKey : notnull
     {
         private class Node
@@ -16,10 +16,16 @@ namespace EvenireDB.Utils
         private Node? _head;
         private Node? _tail;
 
+        private object _lock = new ();        
+        private readonly Dictionary<TKey, SemaphoreSlim> _semaphores;
+
+        private bool _disposed;
+
         public LRUCache(uint capacity)
         {
             _capacity = capacity;
             _cache = new Dictionary<TKey, Node>((int)capacity);
+            _semaphores = new Dictionary<TKey, SemaphoreSlim>((int)capacity);
         }
 
         public async ValueTask<TValue> GetOrAddAsync(
@@ -27,34 +33,66 @@ namespace EvenireDB.Utils
             Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,
             CancellationToken cancellationToken = default)
         {
-            if (_cache.TryGetValue(key, out var node))
+            if (!_cache.TryGetValue(key, out var node))
             {
-                MoveToHead(node);
-                return node.Value;
+                SemaphoreSlim semaphore = GetSemaphore(key);
+                semaphore.Wait(cancellationToken);
+
+                if (!_cache.TryGetValue(key, out node))
+                    node = await AddAsync(key, valueFactory, cancellationToken).ConfigureAwait(false);
+
+                semaphore.Release();
+            }
+            else
+            {
+                MoveToHead(node);                
             }
 
+            return node.Value;
+        }
+
+        private async Task<LRUCache<TKey, TValue>.Node?> AddAsync(
+            TKey key, 
+            Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,             
+            CancellationToken cancellationToken)
+        {
             var value = await valueFactory(key, cancellationToken).ConfigureAwait(false);
             if (_cache.Count == _capacity)
             {
                 _cache.Remove(_tail.Key);
-                
+
                 _tail = _tail.Previous;
-                
-                if(_tail != null)
+
+                if (_tail != null)
                     _tail.Next = null;
             }
 
-            node = new Node { Key = key, Value = value, Next = _head };
+            var node = new Node { Key = key, Value = value, Next = _head };
             if (_head != null)
                 _head.Previous = node;
 
             _head = node;
-            if (_tail == null)
-                _tail = node;
+            _tail ??= node;
 
             _cache.Add(key, node);
+            return node;
+        }
 
-            return node.Value;
+        private SemaphoreSlim GetSemaphore(TKey key)
+        {
+            if (_semaphores.TryGetValue(key, out var semaphore))
+                return semaphore;
+
+            lock (_lock)
+            {
+                if (!_semaphores.TryGetValue(key, out semaphore))
+                {
+                    semaphore = new SemaphoreSlim(1, 1);
+                    _semaphores.Add(key, semaphore);
+                }
+                    
+                return semaphore;
+            }
         }
 
         private void MoveToHead(Node node)
@@ -81,5 +119,26 @@ namespace EvenireDB.Utils
         }
 
         public int Count => _cache.Count;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    foreach (var semaphore in _semaphores.Values)
+                        semaphore.Dispose();
+                    _semaphores.Clear();
+                }
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }

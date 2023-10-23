@@ -30,5 +30,32 @@ namespace EvenireDB.Tests
 
             cache.Count.Should().Be(1);
         }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(4)]
+        [InlineData(10)]
+        [InlineData(100)]
+        public async Task GetOrAddAsync_should_be_atomic(int count)
+        {
+            var cache = new LRUCache<string, int>(1);
+            var key = "lorem";
+
+            var flags = new bool[count];
+            var results = new int[count];
+            var tasks = Enumerable.Range(0, count)
+                .Select(async i =>
+                {
+                    results[i] = await cache.GetOrAddAsync(key, (_, _) => {
+                            flags[i] = true;
+                            return ValueTask.FromResult(i);
+                        });
+                }).ToArray();
+            await Task.WhenAny(tasks);
+
+            flags.Count(f => f).Should().Be(1);
+            results.All(r => r == results[0]);
+        }
     }
 }
