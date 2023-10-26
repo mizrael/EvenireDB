@@ -109,10 +109,11 @@ namespace EvenireDB
                     HasDuplicateEvent(incomingEvents, entry, out var duplicate))
                     return FailureResult.DuplicateEvent(duplicate);
 
-                UpdateCache(streamId, incomingEvents, entry);
-
                 var group = new IncomingEventsGroup(streamId, incomingEvents);
-                _writer.TryWrite(group); //TODO: error checking
+                if(!_writer.TryWrite(group))
+                    return FailureResult.CannotInitiateWrite(streamId);
+
+                UpdateCache(streamId, incomingEvents, entry);
             }
             finally
             {

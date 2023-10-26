@@ -14,9 +14,14 @@ namespace EvenireDB
         public int Code { get; } = ErrorCodes.Unknown;
 
         public static FailureResult DuplicateEvent(IEvent? @event)
-            => new FailureResult(
+        => new FailureResult(
                 ErrorCodes.DuplicateEvent,
                 (@event is null) ? "one of the incoming events is duplicate." :
                 $"event '{@event.Id}' is already in the stream.");
+
+        public static IOperationResult CannotInitiateWrite(Guid streamId)
+        => new FailureResult(
+                ErrorCodes.CannotInitiateWrite,
+                $"unable to write events for stream '{streamId}'.");
     }
 }

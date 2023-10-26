@@ -213,6 +213,30 @@ namespace EvenireDB.Tests
         }
 
         [Fact]
+        public async Task AppendAsync_should_fail_when_channel_rejects_message()
+        {
+            var streamId = Guid.NewGuid();
+
+            var inputEvents = Enumerable.Range(0, 10)
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .ToArray();
+
+            var repo = Substitute.For<IEventsRepository>();
+            var cache = new LRUCache<Guid, CachedEvents>(1000);
+            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
+            channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(false);
+
+            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channelWriter, logger);
+            await sut.AppendAsync(streamId, inputEvents);
+            var result = await sut.AppendAsync(streamId, inputEvents);
+            result.Should().BeOfType<FailureResult>();
+
+            var failure = (FailureResult)result;
+            failure.Code.Should().Be(ErrorCodes.CannotInitiateWrite);
+        }
+
+        [Fact]
         public async Task AppendAsync_should_succeed_when_events_valid()
         {
             var streamId = Guid.NewGuid();
