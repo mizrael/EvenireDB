@@ -32,7 +32,7 @@ namespace EvenireDB.Server
                     try
                     {
                         await _repo.AppendAsync(group.AggregateId, group.Events, cancellationToken)
-                               .ConfigureAwait(false);
+                                   .ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {

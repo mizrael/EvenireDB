@@ -2,8 +2,6 @@ using System.Threading;
 
 namespace EvenireDB.Utils
 {
-    // TODO: drop entries if memory consumption is approaching a threshold
-    // TODO: add item expiration
     public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TKey : notnull
     {
         private class Node
