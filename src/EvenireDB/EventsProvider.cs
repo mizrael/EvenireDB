@@ -6,11 +6,9 @@ using System.Threading.Channels;
 
 namespace EvenireDB
 {
-    public record CachedEvents(List<IEvent> Events, SemaphoreSlim Semaphore);
-
     // TODO: logging
     // TODO: append to a transaction log
-    public class EventsProvider
+    internal class EventsProvider : IEventsProvider
     {
         private readonly ICache<Guid, CachedEvents> _cache;
         private readonly EventsProviderConfig _config;
@@ -47,8 +45,8 @@ namespace EvenireDB
 
         public async IAsyncEnumerable<IEvent> ReadAsync(
             Guid streamId,
-            StreamPosition startPosition, 
-            Direction direction = Direction.Forward,            
+            StreamPosition startPosition,
+            Direction direction = Direction.Forward,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             if (startPosition < 0)
@@ -58,7 +56,7 @@ namespace EvenireDB
 
             if (entry?.Events == null || entry.Events.Count == 0)
                 yield break;
-                        
+
             uint totalCount = (uint)entry.Events.Count;
             uint pos = startPosition;
 
@@ -69,24 +67,24 @@ namespace EvenireDB
 
                 uint j = 0, i = pos,
                     finalCount = Math.Min(_config.MaxPageSize, totalCount - i);
-             
+
                 while (j++ != finalCount)
                 {
                     yield return entry.Events[(int)i++];
                 }
             }
             else
-            {              
-                if(startPosition == StreamPosition.End)
+            {
+                if (startPosition == StreamPosition.End)
                     pos = totalCount - 1;
-               
+
                 if (pos >= totalCount)
                     yield break;
 
                 uint j = 0, i = pos,
                       finalCount = Math.Min(_config.MaxPageSize, i + 1);
-               
-                while(j++ != finalCount)
+
+                while (j++ != finalCount)
                 {
                     yield return entry.Events[(int)i--];
                 }
@@ -110,7 +108,7 @@ namespace EvenireDB
                     return FailureResult.DuplicateEvent(duplicate);
 
                 var group = new IncomingEventsGroup(streamId, incomingEvents);
-                if(!_writer.TryWrite(group))
+                if (!_writer.TryWrite(group))
                     return FailureResult.CannotInitiateWrite(streamId);
 
                 UpdateCache(streamId, incomingEvents, entry);

@@ -1,11 +1,8 @@
 using EvenireDB;
 using EvenireDB.Server;
 using EvenireDB.Server.Routes;
-using EvenireDB.Utils;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
-using Microsoft.Extensions.Options;
 using System.Reflection;
-using System.Threading.Channels;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,66 +16,19 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnC
                      .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
                      .AddEnvironmentVariables();
 
+var serverConfig = builder.Configuration.GetSection("Server").Get<EvenireServerSettings>();
+
 builder.WebHost.ConfigureKestrel((context, options) =>
 {
-    var serverConfig = context.Configuration.GetRequiredSection("Server").Get<ServerConfig>();
-
     options.ListenAnyIP(serverConfig.GrpcPort, o => o.Protocols = HttpProtocols.Http2);
     options.ListenAnyIP(serverConfig.HttpPort, o => o.Protocols = HttpProtocols.Http1);
 });
 
 builder.Services.AddGrpc();
 
-var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelOptions
-{
-    SingleWriter = false,
-    SingleReader = false,
-    AllowSynchronousContinuations = true
-});
-
 builder.Services
-    .Configure<ServerConfig>(builder.Configuration.GetSection("Server"))
-    .AddSingleton<ICache<Guid, CachedEvents>>(ctx =>
-    {
-        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
-        return new LRUCache<Guid, CachedEvents>(serverConfig.MaxInMemoryStreamsCount);
-    })
-    .AddSingleton(ctx =>
-    {
-        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
-        return new EventsProviderConfig(serverConfig.MaxPageSizeToClient);
-    })
-    .AddSingleton<EventsProvider>()
-    .AddSingleton(channel.Writer)
-    .AddSingleton(channel.Reader)
-    .AddSingleton<IEventFactory>(ctx =>
-    {
-        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
-        return new EventFactory(serverConfig.MaxEventDataSize);
-    })
-    .AddSingleton<EventMapper>()
-    .AddSingleton(ctx =>
-    {
-        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
-
-        var dataPath = serverConfig.DataFolder;
-        if (string.IsNullOrWhiteSpace(dataPath))
-            dataPath = Path.Combine(AppContext.BaseDirectory, "data");
-        else
-        {
-            if (!Path.IsPathFullyQualified(dataPath))
-                dataPath = Path.Combine(AppContext.BaseDirectory, dataPath);
-        }
-
-        return new FileEventsRepositoryConfig(dataPath, serverConfig.MaxEventsPageSizeFromDisk);
-    })
-    .AddSingleton<IEventsRepository, FileEventsRepository>()
-    .AddHostedService<IncomingEventsPersistenceWorker>()
-    .AddSingleton(ctx =>
-    {
-        var serverConfig = ctx.GetRequiredService<IOptions<ServerConfig>>().Value;
-        return new MemoryWatcherSettings(serverConfig.MemoryWatcherInterval, serverConfig.MaxAllowedAllocatedBytes);
-    }).AddHostedService<MemoryWatcher>();
+    .AddEvenire(serverConfig)
+    .AddSingleton<EventMapper>();   
 
 var version = Assembly.GetExecutingAssembly().GetName().Version;
 

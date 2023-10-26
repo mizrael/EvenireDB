@@ -18,7 +18,7 @@ namespace EvenireDB.Server.Routes
         }
 
         private static async IAsyncEnumerable<EventDTO> GetEvents(
-            [FromServices] EventsProvider provider,
+            [FromServices] IEventsProvider provider,
             Guid streamId,
             [FromQuery(Name = "pos")] uint startPosition = 0,
             [FromQuery(Name = "dir")] Direction direction = Direction.Forward)
@@ -29,7 +29,7 @@ namespace EvenireDB.Server.Routes
 
         private static async ValueTask<IResult> SaveEvents(
             [FromServices] EventMapper mapper,
-            [FromServices] EventsProvider provider,
+            [FromServices] IEventsProvider provider,
             Guid streamId,
             [FromBody] EventDTO[]? dtos)
         {

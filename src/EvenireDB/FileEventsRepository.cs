@@ -4,9 +4,6 @@ using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text;
 
-[assembly: InternalsVisibleTo("EvenireDB.Benchmark")]
-[assembly: InternalsVisibleTo("EvenireDB.Tests")]
-
 namespace EvenireDB
 {
     public class FileEventsRepository : IEventsRepository

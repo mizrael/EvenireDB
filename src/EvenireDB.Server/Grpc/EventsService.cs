@@ -6,10 +6,10 @@ namespace EvenireDB.Server.Grpc
 {
     public class EventsService : EventsGrpcService.EventsGrpcServiceBase
     {
-        private readonly EventsProvider _provider;
+        private readonly IEventsProvider _provider;
         private readonly IEventFactory _eventFactory;
 
-        public EventsService(EventsProvider provider, IEventFactory eventFactory)
+        public EventsService(IEventsProvider provider, IEventFactory eventFactory)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _eventFactory = eventFactory ?? throw new ArgumentNullException(nameof(eventFactory));
