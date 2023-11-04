@@ -1,24 +1,25 @@
 using EvenireDB.Client;
 using EvenireDB.Common;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = new Uri(builder.Configuration.GetConnectionString("evenire"));
 
+Settings settings = builder.Configuration.GetSection("Settings").Get<Settings>();
+
 builder.Services.AddHostedService<SensorsFakeProducer>()
-                .Configure<Settings>(builder.Configuration.GetSection("Settings"))
-                .AddEvenireDB(new EvenireConfig(connectionString, true));
+                .AddSingleton(settings)
+                .AddEvenireDB(new EvenireConfig(connectionString, settings.UseGrpc));
 
 var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-app.MapGet("/sensors", ([FromServices] IOptions<Settings> config) =>
+app.MapGet("/sensors", ([FromServices] Settings config) =>
 {
-    return config.Value.SensorIds.Select(id => new
+    return config.SensorIds.Select(id => new
     {
         id,
         links = new { 

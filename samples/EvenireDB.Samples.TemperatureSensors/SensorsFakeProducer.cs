@@ -1,5 +1,4 @@
 ﻿using EvenireDB.Client;
-using Microsoft.Extensions.Options;
 
 public class SensorsFakeProducer : BackgroundService
 {
@@ -7,10 +6,10 @@ public class SensorsFakeProducer : BackgroundService
     private readonly IEventsClient _eventsClient;
     private readonly Settings _sensorConfig;
 
-    public SensorsFakeProducer(IEventsClient eventsClient, IOptions<Settings> sensorConfig)
+    public SensorsFakeProducer(IEventsClient eventsClient, Settings sensorConfig)
     {
         _eventsClient = eventsClient;
-        _sensorConfig = sensorConfig.Value;
+        _sensorConfig = sensorConfig;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
