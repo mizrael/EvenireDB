@@ -8,7 +8,7 @@ namespace EvenireDB.Client
     internal class GrpcEventsClient : IEventsClient
     {
         private readonly EventsGrpcService.EventsGrpcServiceClient _client;
-
+        
         public GrpcEventsClient(EventsGrpcService.EventsGrpcServiceClient client)
         {
             _client = client ?? throw new ArgumentNullException(nameof(client));
@@ -30,7 +30,16 @@ namespace EvenireDB.Client
                 });
             }
 
-            var response = await _client.AppendAsync(request, cancellationToken: cancellationToken);
+            AppendResponse response = null;
+            try
+            {
+                response = await _client.AppendAsync(request, cancellationToken: cancellationToken);                
+            }
+            catch(Exception ex)
+            {
+                throw new ClientException(ErrorCodes.Unknown, $"an error has occurred while appending events to stream '{streamId}': {ex.Message}");
+            }
+
             if (response is null)
                 throw new ClientException(ErrorCodes.Unknown, "something, somewhere, went terribly, terribly wrong.");
 
