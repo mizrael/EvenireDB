@@ -17,3 +17,5 @@ resource logs_resource 'microsoft.insights/components@2020-02-02' = {
     publicNetworkAccessForQuery: 'Enabled'
   }
 }
+
+output logs_name string = logs_name

@@ -2,6 +2,7 @@ param location string
 param service_name string
 param plan_sku string
 param container_registry_name string
+param logs_name string
 param env string
 
 var web_app_name = 'web-${service_name}-${env}'
@@ -31,6 +32,10 @@ resource web_plan_resource 'Microsoft.Web/serverfarms@2022-09-01' = {
   }
 }
 
+resource appInsights  'Microsoft.Insights/components@2020-02-02' existing = {
+  name: logs_name
+}
+
 resource web_app_resource 'Microsoft.Web/sites@2022-09-01' = {
   name: web_app_name
   location: location  
@@ -41,13 +46,14 @@ resource web_app_resource 'Microsoft.Web/sites@2022-09-01' = {
   properties: {
     serverFarmId: web_plan_resource.id
     enabled: true    
-    httpsOnly: true
+    httpsOnly: true    
     siteConfig: {
       numberOfWorkers: 1
       alwaysOn: always_on
       http20Enabled: true      
-      http20ProxyFlag: 1  // this is apparently not yet supported, so have to set it manually using CLI after deployment
-      linuxFxVersion: 'DOCKER|${image}'
+      minTlsVersion: '1.2'
+      http20ProxyFlag: 2  // this is apparently not yet supported, so have to set it manually using CLI after deployment
+      linuxFxVersion: 'DOCKER|${image}'      
       appSettings:[
         {
           name: 'DOCKER_ENABLE_CI'
@@ -74,10 +80,42 @@ resource web_app_resource 'Microsoft.Web/sites@2022-09-01' = {
           value: 'false'
         }        
         {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: appInsights.properties.ConnectionString
+        }
+        {
           name: 'ASPNETCORE_ENVIRONMENT'
           value: appEnv
         }
+        {
+          name: 'HTTP20_ONLY_PORT'
+          value: '5243'
+        }
       ]
+    }
+  }
+}
+
+resource appServiceAppSettings 'Microsoft.Web/sites/config@2020-06-01' = {
+  parent: web_app_resource
+  name: 'logs'
+  properties: {
+    applicationLogs: {
+      fileSystem: {
+        level: 'Warning'
+      }
+    }
+    httpLogs: {
+      fileSystem: {
+        retentionInMb: 40
+        enabled: true
+      }
+    }
+    failedRequestsTracing: {
+      enabled: true
+    }
+    detailedErrorMessages: {
+      enabled: true
     }
   }
 }

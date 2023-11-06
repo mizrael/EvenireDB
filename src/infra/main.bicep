@@ -47,6 +47,7 @@ module webapp './webapp.bicep' = {
     service_name: service_name
     plan_sku: plan_sku
     container_registry_name: container_registry.outputs.container_registry_name
+    logs_name: logs.outputs.logs_name
     env: env
   }
 }
