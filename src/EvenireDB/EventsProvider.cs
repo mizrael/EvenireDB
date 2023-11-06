@@ -107,6 +107,8 @@ namespace EvenireDB
                     HasDuplicateEvent(incomingEvents, entry, out var duplicate))
                     return FailureResult.DuplicateEvent(duplicate);
 
+                _logger.AppendingEventsToStream(incomingEvents.Count(), streamId);
+
                 var group = new IncomingEventsGroup(streamId, incomingEvents);
                 if (!_writer.TryWrite(group))
                     return FailureResult.CannotInitiateWrite(streamId);

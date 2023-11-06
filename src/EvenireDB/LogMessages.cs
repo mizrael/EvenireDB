@@ -9,7 +9,8 @@ namespace EvenireDB
             ReadingStreamFromRepository = 0,
             HighMemoryUsageDetected,
             MemoryUsageBelowTreshold,
-            EventsGroupPersistenceError
+            EventsGroupPersistenceError,
+            AppendingEventsToStream
         }
 
         [LoggerMessage(
@@ -17,6 +18,12 @@ namespace EvenireDB
             Level = LogLevel.Warning,
             Message = "Reading stream '{StreamId}' from repository")]
         public static partial void ReadingStreamFromRepository(this ILogger logger, Guid streamId);
+
+        [LoggerMessage(
+            EventId = (int)EventIds.AppendingEventsToStream,
+            Level = LogLevel.Debug,
+            Message = "Appending {EventsCount} events to stream '{StreamId}'...")]
+        public static partial void AppendingEventsToStream(this ILogger logger, int eventsCount, Guid streamId);
 
         [LoggerMessage(
             EventId = (int)EventIds.HighMemoryUsageDetected,
