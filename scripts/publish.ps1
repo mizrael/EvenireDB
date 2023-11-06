@@ -39,10 +39,10 @@ function PublishToAzure {
     write-host "deploying EvenireDB docker image ..." -ForegroundColor Yellow
 
     docker tag "eveniredb:$version" "$registryName.azurecr.io/eveniredb:$version"
-    docker tag "eveniredb:latest" "$registryName.azurecr.io/eveniredb:latest"
+    docker tag "eveniredb:$version" "$registryName.azurecr.io/eveniredb:latest"
 
-    docker push "$registryName.azurecr.io/eveniredb:$version"
     docker push "$registryName.azurecr.io/eveniredb:latest"
+    docker push "$registryName.azurecr.io/eveniredb:$version"        
 
     write-host "deployment complete!" -ForegroundColor Green
 }

@@ -59,7 +59,7 @@ resource web_app_resource 'Microsoft.Web/sites@2022-09-01' = {
         }              
         {
           name: 'DOCKER_REGISTRY_SERVER_URL'
-          value: acr.properties.loginServer
+          value: 'https://${acr.properties.loginServer}'
         }
         {
           name: 'DOCKER_REGISTRY_SERVER_USERNAME'
