@@ -30,8 +30,8 @@ if (serverConfig.GrpcSettings.Enabled)
     builder.Services.AddGrpc();
 
 builder.Services
-    .AddEvenire(serverConfig)
-    .AddSingleton<EventMapper>();   
+   .AddEvenire(serverConfig)
+   .AddSingleton<EventMapper>();   
 
 var version = Assembly.GetExecutingAssembly().GetName().Version;
 
