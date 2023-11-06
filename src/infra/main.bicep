@@ -2,7 +2,7 @@ targetScope = 'subscription'
 
 param service_name string = 'evenire'
 param location string = 'eastus'
-param plan_sku string = 'F1'
+param plan_sku string = 'B1'
 
 @allowed([
   'dev'
