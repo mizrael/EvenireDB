@@ -1,9 +1,7 @@
 ﻿using EvenireDB.Common;
-using EvenireDB.Server.DTO;
 using Google.Protobuf;
 using Grpc.Core;
 using GrpcEvents;
-using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests
 {

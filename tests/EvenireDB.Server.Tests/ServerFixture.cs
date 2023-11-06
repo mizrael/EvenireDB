@@ -8,7 +8,9 @@ namespace EvenireDB.Server.Tests
 
         public WebApplicationFactory<Program> CreateServer()
         {
+            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "test");
             var application = new WebApplicationFactory<Program>();
+            
             _instances.Add(application);
             return application;
         }
