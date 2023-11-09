@@ -31,9 +31,6 @@ As of now, there are two possible options for spinning up an Evenire server:
 These are both viable options, however, I would recommend opting for the Docker solution as it will package everything you need in the container. Building the image can be done using [this script](https://github.com/mizrael/EvenireDB/blob/main/scripts/dockerize.ps1).
 
 Once you have the image ready, you can run it in a Container by running `docker compose up`.
-The [Docker Compose file](https://github.com/mizrael/EvenireDB/blob/main/docker-compose.yml) will export two ports, which are used by the .NET Client:
-- `16281` for the HTTP endpoints
-- `16282` for the Grpc endpoints
 
 # Client configuration
 

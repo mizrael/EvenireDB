@@ -11,6 +11,7 @@
     <PackageReference Include="Asp.Versioning.Http" Version="7.1.0" />
     <PackageReference Include="Grpc.AspNetCore" Version="2.32.0" />
     <PackageReference Include="Google.Protobuf" Version="3.24.4" />
+    <PackageReference Include="Grpc.AspNetCore.HealthChecks" Version="2.59.0" />
   </ItemGroup>
 
 	<ItemGroup>

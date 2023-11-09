@@ -10,17 +10,15 @@ param (
 )
 
 #TODO: read from config
-$httpPort = 80
-$grpcPort = 5080
+$serverPort = 80
 if($env -eq 'local') {
-    $httpPort = 16281
-    $grpcPort = 16282
+    $serverPort = 5001
 }
 
 $oldPath = $PWD.Path
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
 $rootPath = Join-Path $scriptPath "..\"
 cd $rootPath
-docker build -t "eveniredb:$version" -f Dockerfile --build-arg HTTP_PORT=$httpPort --build-arg GRPC_PORT=$grpcPort .
+docker build -t "eveniredb:$version" -f Dockerfile --build-arg SERVER_PORT=$serverPort  .
 docker tag "eveniredb:$version" "eveniredb:latest"
 cd $oldPath

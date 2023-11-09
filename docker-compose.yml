@@ -5,7 +5,6 @@ services:
     image: eveniredb:latest
     restart: always    
     ports:
-      - 16281:16281
-      - 16282:16282
+      - 80:80
     volumes:
       - './volumes/eveniredb/data/:/data'

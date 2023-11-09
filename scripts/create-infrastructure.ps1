@@ -30,6 +30,6 @@ $uri = "https://management.azure.com/subscriptions/$subscriptionId/resourceGroup
 az rest `
 --method PUT `
 --uri $uri `
---body '{\"properties\":{\"http20ProxyFlag\":2}}'    
+--body '{\"properties\":{\"http20ProxyFlag\":1}}'    
 
 write-host "deployment complete!" -ForegroundColor Green

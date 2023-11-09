@@ -52,7 +52,7 @@ resource web_app_resource 'Microsoft.Web/sites@2022-09-01' = {
       alwaysOn: always_on
       http20Enabled: true      
       minTlsVersion: '1.2'
-      http20ProxyFlag: 2  // this is apparently not yet supported, so have to set it manually using CLI after deployment
+      http20ProxyFlag: 1  // this is apparently not yet supported, so have to set it manually using CLI after deployment
       linuxFxVersion: 'DOCKER|${image}'      
       appSettings:[
         {
