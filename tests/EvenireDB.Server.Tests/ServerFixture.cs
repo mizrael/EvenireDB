@@ -1,4 +1,6 @@
 ﻿using Grpc.Net.Client;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 
 namespace EvenireDB.Server.Tests
 {
@@ -8,7 +10,6 @@ namespace EvenireDB.Server.Tests
 
         public WebApplicationFactory<Program> CreateServer()
         {
-            Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "test");
             var application = new WebApplicationFactory<Program>();
             
             _instances.Add(application);

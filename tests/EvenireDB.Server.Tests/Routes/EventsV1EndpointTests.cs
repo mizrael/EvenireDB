@@ -18,7 +18,7 @@ namespace EvenireDB.Server.Tests.Routes
         public async Task Get_Archive_should_be_empty_when_no_events_available_for_stream()
         {
             await using var application = _serverFixture.CreateServer();
-
+            
             using var client = application.CreateClient();
             var response = await client.GetAsync($"/api/v1/events/{Guid.NewGuid()}");
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);

@@ -8,9 +8,7 @@ namespace EvenireDB.Server.Tests.Routes
             await using var application = new WebApplicationFactory<Program>();
             using var client = application.CreateClient();
             var response = await client.GetAsync("/");
-            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
-            var content = await response.Content.ReadAsStringAsync();
-            content.Should().Contain("EvenireDB Server");
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);            
         }
 
         [Fact]

@@ -14,23 +14,18 @@ var serverConfig = builder.Configuration.GetSection("Server").Get<EvenireServerS
 
 builder.WebHost.ConfigureKestrel((context, options) =>
 {
-    var protocol = (serverConfig.Transport == EvenireServerSettings.TransportType.GRPC) ? HttpProtocols.Http2 : HttpProtocols.Http1AndHttp2;
-    options.ListenAnyIP(serverConfig.Port, o => o.Protocols = protocol);
+    options.ListenAnyIP(serverConfig.HttpSettings.Port, o => o.Protocols = HttpProtocols.Http1AndHttp2);
+    options.ListenAnyIP(serverConfig.GrpcSettings.Port, o => o.Protocols = HttpProtocols.Http2);
 });
 
-if (serverConfig.Transport == EvenireServerSettings.TransportType.GRPC)
-{
-    builder.Services.AddGrpc();
-    builder.Services.AddGrpcHealthChecks();
-}
-else if (serverConfig.Transport == EvenireServerSettings.TransportType.HTTP)
-{
-    builder.Services.AddHealthChecks();
-    builder.Services.AddApiVersioning();
-    builder.Services.AddProblemDetails(options =>
-        options.CustomizeProblemDetails = ctx =>
-                ctx.ProblemDetails.Extensions.Add("nodeId", Environment.MachineName));
-}
+builder.Services.AddGrpc();
+builder.Services.AddGrpcHealthChecks();
+
+builder.Services.AddHealthChecks();
+builder.Services.AddApiVersioning();
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = ctx =>
+            ctx.ProblemDetails.Extensions.Add("nodeId", Environment.MachineName));
 
 builder.Services
    .AddEvenire(serverConfig)
@@ -40,18 +35,13 @@ var app = builder.Build();
 app.UseExceptionHandler(exceptionHandlerApp
     => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
 
-if (serverConfig.Transport == EvenireServerSettings.TransportType.GRPC)
-{
-    app.MapGrpcService<EvenireDB.Server.Grpc.EventsService>();
-    app.MapGrpcHealthChecksService();
-}
-else if (serverConfig.Transport == EvenireServerSettings.TransportType.HTTP)
-{
-    app.MapGet("/", () => Results.Redirect("/healthz"));
-    app.MapHealthChecks("/healthz");
-    app.MapEventsRoutes();
-}    
+app.MapGrpcService<EvenireDB.Server.Grpc.EventsService>();
+app.MapGrpcHealthChecksService();
 
+app.MapGet("/", () => Results.Redirect("/healthz"));
+app.MapHealthChecks("/healthz");
+app.MapEventsRoutes();
+   
 app.Lifetime.ApplicationStarted.Register(() =>
 {
     var version = Assembly.GetExecutingAssembly().GetName().Version;

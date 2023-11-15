@@ -19,9 +19,8 @@ namespace EvenireDB
 
         public string? DataFolder { get; init; }
 
-        public int Port { get; init; } = 80;
-
-        public TransportType Transport { get; init; } = TransportType.HTTP;
+        public HttpTransportSettings HttpSettings { get; init; } = new ();
+        public GrpcTransportSettings GrpcSettings { get; init; } = new();
 
         /// <summary>
         /// max number of streams to cache in memory
@@ -35,11 +34,8 @@ namespace EvenireDB
         public long MaxAllowedAllocatedBytes { get; init; } = 1_000_000_000; // TODO: consider making this a function of max allowed streams count and max event data size
 
         public TimeSpan MemoryWatcherInterval { get; init; } = TimeSpan.FromMinutes(2);
-
-        public enum TransportType
-        {
-            HTTP,
-            GRPC
-        }
     }
+
+    public record HttpTransportSettings(int Port = 80);
+    public record GrpcTransportSettings(int Port = 5243);
 }
