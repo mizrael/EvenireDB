@@ -104,7 +104,8 @@ namespace EvenireDB
                     dataBufferMem.Slice((int)srcOffset, headers[i].EventDataLength)
                                  .CopyTo(destEventData);
 
-                    var @event = _factory.Create(headers[i].EventId, eventTypeName, destEventData);
+                    var eventId = new EventId(headers[i].EventIdTimestamp, headers[i].EventIdSequence);
+                    var @event = _factory.Create(eventId, eventTypeName, destEventData);
                     yield return @event;
                 }
             }

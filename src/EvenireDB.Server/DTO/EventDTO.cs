@@ -1,8 +1,17 @@
 ﻿namespace EvenireDB.Server.DTO
 {
-    public record EventDTO(Guid Id, string Type, ReadOnlyMemory<byte> Data)
+    public record EventIdDTO(long Timestamp, short Sequence)
+    {
+        public static EventIdDTO FromModel(EventId eventId)
+        => new EventIdDTO(eventId.Timestamp, eventId.Sequence);
+
+        public EventId ToModel()
+        => new EventId(this.Timestamp, this.Sequence);
+    }
+
+    public record EventDTO(EventIdDTO Id, string Type, ReadOnlyMemory<byte> Data)
     {
         public static EventDTO FromModel(IEvent @event)
-        => new EventDTO(@event.Id, @event.Type, @event.Data);
+        => new EventDTO(EventIdDTO.FromModel(@event.Id), @event.Type, @event.Data);
     }
 }

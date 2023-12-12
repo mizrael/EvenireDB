@@ -133,7 +133,7 @@ namespace EvenireDB
         {
             duplicate = null;
 
-            var existingEventIds = new HashSet<Guid>(entry.Events.Count);
+            var existingEventIds = new HashSet<EventId>(entry.Events.Count);
             for (int i = 0; i != entry.Events.Count; i++)
                 existingEventIds.Add(entry.Events[i].Id);
 

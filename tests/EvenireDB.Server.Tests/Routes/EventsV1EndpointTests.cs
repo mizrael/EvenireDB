@@ -117,6 +117,6 @@ namespace EvenireDB.Server.Tests.Routes
         }
 
         private EventDTO[] BuildEventsDTOs(int count, byte[]? data)
-           => Enumerable.Range(0, count).Select(i => new EventDTO(Guid.NewGuid(), "lorem", data)).ToArray();
+           => Enumerable.Range(0, count).Select(i => new EventDTO(new EventIdDTO(42, 71), "lorem", data)).ToArray();
     }
 }

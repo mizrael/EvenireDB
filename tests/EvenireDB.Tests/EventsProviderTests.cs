@@ -28,7 +28,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -53,7 +53,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-                .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
                 .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -80,7 +80,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -111,7 +111,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -140,7 +140,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -167,7 +167,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -195,7 +195,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             var expectedEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .Select(i => new Event(new EventId(42, 71), "lorem", _defaultData))
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
@@ -218,7 +218,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             var inputEvents = Enumerable.Range(0, 10)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .Select(i => new Event(new EventId(42, 71), "lorem", _defaultData))
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
@@ -242,7 +242,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             var expectedEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
+                .Select(i => new Event(new EventId(42, 71), "lorem", _defaultData))
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();

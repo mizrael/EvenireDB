@@ -12,7 +12,7 @@ public class FileEventsRepositoryWriteBenckmarks
     private IEventFactory _factory;
 
     private IEvent[] BuildEvents(int count)
-        => Enumerable.Range(0, count).Select(i => _factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
+        => Enumerable.Range(0, count).Select(i => _factory.Create(new EventId(42, 71), "lorem", _data)).ToArray();
 
     [GlobalSetup]
     public void Setup()

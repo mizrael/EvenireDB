@@ -37,7 +37,7 @@ public class EventsProviderBenckmarks
 
         _sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
-        var events = Enumerable.Range(0, (int)this.EventsCount).Select(i => factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
+        var events = Enumerable.Range(0, (int)this.EventsCount).Select(i => factory.Create(new EventId(42, 71), "lorem", _data)).ToArray();
         Task.WaitAll(_sut.AppendAsync(_streamId, events).AsTask());
     }
 

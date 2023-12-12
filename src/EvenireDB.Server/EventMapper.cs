@@ -29,6 +29,6 @@ public class EventMapper
     {
         ArgumentNullException.ThrowIfNull(dto, nameof(dto));
 
-        return _factory.Create(dto.Id, dto.Type, dto.Data);
+        return _factory.Create(dto.Id.ToModel(), dto.Type, dto.Data);
     }
 }

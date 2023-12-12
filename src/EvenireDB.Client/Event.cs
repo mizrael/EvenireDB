@@ -1,12 +1,13 @@
 ﻿using EvenireDB.Common;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace EvenireDB.Client
 {
+    public record EventId(ulong Timestamp, ushort Sequence);
+
     public record Event
     {
-        public Event(Guid id, string type, ReadOnlyMemory<byte> data)
+        public Event(EventId id, string type, ReadOnlyMemory<byte> data)
         {
             if (string.IsNullOrWhiteSpace(type))
                 throw new ArgumentException($"'{nameof(type)}' cannot be null or whitespace.", nameof(type));
@@ -22,7 +23,7 @@ namespace EvenireDB.Client
             Data = data;
         }
 
-        public Guid Id { get; }
+        public EventId Id { get; }
         public string Type { get; }
 
         public ReadOnlyMemory<byte> Data { get; }

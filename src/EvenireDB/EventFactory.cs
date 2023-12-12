@@ -11,7 +11,7 @@ namespace EvenireDB
             _maxEventDataSize = maxEventDataSize;
         }
 
-        public IEvent Create(Guid id, string type, ReadOnlyMemory<byte> data)
+        public IEvent Create(EventId id, string type, ReadOnlyMemory<byte> data)
         {
             if (string.IsNullOrWhiteSpace(type))
                 throw new ArgumentException($"'{nameof(type)}' cannot be null or whitespace.", nameof(type));

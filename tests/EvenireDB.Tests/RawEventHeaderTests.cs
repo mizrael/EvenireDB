@@ -12,7 +12,7 @@ namespace EvenireDB.Tests
             var eventType = Encoding.UTF8.GetBytes("lorem");
             Array.Copy(eventType, eventTypeData, eventType.Length);
 
-            var eventId = new Guid("54ECC541-0899-4E38-A2E3-6BC8C3258DC7");
+            var eventId = new EventId(42, 71);
 
             var header = new RawEventHeader(
                 eventId: eventId,
@@ -27,7 +27,8 @@ namespace EvenireDB.Tests
 
             var deserializedHeader = new RawEventHeader(new ReadOnlySpan<byte>(destBuffer));
             deserializedHeader.DataPosition.Should().Be(42);
-            deserializedHeader.EventId.Should().Be(eventId);
+            deserializedHeader.EventIdTimestamp.Should().Be(eventId.Timestamp);
+            deserializedHeader.EventIdSequence.Should().Be(eventId.Sequence);
             deserializedHeader.EventDataLength.Should().Be(71);
             deserializedHeader.EventTypeLength.Should().Be((short)eventType.Length);
             deserializedHeader.EventType.Should().BeEquivalentTo(eventTypeData);

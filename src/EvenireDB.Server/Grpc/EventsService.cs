@@ -44,7 +44,7 @@ namespace EvenireDB.Server.Grpc
             {
                 foreach (var incoming in request.Events)
                 {
-                    var eventId = Guid.Parse(incoming.Id);                    
+                    var eventId = EventId.Parse(incoming.Id);                    
                     var @event = _eventFactory.Create(eventId, incoming.Type, incoming.Data.Memory);
                     events.Add(@event);
                 }

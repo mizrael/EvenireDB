@@ -31,7 +31,7 @@
 
 
         public IEvent[] BuildEvents(int count, byte[]? data = null)
-            => Enumerable.Range(0, count).Select(i => _factory.Create(Guid.NewGuid(), "lorem", data ?? GenerateRandomData())).ToArray();
+            => Enumerable.Range(0, count).Select(i => _factory.Create(new EventId(42, 71), "lorem", data ?? GenerateRandomData())).ToArray();
 
         private static byte[] GenerateRandomData()
         {

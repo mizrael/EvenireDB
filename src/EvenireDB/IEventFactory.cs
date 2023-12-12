@@ -2,6 +2,6 @@ namespace EvenireDB
 {
     public interface IEventFactory
     {
-        IEvent Create(Guid id, string type, ReadOnlyMemory<byte> data);
+        IEvent Create(EventId id, string type, ReadOnlyMemory<byte> data);
     }
 }

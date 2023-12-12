@@ -24,7 +24,10 @@ namespace EvenireDB.Client
             {
                 request.Events.Add(new GrpcEvents.Event()
                 {
-                    Id = @event.Id.ToString(),
+                    Id = new GrpcEvents.EventId(){
+                        Timestamp = @event.Id.Timestamp,
+                        Sequence = @event.Id.Sequence
+                    },
                     Type = @event.Type,
                     Data = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(@event.Data)
                 });
@@ -66,7 +69,7 @@ namespace EvenireDB.Client
             using var response = _client.Read(request, cancellationToken: cancellationToken);
             await foreach(var item in response.ResponseStream.ReadAllAsync().ConfigureAwait(false))
             {
-                var eventId = Guid.Parse(item.Id);
+                var eventId = new EventId(item.Id.Timestamp, (ushort)item.Id.Sequence);
                 
                 yield return new Event(eventId, item.Type, item.Data.Memory); 
             }
