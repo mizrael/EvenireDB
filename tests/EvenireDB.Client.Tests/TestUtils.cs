@@ -4,10 +4,10 @@
     {
         private readonly static byte[] _defaultEventData = new byte[] { 0x42 };
 
-        public static Event[] BuildEvents(int count)
+        public static PersistedEvent[] BuildEvents(int count)
            => Enumerable.Range(0, count).Select(i => new Event(Guid.NewGuid(), "lorem", _defaultEventData)).ToArray();
 
-        public static bool IsEquivalent(Event[] src, Event[] other) 
+        public static bool IsEquivalent(PersistedEvent[] src, PersistedEvent[] other) 
         {
             src.Should().NotBeNull()
                 .And.HaveCount(other.Length);            

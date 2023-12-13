@@ -29,7 +29,7 @@ app.MapGet("/sensors", ([FromServices] Settings config) =>
 });
 app.MapGet("/sensors/{sensorId}", async ([FromServices] IEventsClient client, Guid sensorId) =>
 {
-    var events = new List<Event>();
+    var events = new List<PersistedEvent>();
     await foreach(var item in client.ReadAsync(sensorId, StreamPosition.End, Direction.Backward).ConfigureAwait(false))
         events.Add(item);
 
@@ -58,7 +58,7 @@ public record Sensor
 
     public double Average { get; }
 
-    public static Sensor Create(Guid id, IEnumerable<Event> events)
+    public static Sensor Create(Guid id, IEnumerable<PersistedEvent> events)
     {
         var readings = events.Where(evt => evt.Type == "ReadingReceived")
                              .Select(evt => JsonSerializer.Deserialize<Reading>(evt.Data.Span))

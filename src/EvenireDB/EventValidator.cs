@@ -2,16 +2,16 @@ using EvenireDB.Common;
 
 namespace EvenireDB
 {
-    public class EventFactory : IEventFactory
+    public class EventValidator : IEventValidator
     {
         private readonly uint _maxEventDataSize;
 
-        public EventFactory(uint maxEventDataSize)
+        public EventValidator(uint maxEventDataSize)
         {
             _maxEventDataSize = maxEventDataSize;
         }
 
-        public IEvent Create(EventId id, string type, ReadOnlyMemory<byte> data)
+        public void Validate(string type, ReadOnlyMemory<byte> data)
         {
             if (string.IsNullOrWhiteSpace(type))
                 throw new ArgumentException($"'{nameof(type)}' cannot be null or whitespace.", nameof(type));
@@ -24,8 +24,6 @@ namespace EvenireDB
 
             if (data.Length > _maxEventDataSize)
                 throw new ArgumentOutOfRangeException(nameof(data), $"event data cannot be longer than {_maxEventDataSize} bytes.");
-
-            return new Event(id, type, data);
         }
     }
 }

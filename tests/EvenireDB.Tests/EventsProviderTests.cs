@@ -14,7 +14,7 @@ namespace EvenireDB.Tests
             var repo = Substitute.For<IEventsRepository>();            
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
             var events = await sut.ReadAsync(Guid.NewGuid(), StreamPosition.Start)
@@ -28,7 +28,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -37,7 +37,7 @@ namespace EvenireDB.Tests
 
             var repo = Substitute.For<IEventsRepository>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
             var events = await sut.ReadAsync(streamId, StreamPosition.Start)
@@ -53,7 +53,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-                .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
+                .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
                 .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -62,7 +62,7 @@ namespace EvenireDB.Tests
 
             var repo = Substitute.For<IEventsRepository>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
             var expectedEvents = sourceEvents.Skip(142).ToArray().Reverse();
@@ -80,7 +80,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -89,7 +89,7 @@ namespace EvenireDB.Tests
 
             var repo = Substitute.For<IEventsRepository>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
             var offset = 11;
@@ -111,7 +111,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -120,7 +120,7 @@ namespace EvenireDB.Tests
 
             var repo = Substitute.For<IEventsRepository>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
             var startPosition = EventsProviderConfig.Default.MaxPageSize / 2;
@@ -140,7 +140,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -149,7 +149,7 @@ namespace EvenireDB.Tests
 
             var repo = Substitute.For<IEventsRepository>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
             var expectedEvents = sourceEvents.Take((int)EventsProviderConfig.Default.MaxPageSize);
@@ -167,7 +167,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             List<IEvent> sourceEvents = Enumerable.Range(0, 242)
-               .Select(i => (IEvent)new Event(new EventId(42, 71), "lorem", _defaultData))
+               .Select(i => (IEvent)new Event(Guid.NewGuid(), "lorem", _defaultData))
                .ToList();
 
             var cache = Substitute.For<ICache<Guid, CachedEvents>>();
@@ -176,7 +176,7 @@ namespace EvenireDB.Tests
 
             var repo = Substitute.For<IEventsRepository>();
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
             StreamPosition startPosition = 11;
@@ -195,13 +195,13 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             var expectedEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(new EventId(42, 71), "lorem", _defaultData))
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
             var cache = new LRUCache<Guid, CachedEvents>(1000);
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
             await sut.AppendAsync(streamId, expectedEvents);
             var result = await sut.AppendAsync(streamId, new[] { expectedEvents[0] });
@@ -218,7 +218,7 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             var inputEvents = Enumerable.Range(0, 10)
-                .Select(i => new Event(new EventId(42, 71), "lorem", _defaultData))
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
@@ -226,7 +226,7 @@ namespace EvenireDB.Tests
             var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
             channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(false);
 
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channelWriter, logger);
             await sut.AppendAsync(streamId, inputEvents);
             var result = await sut.AppendAsync(streamId, inputEvents);
@@ -242,13 +242,13 @@ namespace EvenireDB.Tests
             var streamId = Guid.NewGuid();
 
             var expectedEvents = Enumerable.Range(0, 242)
-                .Select(i => new Event(new EventId(42, 71), "lorem", _defaultData))
+                .Select(i => new Event(Guid.NewGuid(), "lorem", _defaultData))
                 .ToArray();
 
             var repo = Substitute.For<IEventsRepository>();
             var cache = new LRUCache<Guid, CachedEvents>(1000);
             var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
-            var logger = Substitute.For<ILogger<EventsProvider>>();
+            var logger = Substitute.For<ILogger<EventsReader>>();
             var sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
 
             var result = await sut.AppendAsync(streamId, expectedEvents);

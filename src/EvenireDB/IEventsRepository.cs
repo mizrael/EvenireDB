@@ -2,8 +2,8 @@
 {
     public interface IEventsRepository
     {
-        IAsyncEnumerable<IEvent> ReadAsync(Guid streamId, CancellationToken cancellationToken = default);
+        IAsyncEnumerable<Event> ReadAsync(Guid streamId, CancellationToken cancellationToken = default);
 
-        ValueTask AppendAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default);
+        ValueTask AppendAsync(Guid streamId, IEnumerable<EventData> events, CancellationToken cancellationToken = default);
     }
 }

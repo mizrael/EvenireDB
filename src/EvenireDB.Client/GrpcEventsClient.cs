@@ -20,14 +20,11 @@ namespace EvenireDB.Client
             {
                 StreamId = streamId.ToString()
             };
+
             foreach (var @event in events)
             {
                 request.Events.Add(new GrpcEvents.Event()
-                {
-                    Id = new GrpcEvents.EventId(){
-                        Timestamp = @event.Id.Timestamp,
-                        Sequence = @event.Id.Sequence
-                    },
+                {                 
                     Type = @event.Type,
                     Data = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(@event.Data)
                 });
@@ -54,7 +51,7 @@ namespace EvenireDB.Client
                 };
         }
 
-        public async IAsyncEnumerable<Event> ReadAsync(
+        public async IAsyncEnumerable<PersistedEvent> ReadAsync(
             Guid streamId, 
             StreamPosition position, 
             Direction direction = Direction.Forward, 
@@ -70,8 +67,8 @@ namespace EvenireDB.Client
             await foreach(var item in response.ResponseStream.ReadAllAsync().ConfigureAwait(false))
             {
                 var eventId = new EventId(item.Id.Timestamp, (ushort)item.Id.Sequence);
-                
-                yield return new Event(eventId, item.Type, item.Data.Memory); 
+
+                yield return new PersistedEvent(eventId, item.Type, item.Data.Memory);
             }
         }
     }

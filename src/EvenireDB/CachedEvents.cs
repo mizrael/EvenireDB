@@ -1,4 +1,4 @@
 ﻿namespace EvenireDB
 {
-    internal record CachedEvents(List<IEvent> Events, SemaphoreSlim Semaphore);
+    public record CachedEvents(List<Event> Events, SemaphoreSlim Semaphore);
 }

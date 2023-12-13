@@ -2,14 +2,14 @@
 {
     public readonly struct EventId
     {
-        public EventId(ulong timestamp, ushort sequence)
+        public EventId(long timestamp, int sequence)
         {
             Timestamp = timestamp;
             Sequence = sequence;
         }
 
-        public ulong Timestamp { get; }
-        public ushort Sequence { get; }
+        public long Timestamp { get; }
+        public int Sequence { get; }
 
         public static EventId Parse(string text)
         {
@@ -20,8 +20,8 @@
             if (parts.Length != 2)
                 throw new ArgumentException("Invalid event id format", nameof(text));
 
-            var timestamp = ulong.Parse(parts[0]);
-            var sequence = ushort.Parse(parts[1]);
+            var timestamp = long.Parse(parts[0]);
+            var sequence = int.Parse(parts[1]);
 
             return new EventId(timestamp, sequence);
         }

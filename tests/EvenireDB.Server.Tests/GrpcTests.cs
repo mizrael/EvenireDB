@@ -121,8 +121,8 @@ namespace EvenireDB.Server.Tests
             loadedEvents.Should().BeEquivalentTo(dtos);
         }
 
-        private Event[] BuildEventsDTOs(int count, byte[]? data)
-           => Enumerable.Range(0, count).Select(i => new Event()
+        private EventData[] BuildEventsDTOs(int count, byte[]? data)
+           => Enumerable.Range(0, count).Select(i => new GrpcEvents.Event()
            {
                Id = Guid.NewGuid().ToString(),
                Type = "lorem",

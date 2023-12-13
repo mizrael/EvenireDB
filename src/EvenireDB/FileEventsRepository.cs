@@ -10,12 +10,12 @@ namespace EvenireDB
     {
         private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
         private readonly FileEventsRepositoryConfig _config;
-        private readonly IEventFactory _factory;
+        private readonly IEventValidator _factory;
 
         private const string DataFileSuffix = "_data";
         private const string HeadersFileSuffix = "_headers";
 
-        public FileEventsRepository(FileEventsRepositoryConfig config, IEventFactory factory)
+        public FileEventsRepository(FileEventsRepositoryConfig config, IEventValidator factory)
         {
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -104,8 +104,7 @@ namespace EvenireDB
                     dataBufferMem.Slice((int)srcOffset, headers[i].EventDataLength)
                                  .CopyTo(destEventData);
 
-                    var eventId = new EventId(headers[i].EventIdTimestamp, headers[i].EventIdSequence);
-                    var @event = _factory.Create(eventId, eventTypeName, destEventData);
+                    var @event = _factory.Create(headers[i].EventId, eventTypeName, destEventData);
                     yield return @event;
                 }
             }

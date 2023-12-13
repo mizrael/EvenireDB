@@ -3,9 +3,9 @@ using EvenireDB;
 
 public class EventMapper
 {
-    private readonly IEventFactory _factory;
+    private readonly IEventValidator _factory;
 
-    public EventMapper(IEventFactory factory)
+    public EventMapper(IEventValidator factory)
     {
         _factory = factory ?? throw new ArgumentNullException(nameof(factory));
     }
@@ -29,6 +29,6 @@ public class EventMapper
     {
         ArgumentNullException.ThrowIfNull(dto, nameof(dto));
 
-        return _factory.Create(dto.Id.ToModel(), dto.Type, dto.Data);
+        return _factory.Create(dto.Id, dto.Type, dto.Data);
     }
 }

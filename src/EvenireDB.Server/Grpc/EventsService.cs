@@ -7,15 +7,15 @@ namespace EvenireDB.Server.Grpc
     public class EventsService : EventsGrpcService.EventsGrpcServiceBase
     {
         private readonly IEventsProvider _provider;
-        private readonly IEventFactory _eventFactory;
+        private readonly IEventValidator _eventFactory;
 
-        public EventsService(IEventsProvider provider, IEventFactory eventFactory)
+        public EventsService(IEventsProvider provider, IEventValidator eventFactory)
         {
             _provider = provider ?? throw new ArgumentNullException(nameof(provider));
             _eventFactory = eventFactory ?? throw new ArgumentNullException(nameof(eventFactory));
         }
 
-        public override async Task Read(ReadRequest request, IServerStreamWriter<GrpcEvents.Event> responseStream, ServerCallContext context)
+        public override async Task Read(ReadRequest request, IServerStreamWriter<GrpcEvents.PersistedEvent> responseStream, ServerCallContext context)
         {
             if (!Guid.TryParse(request.StreamId, out var streamId))
                 throw new ArgumentOutOfRangeException(nameof(request.StreamId)); //TODO: is this ok?
@@ -25,11 +25,15 @@ namespace EvenireDB.Server.Grpc
                 direction: (Direction)request.Direction,
                 startPosition: request.StartPosition).ConfigureAwait(false))
             {
-                var dto = new GrpcEvents.Event()
+                var dto = new GrpcEvents.PersistedEvent()
                 {
                     Data = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(@event.Data), 
                     Type = @event.Type,
-                    Id = @event.Id.ToString() // TODO: probably bytes would be faster
+                    Id = new GrpcEvents.EventId()
+                    {
+                        Timestamp = @event.Id.Timestamp,
+                        Sequence = @event.Id.Sequence
+                    }
                 };
                 await responseStream.WriteAsync(dto).ConfigureAwait(false);
             }
@@ -37,19 +41,20 @@ namespace EvenireDB.Server.Grpc
 
         public override async Task<AppendResponse> Append(AppendRequest request, ServerCallContext context)
         {
-            var events = new List<EvenireDB.IEvent>();
+            var events = new List<EventData>(request.Events.Count);
             var response = new AppendResponse() { StreamId = request.StreamId };
 
             try
             {
+                var streamId = Guid.Parse(request.StreamId);
+
                 foreach (var incoming in request.Events)
                 {
-                    var eventId = EventId.Parse(incoming.Id);                    
-                    var @event = _eventFactory.Create(eventId, incoming.Type, incoming.Data.Memory);
+                    _eventFactory.Validate(incoming.Type, incoming.Data.Memory);
+                    var @event = new EventData(incoming.Type, incoming.Data.Memory);
                     events.Add(@event);
                 }
-
-                var streamId = Guid.Parse(request.StreamId);
+                
                 var result = await _provider.AppendAsync(streamId, events);                
 
                 if (result is FailureResult failure)

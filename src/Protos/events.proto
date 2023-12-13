@@ -5,7 +5,7 @@ option csharp_namespace = "GrpcEvents";
 package events;
 
 service EventsGrpcService {
-  rpc Read (ReadRequest) returns (stream Event);
+  rpc Read (ReadRequest) returns (stream PersistedEvent);
   rpc Append(AppendRequest) returns(AppendResponse);
 }
 
@@ -25,17 +25,22 @@ message AppendResponse {
 	FailureResponse error = 2;
 }
 
-message FailureResponse{
+message FailureResponse {
 	string message = 1;
 	int32 code = 2;
 }
 
-message EventId{
+message EventId {
 	uint64 timestamp = 1;
 	uint32 sequence = 2;
 }
 
-message Event{
+message Event {
+	string type = 1;
+	bytes data = 2;
+}
+
+message PersistedEvent {
 	EventId id = 1;
 	string type = 2;
 	bytes data = 3;
