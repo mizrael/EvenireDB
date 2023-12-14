@@ -3,7 +3,8 @@ using System.Threading.Channels;
 
 namespace EvenireDB
 {
-    public class EventsWriter
+    // TODO: append to a transaction log
+    public class EventsWriter : IEventsWriter
     {
         private readonly IEventsCache _cache;
         private readonly ChannelWriter<IncomingEventsGroup> _writer;

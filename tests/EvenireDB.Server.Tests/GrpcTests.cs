@@ -34,7 +34,7 @@ namespace EvenireDB.Server.Tests
         public async Task Append_should_return_bad_request_when_input_invalid()
         {
             var streamId = Guid.NewGuid();
-            var dtos = BuildEventsDTOs(10, null);
+            var dtos = BuildEventDataDTOs(10, null);
 
             var channel = _serverFixture.CreateGrpcChannel();
             var client = new EventsGrpcService.EventsGrpcServiceClient(channel);
@@ -54,7 +54,7 @@ namespace EvenireDB.Server.Tests
         public async Task Post_should_return_bad_request_when_input_too_big()
         {
             var streamId = Guid.NewGuid();
-            var dtos = BuildEventsDTOs(1, new byte[500_001]); //TODO: from config
+            var dtos = BuildEventDataDTOs(1, new byte[500_001]); //TODO: from config
 
             var channel = _serverFixture.CreateGrpcChannel();
             var client = new EventsGrpcService.EventsGrpcServiceClient(channel);
@@ -74,7 +74,7 @@ namespace EvenireDB.Server.Tests
         public async Task Post_should_return_conflict_when_input_already_in_stream()
         {
             var streamId = Guid.NewGuid();
-            var dtos = BuildEventsDTOs(10, _defaultEventData);
+            var dtos = BuildEventDataDTOs(10, _defaultEventData);
 
             var channel = _serverFixture.CreateGrpcChannel();
             var client = new EventsGrpcService.EventsGrpcServiceClient(channel);
@@ -98,7 +98,7 @@ namespace EvenireDB.Server.Tests
         public async Task Post_should_succeed_when_input_valid()
         {
             var streamId = Guid.NewGuid();
-            var dtos = BuildEventsDTOs(10, _defaultEventData);
+            var dtos = BuildEventDataDTOs(10, _defaultEventData);
 
             var channel = _serverFixture.CreateGrpcChannel();
             var client = new EventsGrpcService.EventsGrpcServiceClient(channel);
@@ -121,10 +121,9 @@ namespace EvenireDB.Server.Tests
             loadedEvents.Should().BeEquivalentTo(dtos);
         }
 
-        private EventData[] BuildEventsDTOs(int count, byte[]? data)
-           => Enumerable.Range(0, count).Select(i => new GrpcEvents.Event()
+        private GrpcEvents.EventData[] BuildEventDataDTOs(int count, byte[]? data)
+           => Enumerable.Range(0, count).Select(i => new GrpcEvents.EventData()
            {
-               Id = Guid.NewGuid().ToString(),
                Type = "lorem",
                Data = data is not null && data.Length > 0 ? ByteString.CopyFrom(data) : ByteString.Empty
            }).ToArray();

@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace EvenireDB
 {
-    public interface IEventsProvider
+    public interface IEventsReader
     {
         IAsyncEnumerable<Event> ReadAsync(
             Guid streamId, 

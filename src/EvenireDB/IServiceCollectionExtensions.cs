@@ -1,4 +1,5 @@
 ﻿using EvenireDB.Server;
+using EvenireDB.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Threading.Channels;
@@ -16,17 +17,19 @@ namespace EvenireDB
                 AllowSynchronousContinuations = true
             });
 
-            services.AddSingleton<IEventsCache>(ctx =>
+            services
+            .AddSingleton<ICache<Guid, CachedEvents>>(ctx =>
             {
-                var logger = ctx.GetRequiredService<ILogger<EventsCache>>();
-                return new EventsCache(settings.MaxInMemoryStreamsCount, logger);
+                return new LRUCache<Guid, CachedEvents>(settings.MaxInMemoryStreamsCount);
             })
+            .AddSingleton<IEventsCache, EventsCache>()
             .AddSingleton(ctx =>
             {
 
                 return new EventsProviderConfig(settings.MaxPageSizeToClient);
             })
-            .AddSingleton<IEventsProvider, EventsReader>()
+            .AddSingleton<IEventsReader, EventsReader>()
+            .AddSingleton<IEventsWriter, EventsWriter>()
             .AddSingleton(channel.Writer)
             .AddSingleton(channel.Reader)
             .AddSingleton<IEventValidator>(ctx =>

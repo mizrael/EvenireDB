@@ -4,28 +4,30 @@ using GrpcEvents;
 
 namespace EvenireDB.Server.Grpc
 {
-    public class EventsService : EventsGrpcService.EventsGrpcServiceBase
+    public class EventsGrcpServiceImpl : EventsGrpcService.EventsGrpcServiceBase
     {
-        private readonly IEventsProvider _provider;
-        private readonly IEventValidator _eventFactory;
+        private readonly IEventsReader _reader;
+        private readonly IEventsWriter _writer;
+        private readonly IEventValidator _validator;
 
-        public EventsService(IEventsProvider provider, IEventValidator eventFactory)
+        public EventsGrcpServiceImpl(IEventsReader reader, IEventValidator validator, IEventsWriter writer)
         {
-            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
-            _eventFactory = eventFactory ?? throw new ArgumentNullException(nameof(eventFactory));
+            _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            _validator = validator ?? throw new ArgumentNullException(nameof(validator));
+            _writer = writer ?? throw new ArgumentNullException(nameof(writer));
         }
 
-        public override async Task Read(ReadRequest request, IServerStreamWriter<GrpcEvents.PersistedEvent> responseStream, ServerCallContext context)
+        public override async Task Read(ReadRequest request, IServerStreamWriter<GrpcEvents.Event> responseStream, ServerCallContext context)
         {
             if (!Guid.TryParse(request.StreamId, out var streamId))
                 throw new ArgumentOutOfRangeException(nameof(request.StreamId)); //TODO: is this ok?
 
-            await foreach(var @event in _provider.ReadAsync(
+            await foreach(var @event in _reader.ReadAsync(
                 streamId,
                 direction: (Direction)request.Direction,
                 startPosition: request.StartPosition).ConfigureAwait(false))
             {
-                var dto = new GrpcEvents.PersistedEvent()
+                var dto = new GrpcEvents.Event()
                 {
                     Data = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(@event.Data), 
                     Type = @event.Type,
@@ -50,12 +52,12 @@ namespace EvenireDB.Server.Grpc
 
                 foreach (var incoming in request.Events)
                 {
-                    _eventFactory.Validate(incoming.Type, incoming.Data.Memory);
+                    _validator.Validate(incoming.Type, incoming.Data.Memory);
                     var @event = new EventData(incoming.Type, incoming.Data.Memory);
                     events.Add(@event);
                 }
                 
-                var result = await _provider.AppendAsync(streamId, events);                
+                var result = await _writer.AppendAsync(streamId, events);                
 
                 if (result is FailureResult failure)
                 {

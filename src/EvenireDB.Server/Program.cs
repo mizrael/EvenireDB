@@ -35,7 +35,7 @@ var app = builder.Build();
 app.UseExceptionHandler(exceptionHandlerApp
     => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
 
-app.MapGrpcService<EvenireDB.Server.Grpc.EventsService>();
+app.MapGrpcService<EvenireDB.Server.Grpc.EventsGrcpServiceImpl>();
 app.MapGrpcHealthChecksService();
 
 app.MapGet("/", () => Results.Redirect("/healthz"));

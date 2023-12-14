@@ -15,7 +15,7 @@ namespace EvenireDB.Client
             _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         }
 
-        public async IAsyncEnumerable<PersistedEvent> ReadAsync(
+        public async IAsyncEnumerable<Event> ReadAsync(
             Guid streamId,
             StreamPosition position,
             Direction direction = Direction.Forward,
@@ -26,13 +26,13 @@ namespace EvenireDB.Client
                                             .ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
-            var results = (await response.Content.ReadFromJsonAsync<PersistedEvent[]>(cancellationToken: cancellationToken))
-                            ?? Array.Empty<PersistedEvent>();
+            var results = (await response.Content.ReadFromJsonAsync<Event[]>(cancellationToken: cancellationToken))
+                            ?? Array.Empty<Event>();
             foreach(var item in results)
                 yield return item;
         }
 
-        public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
+        public async ValueTask AppendAsync(Guid streamId, IEnumerable<EventData> events, CancellationToken cancellationToken = default)
         {
             var response = await _httpClient.PostAsJsonAsync($"/api/v1/events/{streamId}", events, cancellationToken)
                                             .ConfigureAwait(false);

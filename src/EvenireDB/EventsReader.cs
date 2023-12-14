@@ -4,9 +4,7 @@ using System.Runtime.CompilerServices;
 
 namespace EvenireDB
 {
-    // TODO: logging
-    // TODO: append to a transaction log
-    internal class EventsReader : IEventsProvider
+    internal class EventsReader : IEventsReader
     {
         private readonly IEventsCache _cache;
         private readonly EventsProviderConfig _config;

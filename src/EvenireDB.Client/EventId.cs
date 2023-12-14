@@ -1,4 +1,4 @@
 ﻿namespace EvenireDB.Client
 {
-    public record EventId(ulong Timestamp, ushort Sequence);
+    public record EventId(long Timestamp, int Sequence);
 }

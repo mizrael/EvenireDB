@@ -5,10 +5,10 @@ namespace EvenireDB.Client
 {
     public static class IEventsClientExtensions
     {
-        public static IAsyncEnumerable<PersistedEvent> ReadAsync(this IEventsClient client, Guid streamId, Direction direction = Direction.Forward, CancellationToken cancellationToken = default)
+        public static IAsyncEnumerable<Event> ReadAsync(this IEventsClient client, Guid streamId, Direction direction = Direction.Forward, CancellationToken cancellationToken = default)
             => client.ReadAsync(streamId, StreamPosition.Start, direction, cancellationToken);
 
-        public static async IAsyncEnumerable<PersistedEvent> ReadAllAsync(
+        public static async IAsyncEnumerable<Event> ReadAllAsync(
             this IEventsClient client,
             Guid streamId,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)

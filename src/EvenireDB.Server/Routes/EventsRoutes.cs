@@ -18,25 +18,25 @@ namespace EvenireDB.Server.Routes
         }
 
         private static async IAsyncEnumerable<EventDTO> GetEvents(
-            [FromServices] IEventsProvider provider,
+            [FromServices] IEventsReader reader,
             Guid streamId,
             [FromQuery(Name = "pos")] uint startPosition = 0,
             [FromQuery(Name = "dir")] Direction direction = Direction.Forward)
         {
-            await foreach (var @event in provider.ReadAsync(streamId, direction: direction, startPosition: startPosition))
+            await foreach (var @event in reader.ReadAsync(streamId, direction: direction, startPosition: startPosition))
                 yield return EventDTO.FromModel(@event);
         }
 
         private static async ValueTask<IResult> SaveEvents(
             [FromServices] EventMapper mapper,
-            [FromServices] IEventsProvider provider,
+            [FromServices] IEventsWriter writer,
             Guid streamId,
             [FromBody] EventDTO[]? dtos)
         {
             if(dtos is null)
                 return Results.BadRequest();
 
-            IEvent[] events;
+            Event[] events;
 
             try
             {
@@ -48,7 +48,7 @@ namespace EvenireDB.Server.Routes
                 return Results.BadRequest();
             }
 
-            var result = await provider.AppendAsync(streamId, events);
+            var result = await writer.AppendAsync(streamId, events);
             return result switch
             {
                 FailureResult { Code: ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),
