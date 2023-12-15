@@ -7,12 +7,12 @@ namespace EvenireDB
     internal class EventsReader : IEventsReader
     {
         private readonly IEventsCache _cache;
-        private readonly EventsProviderConfig _config;
+        private readonly EventsReaderConfig _config;
         private readonly IEventsRepository _repo;
         private readonly ILogger<EventsReader> _logger;
 
         public EventsReader(
-            EventsProviderConfig config,
+            EventsReaderConfig config,
             IEventsRepository repo,
             IEventsCache cache,
             ILogger<EventsReader> logger)

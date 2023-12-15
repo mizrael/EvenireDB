@@ -26,7 +26,7 @@ namespace EvenireDB
             .AddSingleton(ctx =>
             {
 
-                return new EventsProviderConfig(settings.MaxPageSizeToClient);
+                return new EventsReaderConfig(settings.MaxPageSizeToClient);
             })
             .AddSingleton<IEventsReader, EventsReader>()
             .AddSingleton<IEventsWriter, EventsWriter>()

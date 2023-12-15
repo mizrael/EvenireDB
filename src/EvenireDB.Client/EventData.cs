@@ -1,4 +1,5 @@
 ﻿using EvenireDB.Common;
+using System.Text.Json;
 
 namespace EvenireDB.Client
 {
@@ -22,5 +23,13 @@ namespace EvenireDB.Client
         public string Type { get; }
 
         public ReadOnlyMemory<byte> Data { get; }
+
+        public static EventData Create<T>(T payload, string type = "")
+        {
+            if (string.IsNullOrWhiteSpace(type))
+                type = typeof(T).Name;
+            var bytes = JsonSerializer.SerializeToUtf8Bytes<T>(payload);
+            return new EventData(type, bytes);
+        }
     }
 }

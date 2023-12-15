@@ -30,15 +30,17 @@ public class EventsProviderBenckmarks
         var repoConfig = new FileEventsRepositoryConfig(dataPath);
         var repo = new FileEventsRepository(repoConfig, factory);
 
-        var cache = new LRUCache<Guid, CachedEvents>(this.EventsCount);
+        var cache = new EventsCache(
+            new NullLogger<EventsCache>(),
+            new LRUCache<Guid, CachedEvents>(this.EventsCount),
+            repo);
+
         var logger = new NullLogger<EventsReader>();
 
-        var channel = Channel.CreateUnbounded<IncomingEventsGroup>();
+        _sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
 
-        _sut = new EventsProvider(EventsProviderConfig.Default, repo, cache, channel.Writer, logger);
-
-        var events = Enumerable.Range(0, (int)this.EventsCount).Select(i => factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
-        Task.WaitAll(_sut.AppendAsync(_streamId, events).AsTask());
+        var events = Enumerable.Range(0, (int)this.EventsCount).Select(i => new Event(new EventId(i, 0), "lorem", _data)).ToArray();
+        Task.WaitAll(repo.AppendAsync(_streamId, events).AsTask());
     }
 
     [Benchmark(Baseline = true)]    
