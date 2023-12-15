@@ -31,12 +31,12 @@ namespace EvenireDB.Server.Routes
             [FromServices] EventMapper mapper,
             [FromServices] IEventsWriter writer,
             Guid streamId,
-            [FromBody] EventDTO[]? dtos)
+            [FromBody] EventDataDTO[]? dtos)
         {
             if(dtos is null)
                 return Results.BadRequest();
 
-            Event[] events;
+            EventData[] events;
 
             try
             {

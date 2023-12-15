@@ -2,11 +2,11 @@ using EvenireDB.Common;
 
 namespace EvenireDB
 {
-    public class EventValidator : IEventValidator
+    public class EventDataValidator : IEventDataValidator
     {
         private readonly uint _maxEventDataSize;
 
-        public EventValidator(uint maxEventDataSize)
+        public EventDataValidator(uint maxEventDataSize)
         {
             _maxEventDataSize = maxEventDataSize;
         }
@@ -15,11 +15,11 @@ namespace EvenireDB
         {
             if (string.IsNullOrWhiteSpace(type))
                 throw new ArgumentException($"'{nameof(type)}' cannot be null or whitespace.", nameof(type));
-
+            
             if (type.Length > Constants.MAX_EVENT_TYPE_LENGTH)
                 throw new ArgumentOutOfRangeException(nameof(type), $"event type cannot be longer than {Constants.MAX_EVENT_TYPE_LENGTH} characters.");
 
-            if (data.Length == 0)
+            if (data.IsEmpty)
                 throw new ArgumentNullException(nameof(data));
 
             if (data.Length > _maxEventDataSize)

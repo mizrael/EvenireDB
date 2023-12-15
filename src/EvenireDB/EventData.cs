@@ -3,7 +3,7 @@
     public record EventData
     {
         public EventData(string type, ReadOnlyMemory<byte> data)
-        {         
+        {
             Type = type;
             Data = data;
         }       

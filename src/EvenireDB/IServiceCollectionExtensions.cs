@@ -28,13 +28,15 @@ namespace EvenireDB
 
                 return new EventsReaderConfig(settings.MaxPageSizeToClient);
             })
+            .AddSingleton(TimeProvider.System)
+            .AddSingleton<IEventIdGenerator, EventIdGenerator>()
             .AddSingleton<IEventsReader, EventsReader>()
             .AddSingleton<IEventsWriter, EventsWriter>()
             .AddSingleton(channel.Writer)
             .AddSingleton(channel.Reader)
-            .AddSingleton<IEventValidator>(ctx =>
+            .AddSingleton<IEventDataValidator>(ctx =>
             {
-                return new EventValidator(settings.MaxEventDataSize);
+                return new EventDataValidator(settings.MaxEventDataSize);
             })
             .AddSingleton(ctx =>
             {

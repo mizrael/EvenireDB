@@ -8,9 +8,9 @@ namespace EvenireDB.Server.Grpc
     {
         private readonly IEventsReader _reader;
         private readonly IEventsWriter _writer;
-        private readonly IEventValidator _validator;
+        private readonly IEventDataValidator _validator;
 
-        public EventsGrcpServiceImpl(IEventsReader reader, IEventValidator validator, IEventsWriter writer)
+        public EventsGrcpServiceImpl(IEventsReader reader, IEventDataValidator validator, IEventsWriter writer)
         {
             _reader = reader ?? throw new ArgumentNullException(nameof(reader));
             _validator = validator ?? throw new ArgumentNullException(nameof(validator));

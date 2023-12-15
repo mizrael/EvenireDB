@@ -4,7 +4,7 @@
     {
         private const string BaseDataPath = "./data/";
         private readonly List<FileEventsRepositoryConfig> _configs = new();
-        private readonly IEventValidator _factory = new EventValidator(1000);
+        private readonly IEventDataValidator _factory = new EventDataValidator(1000);
 
         public FileEventsRepositoryConfig CreateRepoConfig(Guid aggregateId)
         {

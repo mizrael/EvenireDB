@@ -19,6 +19,7 @@ namespace EvenireDB.Tests
                 .ToArray();
 
             var cache = Substitute.For<IEventsCache>();
+            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1,1)));
            
             var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
             channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(false);
@@ -42,10 +43,14 @@ namespace EvenireDB.Tests
 
             var expectedEvents = Enumerable.Range(0, 242)
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
-                .ToArray();
+                .ToArray();            
             
-            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();            
             var cache = Substitute.For<IEventsCache>();
+            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
+
+            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
+            channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(true);
+
             var idGenerator = Substitute.For<IEventIdGenerator>();
             var logger = Substitute.For<ILogger<EventsWriter>>();
             var sut = new EventsWriter(cache, channelWriter, idGenerator, logger);

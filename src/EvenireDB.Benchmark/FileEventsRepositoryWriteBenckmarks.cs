@@ -9,7 +9,7 @@ public class FileEventsRepositoryWriteBenckmarks
     private readonly static byte[] _data = Enumerable.Repeat((byte)42, 100).ToArray();
 
     private FileEventsRepositoryConfig _repoConfig;
-    private IEventValidator _factory;
+    private IEventDataValidator _factory;
 
     private Event[] BuildEvents(int count)
         => Enumerable.Range(0, count).Select(i => new Event(new EventId(i, 0), "lorem", _data)).ToArray();
@@ -23,7 +23,7 @@ public class FileEventsRepositoryWriteBenckmarks
         if(!Directory.Exists(dataPath))
             Directory.CreateDirectory(dataPath);
 
-        _factory = new EventValidator(500_000);
+        _factory = new EventDataValidator(500_000);
         _repoConfig = new FileEventsRepositoryConfig(dataPath);
     }
 
