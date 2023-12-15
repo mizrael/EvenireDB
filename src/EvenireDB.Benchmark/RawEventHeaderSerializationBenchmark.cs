@@ -57,8 +57,8 @@ public class RawEventHeaderSerializationBenchmark
         {
             var header = _headers[i];
 
-            Unsafe.As<byte, ulong>(ref _buffer[0]) = header.EventIdTimestamp;
-            Unsafe.As<byte, ushort>(ref _buffer[sizeof(long)]) = header.EventIdSequence;
+            Unsafe.As<byte, long>(ref _buffer[0]) = header.EventIdTimestamp;
+            Unsafe.As<byte, int>(ref _buffer[sizeof(long)]) = header.EventIdSequence;
             Unsafe.As<byte, long>(ref _buffer[16]) = header.DataPosition;
             Array.Copy(header.EventType, 0, _buffer, 24, Constants.MAX_EVENT_TYPE_LENGTH);
             Unsafe.As<byte, short>(ref _buffer[74]) = header.EventTypeLength;
