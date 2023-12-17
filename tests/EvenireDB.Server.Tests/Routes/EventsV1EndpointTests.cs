@@ -19,7 +19,7 @@ namespace EvenireDB.Server.Tests.Routes
             await using var application = _serverFixture.CreateServer();
             
             using var client = application.CreateClient();
-            var response = await client.GetAsync($"/api/v1/events/{Guid.NewGuid()}");
+            var response = await client.GetAsync($"/api/v1/streams/{Guid.NewGuid()}/events");
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
             var events = await response.Content.ReadFromJsonAsync<EventDTO[]>();
@@ -33,7 +33,7 @@ namespace EvenireDB.Server.Tests.Routes
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
-            var nullPayloadResponse = await client.PostAsJsonAsync<EventDataDTO[]>($"/api/v1/events/{streamId}", null);
+            var nullPayloadResponse = await client.PostAsJsonAsync<EventDataDTO[]>($"/api/v1/streams/{streamId}/events", null);
             nullPayloadResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
         }
 
@@ -46,7 +46,7 @@ namespace EvenireDB.Server.Tests.Routes
             using var client = application.CreateClient();
 
             var dtos = BuildEventsDTOs(10, null);
-            var nullDataResponse = await client.PostAsJsonAsync($"/api/v1/events/{streamId}", dtos);
+            var nullDataResponse = await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
             nullDataResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
         }
 
@@ -58,7 +58,7 @@ namespace EvenireDB.Server.Tests.Routes
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
             var dtos = BuildEventsDTOs(1, new byte[500_001]); //TODO: from config
-            var response = await client.PostAsJsonAsync($"/api/v1/events/{streamId}", dtos);
+            var response = await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
         }
 
@@ -71,10 +71,10 @@ namespace EvenireDB.Server.Tests.Routes
             using var client = application.CreateClient();
 
             var dtos = BuildEventsDTOs(10, _defaultEventData);
-            var firstResponse = await client.PostAsJsonAsync($"/api/v1/events/{streamId}", dtos);
+            var firstResponse = await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
             firstResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
 
-            var errorResponse = await client.PostAsJsonAsync($"/api/v1/events/{streamId}", dtos);
+            var errorResponse = await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
             errorResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Conflict);
         }
 
@@ -87,7 +87,7 @@ namespace EvenireDB.Server.Tests.Routes
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
-            var response = await client.PostAsJsonAsync($"/api/v1/events/{streamId}", dtos);
+            var response = await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
             response.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
         }
 
@@ -102,9 +102,9 @@ namespace EvenireDB.Server.Tests.Routes
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
-            await client.PostAsJsonAsync($"/api/v1/events/{streamId}", dtos);
+            await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
 
-            var response = await client.GetAsync($"/api/v1/events/{streamId}");
+            var response = await client.GetAsync($"/api/v1/streams/{streamId}/events");
             var fetchedEvents = await response.Content.ReadFromJsonAsync<EventDTO[]>();
             fetchedEvents.Should().NotBeNull()
                          .And.HaveCount(dtos.Length);

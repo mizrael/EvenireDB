@@ -4,15 +4,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EvenireDB.Server.Routes
 {
-    public static class EventsRoutes
+    //TODO: add endpoint to get all streams
+    public static class StreamsRoutes
     {
         public static WebApplication MapEventsRoutes(this WebApplication app)
         {
-            var eventsApi = app.NewVersionedApi();
-            var v1 = eventsApi.MapGroup("/api/v{version:apiVersion}/events")
-                              .HasApiVersion(1.0);
-            v1.MapGet("/{streamId:guid}", GetEvents).WithName(nameof(GetEvents));
-            v1.MapPost("/{streamId:guid}", SaveEvents).WithName(nameof(SaveEvents));
+            var api = app.NewVersionedApi();
+            var v1 = api.MapGroup("/api/v{version:apiVersion}/streams")
+                        .HasApiVersion(1.0);
+            v1.MapGet("/{streamId:guid}/events", GetEvents).WithName(nameof(GetEvents));
+            v1.MapPost("/{streamId:guid}/events", SaveEvents).WithName(nameof(SaveEvents));
 
             return app;
         }
