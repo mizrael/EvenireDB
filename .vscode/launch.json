@@ -10,9 +10,25 @@
             "request": "launch",
             "preLaunchTask": "build",
             // If you have changed target frameworks, make sure to update the program path.
-            "program": "${workspaceFolder}/src/EvenireDB.Server/bin/Debug/net7.0/EvenireDB.Server.dll",
+            "program": "${workspaceFolder}/src/EvenireDB.Server/bin/Debug/net8.0/EvenireDB.Server.dll",
             "args": [],
             "cwd": "${workspaceFolder}/src/EvenireDB.Server",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            // Use IntelliSense to find out which attributes exist for C# debugging
+            // Use hover for the description of the existing attributes
+            // For further information visit https://github.com/dotnet/vscode-csharp/blob/main/debugger-launchjson.md
+            "name": "launch sample 1",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/samples/EvenireDB.Samples.TemperatureSensors/bin/Debug/net8.0/EvenireDB.Samples.TemperatureSensors.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/samples/EvenireDB.Samples.TemperatureSensors",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false
