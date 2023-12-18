@@ -9,10 +9,10 @@ public class FileEventsRepositoryWriteBenckmarks
     private readonly static byte[] _data = Enumerable.Repeat((byte)42, 100).ToArray();
 
     private FileEventsRepositoryConfig _repoConfig;
-    private IEventFactory _factory;
+    private IEventDataValidator _factory;
 
-    private IEvent[] BuildEvents(int count)
-        => Enumerable.Range(0, count).Select(i => _factory.Create(Guid.NewGuid(), "lorem", _data)).ToArray();
+    private Event[] BuildEvents(int count)
+        => Enumerable.Range(0, count).Select(i => new Event(new EventId(i, 0), "lorem", _data)).ToArray();
 
     [GlobalSetup]
     public void Setup()
@@ -23,19 +23,19 @@ public class FileEventsRepositoryWriteBenckmarks
         if(!Directory.Exists(dataPath))
             Directory.CreateDirectory(dataPath);
 
-        _factory = new EventFactory(500_000);
+        _factory = new EventDataValidator(500_000);
         _repoConfig = new FileEventsRepositoryConfig(dataPath);
     }
 
     [Benchmark(Baseline = true)]
     [ArgumentsSource(nameof(Data))]    
-    public async Task WriteAsync_Baseline(IEvent[] events)
+    public async Task WriteAsync_Baseline(Event[] events)
     {
         var sut = new FileEventsRepository(_repoConfig, _factory);
         await sut.AppendAsync(Guid.NewGuid(), events);
     }
 
-    public IEnumerable<IEvent[]> Data()
+    public IEnumerable<Event[]> Data()
     {
         yield return BuildEvents(1_000);
         yield return BuildEvents(10_000);

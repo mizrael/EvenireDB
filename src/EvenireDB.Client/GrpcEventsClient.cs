@@ -14,17 +14,17 @@ namespace EvenireDB.Client
             _client = client ?? throw new ArgumentNullException(nameof(client));
         }
 
-        public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
+        public async ValueTask AppendAsync(Guid streamId, IEnumerable<EventData> events, CancellationToken cancellationToken = default)
         {
             var request = new AppendRequest()
             {
                 StreamId = streamId.ToString()
             };
+
             foreach (var @event in events)
             {
-                request.Events.Add(new GrpcEvents.Event()
-                {
-                    Id = @event.Id.ToString(),
+                request.Events.Add(new GrpcEvents.EventData()
+                {                 
                     Type = @event.Type,
                     Data = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(@event.Data)
                 });
@@ -66,9 +66,9 @@ namespace EvenireDB.Client
             using var response = _client.Read(request, cancellationToken: cancellationToken);
             await foreach(var item in response.ResponseStream.ReadAllAsync().ConfigureAwait(false))
             {
-                var eventId = Guid.Parse(item.Id);
-                
-                yield return new Event(eventId, item.Type, item.Data.Memory); 
+                var eventId = new EventId(item.Id.Timestamp, (ushort)item.Id.Sequence);
+
+                yield return new Event(eventId, item.Type, item.Data.Memory);
             }
         }
     }

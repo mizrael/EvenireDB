@@ -3,21 +3,21 @@ using EvenireDB;
 
 public class EventMapper
 {
-    private readonly IEventFactory _factory;
+    private readonly IEventDataValidator _validator;
 
-    public EventMapper(IEventFactory factory)
+    public EventMapper(IEventDataValidator validator)
     {
-        _factory = factory ?? throw new ArgumentNullException(nameof(factory));
+        _validator = validator;
     }
 
-    public IEvent[] ToModels(EventDTO[] dtos)
+    public EventData[] ToModels(EventDataDTO[] dtos)
     {
         if (dtos is null)
             throw new ArgumentNullException(nameof(dtos));
         if (dtos.Length == 0)
-            return Array.Empty<IEvent>();
+            return Array.Empty<Event>();
 
-        var events = new IEvent[dtos.Length];
+        var events = new EventData[dtos.Length];
         for (int i = 0; i < dtos.Length; i++)
         {
             events[i] = ToModel(dtos[i]);
@@ -25,10 +25,9 @@ public class EventMapper
         return events;
     }
 
-    public IEvent ToModel(EventDTO dto)
+    public EventData ToModel(EventDataDTO dto)
     {
-        ArgumentNullException.ThrowIfNull(dto, nameof(dto));
-
-        return _factory.Create(dto.Id, dto.Type, dto.Data);
+        _validator.Validate(dto.Type, dto.Data);        
+        return new EventData(dto.Type, dto.Data);
     }
 }

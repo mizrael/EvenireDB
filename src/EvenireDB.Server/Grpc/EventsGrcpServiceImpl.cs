@@ -4,15 +4,17 @@ using GrpcEvents;
 
 namespace EvenireDB.Server.Grpc
 {
-    public class EventsService : EventsGrpcService.EventsGrpcServiceBase
+    public class EventsGrcpServiceImpl : EventsGrpcService.EventsGrpcServiceBase
     {
-        private readonly IEventsProvider _provider;
-        private readonly IEventFactory _eventFactory;
+        private readonly IEventsReader _reader;
+        private readonly IEventsWriter _writer;
+        private readonly IEventDataValidator _validator;
 
-        public EventsService(IEventsProvider provider, IEventFactory eventFactory)
+        public EventsGrcpServiceImpl(IEventsReader reader, IEventDataValidator validator, IEventsWriter writer)
         {
-            _provider = provider ?? throw new ArgumentNullException(nameof(provider));
-            _eventFactory = eventFactory ?? throw new ArgumentNullException(nameof(eventFactory));
+            _reader = reader ?? throw new ArgumentNullException(nameof(reader));
+            _validator = validator ?? throw new ArgumentNullException(nameof(validator));
+            _writer = writer ?? throw new ArgumentNullException(nameof(writer));
         }
 
         public override async Task Read(ReadRequest request, IServerStreamWriter<GrpcEvents.Event> responseStream, ServerCallContext context)
@@ -20,7 +22,7 @@ namespace EvenireDB.Server.Grpc
             if (!Guid.TryParse(request.StreamId, out var streamId))
                 throw new ArgumentOutOfRangeException(nameof(request.StreamId)); //TODO: is this ok?
 
-            await foreach(var @event in _provider.ReadAsync(
+            await foreach(var @event in _reader.ReadAsync(
                 streamId,
                 direction: (Direction)request.Direction,
                 startPosition: request.StartPosition).ConfigureAwait(false))
@@ -29,7 +31,11 @@ namespace EvenireDB.Server.Grpc
                 {
                     Data = Google.Protobuf.UnsafeByteOperations.UnsafeWrap(@event.Data), 
                     Type = @event.Type,
-                    Id = @event.Id.ToString() // TODO: probably bytes would be faster
+                    Id = new GrpcEvents.EventId()
+                    {
+                        Timestamp = @event.Id.Timestamp,
+                        Sequence = @event.Id.Sequence
+                    }
                 };
                 await responseStream.WriteAsync(dto).ConfigureAwait(false);
             }
@@ -37,20 +43,21 @@ namespace EvenireDB.Server.Grpc
 
         public override async Task<AppendResponse> Append(AppendRequest request, ServerCallContext context)
         {
-            var events = new List<EvenireDB.IEvent>();
+            var events = new List<EventData>(request.Events.Count);
             var response = new AppendResponse() { StreamId = request.StreamId };
 
             try
             {
+                var streamId = Guid.Parse(request.StreamId);
+
                 foreach (var incoming in request.Events)
                 {
-                    var eventId = Guid.Parse(incoming.Id);                    
-                    var @event = _eventFactory.Create(eventId, incoming.Type, incoming.Data.Memory);
+                    _validator.Validate(incoming.Type, incoming.Data.Memory);
+                    var @event = new EventData(incoming.Type, incoming.Data.Memory);
                     events.Add(@event);
                 }
-
-                var streamId = Guid.Parse(request.StreamId);
-                var result = await _provider.AppendAsync(streamId, events);                
+                
+                var result = await _writer.AppendAsync(streamId, events);                
 
                 if (result is FailureResult failure)
                 {

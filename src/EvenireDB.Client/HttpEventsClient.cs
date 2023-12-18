@@ -21,7 +21,7 @@ namespace EvenireDB.Client
             Direction direction = Direction.Forward,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            var endpoint = $"/api/v1/events/{streamId}?pos={position}&dir={(int)direction}";
+            var endpoint = $"/api/v1/streams/{streamId}/events?pos={position}&dir={(int)direction}";
             var response = await _httpClient.GetAsync(endpoint, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                                             .ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
@@ -32,9 +32,9 @@ namespace EvenireDB.Client
                 yield return item;
         }
 
-        public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
+        public async ValueTask AppendAsync(Guid streamId, IEnumerable<EventData> events, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.PostAsJsonAsync($"/api/v1/events/{streamId}", events, cancellationToken)
+            var response = await _httpClient.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", events, cancellationToken)
                                             .ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
                 return;

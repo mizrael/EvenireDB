@@ -1,16 +1,12 @@
 ﻿namespace EvenireDB
 {
-    internal record Event : IEvent
+    public record Event : EventData
     {
-        public Event(Guid id, string type, ReadOnlyMemory<byte> data)
+        public Event(EventId id, string type, ReadOnlyMemory<byte> data) : base(type, data)
         {
-            Id = id;
-            Type = type;
-            Data = data;
+            this.Id = id;
         }
 
-        public Guid Id { get; }
-        public string Type { get; }
-        public ReadOnlyMemory<byte> Data { get; }
+        public EventId Id { get; }
     }
 }

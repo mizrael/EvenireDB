@@ -26,7 +26,7 @@ public class RawEventHeaderSerializationBenchmark
             Encoding.UTF8.GetBytes(eventType, eventTypeBuff);
 
             _headers[i] = new RawEventHeader(
-                eventId: Guid.NewGuid(),
+                eventId: new EventId(42, 71),
                 eventType: eventTypeBuff,
                 dataPosition: 42,
                 eventDataLength: 71,
@@ -41,7 +41,8 @@ public class RawEventHeaderSerializationBenchmark
         {
             var header = _headers[i];
 
-            Array.Copy(header.EventId.ToByteArray(), 0, _buffer, 0, TypeSizes.GUID);
+            Array.Copy(BitConverter.GetBytes(header.EventIdTimestamp), 0, _buffer, 0, sizeof(ulong));
+            Array.Copy(BitConverter.GetBytes(header.EventIdSequence), 0, _buffer, sizeof(ulong), sizeof(ushort));
             Array.Copy(BitConverter.GetBytes(header.DataPosition), 0, _buffer, 16, sizeof(long));
             Array.Copy(header.EventType, 0, _buffer, 24, Constants.MAX_EVENT_TYPE_LENGTH);
             Array.Copy(BitConverter.GetBytes(header.EventTypeLength), 0, _buffer, 74, sizeof(short));
@@ -56,7 +57,8 @@ public class RawEventHeaderSerializationBenchmark
         {
             var header = _headers[i];
 
-            Array.Copy(header.EventId.ToByteArray(), 0, _buffer, 0, TypeSizes.GUID);
+            Unsafe.As<byte, long>(ref _buffer[0]) = header.EventIdTimestamp;
+            Unsafe.As<byte, int>(ref _buffer[sizeof(long)]) = header.EventIdSequence;
             Unsafe.As<byte, long>(ref _buffer[16]) = header.DataPosition;
             Array.Copy(header.EventType, 0, _buffer, 24, Constants.MAX_EVENT_TYPE_LENGTH);
             Unsafe.As<byte, short>(ref _buffer[74]) = header.EventTypeLength;

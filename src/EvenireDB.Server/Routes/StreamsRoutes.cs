@@ -4,39 +4,40 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace EvenireDB.Server.Routes
 {
-    public static class EventsRoutes
+    //TODO: add endpoint to get all streams
+    public static class StreamsRoutes
     {
         public static WebApplication MapEventsRoutes(this WebApplication app)
         {
-            var eventsApi = app.NewVersionedApi();
-            var v1 = eventsApi.MapGroup("/api/v{version:apiVersion}/events")
-                              .HasApiVersion(1.0);
-            v1.MapGet("/{streamId:guid}", GetEvents).WithName(nameof(GetEvents));
-            v1.MapPost("/{streamId:guid}", SaveEvents).WithName(nameof(SaveEvents));
+            var api = app.NewVersionedApi();
+            var v1 = api.MapGroup("/api/v{version:apiVersion}/streams")
+                        .HasApiVersion(1.0);
+            v1.MapGet("/{streamId:guid}/events", GetEvents).WithName(nameof(GetEvents));
+            v1.MapPost("/{streamId:guid}/events", SaveEvents).WithName(nameof(SaveEvents));
 
             return app;
         }
 
         private static async IAsyncEnumerable<EventDTO> GetEvents(
-            [FromServices] IEventsProvider provider,
+            [FromServices] IEventsReader reader,
             Guid streamId,
             [FromQuery(Name = "pos")] uint startPosition = 0,
             [FromQuery(Name = "dir")] Direction direction = Direction.Forward)
         {
-            await foreach (var @event in provider.ReadAsync(streamId, direction: direction, startPosition: startPosition))
+            await foreach (var @event in reader.ReadAsync(streamId, direction: direction, startPosition: startPosition))
                 yield return EventDTO.FromModel(@event);
         }
 
         private static async ValueTask<IResult> SaveEvents(
             [FromServices] EventMapper mapper,
-            [FromServices] IEventsProvider provider,
+            [FromServices] IEventsWriter writer,
             Guid streamId,
-            [FromBody] EventDTO[]? dtos)
+            [FromBody] EventDataDTO[]? dtos)
         {
             if(dtos is null)
                 return Results.BadRequest();
 
-            IEvent[] events;
+            EventData[] events;
 
             try
             {
@@ -48,7 +49,7 @@ namespace EvenireDB.Server.Routes
                 return Results.BadRequest();
             }
 
-            var result = await provider.AppendAsync(streamId, events);
+            var result = await writer.AppendAsync(streamId, events);
             return result switch
             {
                 FailureResult { Code: ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),

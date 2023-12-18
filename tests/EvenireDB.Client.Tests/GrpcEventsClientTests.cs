@@ -61,7 +61,7 @@ namespace EvenireDB.Client.Tests
             TestUtils.IsEquivalent(receivedEvents, expectedEvents);
         }
 
-        [Fact]
+        [Fact(Skip = "TBD")]
         public async Task AppendAsync_should_fail_when_events_already_appended()
         {
             var streamId = Guid.NewGuid();

@@ -6,22 +6,25 @@ namespace EvenireDB
     //TODO: evaluate https://github.com/MessagePack-CSharp/MessagePack-CSharp    
     internal readonly struct RawEventHeader
     {
-        public readonly Guid EventId;
+        public readonly long EventIdTimestamp;
+        public readonly int EventIdSequence;
         public readonly long DataPosition;
         public readonly byte[] EventType; // should always be size Constants.MAX_EVENT_TYPE_LENGTH
         public readonly short EventTypeLength;
         public readonly int EventDataLength;
 
         public const int SIZE =
-            TypeSizes.GUID + // index
+            sizeof(long) + // event id timestamp
+            sizeof(int) + // event id sequence
             sizeof(long) + // offset in the main stream
             Constants.MAX_EVENT_TYPE_LENGTH + // type name
             sizeof(short) + // type name length
             sizeof(int) // data length
         ;
 
-        private const int EVENT_ID_POS = 0;
-        private const int OFFSET_POS = EVENT_ID_POS + TypeSizes.GUID;
+        private const int EVENT_ID_TIMESTAMP_POS = 0;
+        private const int EVENT_ID_SEQUENCE_POS = EVENT_ID_TIMESTAMP_POS + sizeof(long);
+        private const int OFFSET_POS = EVENT_ID_SEQUENCE_POS + sizeof(int);
         private const int EVENT_TYPE_NAME_POS = OFFSET_POS + sizeof(long);
         private const int EVENT_TYPE_NAME_LENGTH_POS = EVENT_TYPE_NAME_POS + Constants.MAX_EVENT_TYPE_LENGTH;
         private const int EVENT_DATA_LENGTH_POS = EVENT_TYPE_NAME_LENGTH_POS + sizeof(short);
@@ -29,8 +32,8 @@ namespace EvenireDB
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly void ToBytes(ref byte[] buffer)
         {
-            // event index
-            Array.Copy(this.EventId.ToByteArray(), 0, buffer, EVENT_ID_POS, TypeSizes.GUID);
+            Unsafe.As<byte, long>(ref buffer[EVENT_ID_TIMESTAMP_POS]) = this.EventIdTimestamp;
+            Unsafe.As<byte, int>(ref buffer[EVENT_ID_SEQUENCE_POS]) = this.EventIdSequence;
 
             // offset in the main stream            
             Unsafe.As<byte, long>(ref buffer[OFFSET_POS]) = this.DataPosition;
@@ -51,17 +54,19 @@ namespace EvenireDB
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public RawEventHeader(ReadOnlySpan<byte> data)
         {
-            this.EventId = new Guid(data.Slice(EVENT_ID_POS, TypeSizes.GUID));
-            this.DataPosition = BitConverter.ToInt32(data.Slice(OFFSET_POS));
+            this.EventIdTimestamp = BitConverter.ToInt64(data.Slice(EVENT_ID_TIMESTAMP_POS, sizeof(long)));
+            this.EventIdSequence = BitConverter.ToInt32(data.Slice(EVENT_ID_SEQUENCE_POS, sizeof(int)));
+            this.DataPosition = BitConverter.ToInt32(data.Slice(OFFSET_POS, sizeof(long)));
             this.EventType = data.Slice(EVENT_TYPE_NAME_POS, Constants.MAX_EVENT_TYPE_LENGTH).ToArray();
-            this.EventTypeLength = BitConverter.ToInt16(data.Slice(EVENT_TYPE_NAME_LENGTH_POS));
-            this.EventDataLength = BitConverter.ToInt32(data.Slice(EVENT_DATA_LENGTH_POS));
+            this.EventTypeLength = BitConverter.ToInt16(data.Slice(EVENT_TYPE_NAME_LENGTH_POS, sizeof(short)));
+            this.EventDataLength = BitConverter.ToInt32(data.Slice(EVENT_DATA_LENGTH_POS, sizeof(int)));
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public RawEventHeader(Guid eventId, byte[] eventType, long dataPosition, int eventDataLength, short eventTypeLength)
+        public RawEventHeader(EventId eventId, byte[] eventType, long dataPosition, int eventDataLength, short eventTypeLength)
         {
-            EventId = eventId;
+            EventIdTimestamp = eventId.Timestamp;
+            EventIdSequence = eventId.Sequence;
             EventType = eventType;
             DataPosition = dataPosition;
             EventDataLength = eventDataLength;

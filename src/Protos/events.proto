@@ -17,7 +17,7 @@ message ReadRequest {
 
 message AppendRequest {
 	string streamId = 1;
-	repeated Event events = 2;
+	repeated EventData events = 2;
 }
 
 message AppendResponse {	
@@ -25,13 +25,23 @@ message AppendResponse {
 	FailureResponse error = 2;
 }
 
-message FailureResponse{
+message FailureResponse {
 	string message = 1;
 	int32 code = 2;
 }
 
-message Event{
-	string id = 1;
+message EventId {
+	int64 timestamp = 1;
+	int32 sequence = 2;
+}
+
+message EventData {
+	string type = 1;
+	bytes data = 2;
+}
+
+message Event {
+	EventId id = 1;
 	string type = 2;
 	bytes data = 3;
 }

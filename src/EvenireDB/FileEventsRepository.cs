@@ -10,12 +10,12 @@ namespace EvenireDB
     {
         private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
         private readonly FileEventsRepositoryConfig _config;
-        private readonly IEventFactory _factory;
+        private readonly IEventDataValidator _factory;
 
         private const string DataFileSuffix = "_data";
         private const string HeadersFileSuffix = "_headers";
 
-        public FileEventsRepository(FileEventsRepositoryConfig config, IEventFactory factory)
+        public FileEventsRepository(FileEventsRepositoryConfig config, IEventDataValidator factory)
         {
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -27,7 +27,7 @@ namespace EvenireDB
         private string GetStreamPath(Guid streamId, string type)
         => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
 
-        public async IAsyncEnumerable<IEvent> ReadAsync(
+        public async IAsyncEnumerable<Event> ReadAsync(
             Guid streamId,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
 {
@@ -104,7 +104,8 @@ namespace EvenireDB
                     dataBufferMem.Slice((int)srcOffset, headers[i].EventDataLength)
                                  .CopyTo(destEventData);
 
-                    var @event = _factory.Create(headers[i].EventId, eventTypeName, destEventData);
+                    var eventId = new EventId(headers[i].EventIdTimestamp, headers[i].EventIdSequence);
+                    var @event = new Event(eventId, eventTypeName, destEventData);
                     yield return @event;
                 }
             }
@@ -114,7 +115,7 @@ namespace EvenireDB
             }            
         }
 
-        public async ValueTask AppendAsync(Guid streamId, IEnumerable<IEvent> events, CancellationToken cancellationToken = default)
+        public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
         {
             string dataPath = GetStreamPath(streamId, DataFileSuffix);
             using var dataStream = new FileStream(dataPath, FileMode.Append, FileAccess.Write, FileShare.Read);

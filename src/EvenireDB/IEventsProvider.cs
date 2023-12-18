@@ -3,9 +3,12 @@ using System.Runtime.CompilerServices;
 
 namespace EvenireDB
 {
-    public interface IEventsProvider
+    public interface IEventsReader
     {
-        ValueTask<IOperationResult> AppendAsync(Guid streamId, IEnumerable<IEvent> incomingEvents, CancellationToken cancellationToken = default);
-        IAsyncEnumerable<IEvent> ReadAsync(Guid streamId, StreamPosition startPosition, Direction direction = Direction.Forward, [EnumeratorCancellation] CancellationToken cancellationToken = default);
+        IAsyncEnumerable<Event> ReadAsync(
+            Guid streamId, 
+            StreamPosition startPosition,
+            Direction direction = Direction.Forward, 
+            [EnumeratorCancellation] CancellationToken cancellationToken = default);
     }
 }
