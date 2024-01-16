@@ -10,14 +10,12 @@ namespace EvenireDB
     {
         private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
         private readonly FileEventsRepositoryConfig _config;
-        private readonly IEventDataValidator _factory;
 
         private const string DataFileSuffix = "_data";
         private const string HeadersFileSuffix = "_headers";
 
-        public FileEventsRepository(FileEventsRepositoryConfig config, IEventDataValidator factory)
+        public FileEventsRepository(FileEventsRepositoryConfig config)
         {
-            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _config = config ?? throw new ArgumentNullException(nameof(config));
 
             if (!Directory.Exists(_config.BasePath))

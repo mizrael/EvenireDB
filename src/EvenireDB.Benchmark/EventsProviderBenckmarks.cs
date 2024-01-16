@@ -26,9 +26,8 @@ public class EventsProviderBenckmarks
         if (!Directory.Exists(dataPath))
             Directory.CreateDirectory(dataPath);
 
-        var factory = new EventDataValidator(500_000);
         var repoConfig = new FileEventsRepositoryConfig(dataPath);
-        var repo = new FileEventsRepository(repoConfig, factory);
+        var repo = new FileEventsRepository(repoConfig);
 
         var cache = new EventsCache(
             new NullLogger<EventsCache>(),
