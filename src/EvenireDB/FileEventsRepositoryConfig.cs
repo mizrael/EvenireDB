@@ -1,5 +1,5 @@
 
 namespace EvenireDB
 {
-    public record FileEventsRepositoryConfig(string BasePath, uint MaxPageSize = 100);
+    public record FileEventsRepositoryConfig(uint MaxPageSize = 100);
 }

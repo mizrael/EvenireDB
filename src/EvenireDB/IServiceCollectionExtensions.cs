@@ -1,4 +1,5 @@
-﻿using EvenireDB.Server;
+﻿using EvenireDB.Extents;
+using EvenireDB.Server;
 using EvenireDB.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -38,6 +39,7 @@ namespace EvenireDB
             {
                 return new EventDataValidator(settings.MaxEventDataSize);
             })
+            .AddSingleton(new FileEventsRepositoryConfig(settings.MaxEventsPageSizeFromDisk))
             .AddSingleton(ctx =>
             {
                 var dataPath = settings.DataFolder;
@@ -49,8 +51,9 @@ namespace EvenireDB
                         dataPath = Path.Combine(AppContext.BaseDirectory, dataPath);
                 }
 
-                return new FileEventsRepositoryConfig(dataPath, settings.MaxEventsPageSizeFromDisk);
+                return new ExtentInfoProviderConfig(dataPath);
             })
+            .AddSingleton<IExtentInfoProvider, ExtentInfoProvider>()
             .AddSingleton<IEventsRepository, FileEventsRepository>()
             .AddHostedService<IncomingEventsPersistenceWorker>()
             .AddSingleton(ctx =>

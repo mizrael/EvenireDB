@@ -3,14 +3,13 @@
     public class DataFixture : IAsyncLifetime
     {
         private const string BaseDataPath = "./data/";
-        private readonly List<FileEventsRepositoryConfig> _configs = new();
-        private readonly IEventDataValidator _factory = new EventDataValidator(1000);
+        private readonly List<ExtentInfoProviderConfig> _configs = new();
 
-        public FileEventsRepositoryConfig CreateRepoConfig(Guid aggregateId)
+        internal ExtentInfoProviderConfig CreateExtentsConfig(Guid aggregateId)
         {
             var path = Path.Combine(BaseDataPath, aggregateId.ToString());
             Directory.CreateDirectory(path);
-            var config = new FileEventsRepositoryConfig(path);
+            var config = new ExtentInfoProviderConfig(path);
             _configs.Add(config);
             return config; 
         }

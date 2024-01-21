@@ -1,3 +1,5 @@
+using EvenireDB.Extents;
+
 namespace EvenireDB.Tests
 {
     public class FileEventsRepositoryTests : IClassFixture<DataFixture>
@@ -17,12 +19,13 @@ namespace EvenireDB.Tests
             var events = _fixture.BuildEvents(eventsCount, new byte[] { 0x42 });
 
             var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config);
+            var config = _fixture.CreateExtentsConfig(streamId);
+            var extentInfoProvider = new ExtentInfoProvider(config);
+            var sut = new FileEventsRepository(new FileEventsRepositoryConfig(), extentInfoProvider);
             await sut.AppendAsync(streamId, events).ConfigureAwait(false);
 
-            var eventsFilePath = Path.Combine(config.BasePath, streamId + "_data.dat");
-            var bytes = File.ReadAllBytes(eventsFilePath);
+            var extentInfo = extentInfoProvider.GetLatest(streamId);
+            var bytes = File.ReadAllBytes(extentInfo.DataPath);
             Assert.Equal(expectedFileSize, bytes.Length);
         }
 
@@ -35,13 +38,14 @@ namespace EvenireDB.Tests
                 .ToArray();
 
             var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config);
+            var config = _fixture.CreateExtentsConfig(streamId);
+            var extentInfoProvider = new ExtentInfoProvider(config);
+            var sut = new FileEventsRepository(new FileEventsRepositoryConfig(), extentInfoProvider);
             foreach (var events in batches)
                 await sut.AppendAsync(streamId, events).ConfigureAwait(false);
 
-            var eventsFilePath = Path.Combine(config.BasePath, streamId + "_data.dat");
-            var bytes = File.ReadAllBytes(eventsFilePath);
+            var extentInfo = extentInfoProvider.GetLatest(streamId);
+            var bytes = File.ReadAllBytes(extentInfo.DataPath);
             Assert.Equal(expectedFileSize, bytes.Length);
         }
 
@@ -53,8 +57,8 @@ namespace EvenireDB.Tests
             var expectedEvents = _fixture.BuildEvents(eventsCount);
 
             var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config);
+            var config = _fixture.CreateExtentsConfig(streamId);
+            var sut = new FileEventsRepository(new FileEventsRepositoryConfig(), new ExtentInfoProvider(config));
             await sut.AppendAsync(streamId, expectedEvents).ConfigureAwait(false);
 
             var events = await sut.ReadAsync(streamId).ToArrayAsync().ConfigureAwait(false);
@@ -78,8 +82,8 @@ namespace EvenireDB.Tests
                 .ToArray();
 
             var streamId = Guid.NewGuid();
-            var config = _fixture.CreateRepoConfig(streamId);
-            var sut = new FileEventsRepository(config);
+            var config = _fixture.CreateExtentsConfig(streamId);
+            var sut = new FileEventsRepository(new FileEventsRepositoryConfig(), new ExtentInfoProvider(config));
             foreach (var events in batches)
                 await sut.AppendAsync(streamId, events).ConfigureAwait(false);
 

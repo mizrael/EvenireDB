@@ -1,4 +1,5 @@
 ﻿using EvenireDB.Common;
+using EvenireDB.Extents;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
@@ -6,35 +7,29 @@ using System.Text;
 
 namespace EvenireDB
 {
-    public class FileEventsRepository : IEventsRepository
+    internal class FileEventsRepository : IEventsRepository
     {
-        private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
         private readonly FileEventsRepositoryConfig _config;
+        private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
+        private readonly IExtentInfoProvider _extentInfoProvider;
 
-        private const string DataFileSuffix = "_data";
-        private const string HeadersFileSuffix = "_headers";
-
-        public FileEventsRepository(FileEventsRepositoryConfig config)
+        public FileEventsRepository(
+            FileEventsRepositoryConfig config,
+            IExtentInfoProvider extentInfoProvider)
         {
+            _extentInfoProvider = extentInfoProvider ?? throw new ArgumentNullException(nameof(extentInfoProvider));
             _config = config ?? throw new ArgumentNullException(nameof(config));
-
-            if (!Directory.Exists(_config.BasePath))
-                Directory.CreateDirectory(config.BasePath);
         }
-
-        private string GetStreamPath(Guid streamId, string type)
-        => Path.Combine(_config.BasePath, $"{streamId}{type}.dat");
 
         public async IAsyncEnumerable<Event> ReadAsync(
             Guid streamId,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
-{
-            string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
-            string dataPath = GetStreamPath(streamId, DataFileSuffix);
-            if (!File.Exists(headersPath) || !File.Exists(dataPath))
+        {
+            var extentInfo = _extentInfoProvider.GetLatest(streamId);
+            if (!File.Exists(extentInfo.DataPath) || !File.Exists(extentInfo.HeadersPath))
                 yield break;
 
-            using var headersStream = new FileStream(headersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var headersStream = new FileStream(extentInfo.HeadersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
             var headers = new List<RawEventHeader>();
             int dataBufferSize = 0;
@@ -74,12 +69,12 @@ namespace EvenireDB
 
             // now we read the data for all the events in a single buffer
             // so that we can parse it directly, avoiding accessing the file any longer
-            using var dataStream = new FileStream(dataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var dataStream = new FileStream(extentInfo.DataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             dataStream.Position = headers[0].DataPosition;
 
             var dataBuffer = ArrayPool<byte>.Shared.Rent(dataBufferSize);
             var dataBufferMem = dataBuffer.AsMemory(0, dataBufferSize);
-            
+
             try
             {
                 await dataStream.ReadAsync(dataBufferMem, cancellationToken)
@@ -96,7 +91,7 @@ namespace EvenireDB
                     // if skip is specified, when calculating the source offset we need to subtract the position of the first block of data
                     // because the stream position was already set after opening it
                     long srcOffset = headers[i].DataPosition - headers[0].DataPosition;
-                    
+
                     // need to copy the memory here as the source array is rented 
                     // AND we need to give the event data to the calling client
                     dataBufferMem.Slice((int)srcOffset, headers[i].EventDataLength)
@@ -110,16 +105,14 @@ namespace EvenireDB
             finally
             {
                 ArrayPool<byte>.Shared.Return(dataBuffer);
-            }            
+            }
         }
 
         public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
         {
-            string dataPath = GetStreamPath(streamId, DataFileSuffix);
-            using var dataStream = new FileStream(dataPath, FileMode.Append, FileAccess.Write, FileShare.Read);
-
-            string headersPath = GetStreamPath(streamId, HeadersFileSuffix);
-            using var headersStream = new FileStream(headersPath, FileMode.Append, FileAccess.Write, FileShare.Read);
+            var extentInfo = _extentInfoProvider.GetLatest(streamId);
+            using var dataStream = new FileStream(extentInfo.DataPath, FileMode.Append, FileAccess.Write, FileShare.Read);
+            using var headersStream = new FileStream(extentInfo.HeadersPath, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             var eventsCount = events.Count();
 
@@ -133,7 +126,7 @@ namespace EvenireDB
 
                     var eventType = _eventTypes.GetOrAdd(@event.Type, static type =>
                     {
-                        var dest = new byte[Constants.MAX_EVENT_TYPE_LENGTH]; 
+                        var dest = new byte[Constants.MAX_EVENT_TYPE_LENGTH];
                         Encoding.UTF8.GetBytes(type, dest);
                         return dest;
                     });
@@ -155,7 +148,7 @@ namespace EvenireDB
             finally
             {
                 ArrayPool<byte>.Shared.Return(headerBuffer);
-            }            
+            }
 
             await dataStream.FlushAsync().ConfigureAwait(false);
             await headersStream.FlushAsync().ConfigureAwait(false);
