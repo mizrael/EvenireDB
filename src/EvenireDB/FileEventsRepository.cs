@@ -12,6 +12,7 @@ namespace EvenireDB
     {
         private readonly FileEventsRepositoryConfig _config;
         private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
+        private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _streamLocks = new();
         private readonly IExtentInfoProvider _extentInfoProvider;
 
         public FileEventsRepository(
@@ -112,12 +113,15 @@ namespace EvenireDB
         public async ValueTask AppendAsync(Guid streamId, IEnumerable<Event> events, CancellationToken cancellationToken = default)
         {
             var extentInfo = _extentInfoProvider.GetLatest(streamId);
-            using var dataStream = new FileStream(extentInfo.DataPath, FileMode.Append, FileAccess.Write, FileShare.Read);
-            using var headersStream = new FileStream(extentInfo.HeadersPath, FileMode.Append, FileAccess.Write, FileShare.Read);
 
             var eventsCount = events.Count();
 
+            using var dataStream = new FileStream(extentInfo.DataPath, FileMode.Append, FileAccess.Write, FileShare.Read);
+            using var headersStream = new FileStream(extentInfo.HeadersPath, FileMode.Append, FileAccess.Write, FileShare.Read);
             byte[] headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE * eventsCount);
+            
+            var semaphore = _streamLocks.GetOrAdd(streamId, static _ => new SemaphoreSlim(1, 1));
+            semaphore.Wait(cancellationToken);
 
             try
             {
@@ -150,6 +154,7 @@ namespace EvenireDB
             finally
             {
                 ArrayPool<byte>.Shared.Return(headerBuffer);
+                semaphore.Release();
             }
 
             await dataStream.FlushAsync().ConfigureAwait(false);
