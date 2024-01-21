@@ -3,6 +3,7 @@ using EvenireDB.Extents;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace EvenireDB
@@ -116,7 +117,7 @@ namespace EvenireDB
 
             var eventsCount = events.Count();
 
-            byte[] headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE);
+            byte[] headerBuffer = ArrayPool<byte>.Shared.Rent(RawEventHeader.SIZE * eventsCount);
 
             try
             {
@@ -138,12 +139,13 @@ namespace EvenireDB
                         eventDataLength: @event.Data.Length,
                         eventTypeLength: (short)@event.Type.Length
                     );
-                    header.ToBytes(ref headerBuffer);
-                    await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE, cancellationToken)
-                                       .ConfigureAwait(false);
+                    header.ToBytes(ref headerBuffer, offset: i * RawEventHeader.SIZE);
 
                     await dataStream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);
                 }
+
+                await headersStream.WriteAsync(headerBuffer, 0, RawEventHeader.SIZE * eventsCount, cancellationToken)
+                                   .ConfigureAwait(false);
             }
             finally
             {

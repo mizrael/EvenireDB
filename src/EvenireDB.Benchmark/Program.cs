@@ -1,6 +1,6 @@
 ﻿using BenchmarkDotNet.Running;
 
-BenchmarkRunner.Run<GetBytesBenchmark>();
+BenchmarkRunner.Run<FileEventsRepositoryWriteBenckmarks>();
 
 //TypeLayout.PrintLayout<RawEventHeader>();
 

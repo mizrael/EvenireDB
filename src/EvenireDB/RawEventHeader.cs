@@ -30,22 +30,22 @@ namespace EvenireDB
         private const int EVENT_DATA_LENGTH_POS = EVENT_TYPE_NAME_LENGTH_POS + sizeof(short);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly void ToBytes(ref byte[] buffer)
+        public readonly void ToBytes(ref byte[] buffer, int offset = 0)
         {
-            Unsafe.As<byte, long>(ref buffer[EVENT_ID_TIMESTAMP_POS]) = this.EventIdTimestamp;
-            Unsafe.As<byte, int>(ref buffer[EVENT_ID_SEQUENCE_POS]) = this.EventIdSequence;
+            Unsafe.As<byte, long>(ref buffer[offset + EVENT_ID_TIMESTAMP_POS]) = this.EventIdTimestamp;
+            Unsafe.As<byte, int>(ref buffer[offset + EVENT_ID_SEQUENCE_POS]) = this.EventIdSequence;
 
             // offset in the main stream            
-            Unsafe.As<byte, long>(ref buffer[OFFSET_POS]) = this.DataPosition;
+            Unsafe.As<byte, long>(ref buffer[offset + OFFSET_POS]) = this.DataPosition;
 
             // event type
-            Array.Copy(this.EventType, 0, buffer, EVENT_TYPE_NAME_POS, Constants.MAX_EVENT_TYPE_LENGTH);
+            Array.Copy(this.EventType, 0, buffer, offset + EVENT_TYPE_NAME_POS, Constants.MAX_EVENT_TYPE_LENGTH);
 
             // event type length
-            Unsafe.As<byte, short>(ref buffer[EVENT_TYPE_NAME_LENGTH_POS]) = this.EventTypeLength;
+            Unsafe.As<byte, short>(ref buffer[offset + EVENT_TYPE_NAME_LENGTH_POS]) = this.EventTypeLength;
 
             // event data length
-            Unsafe.As<byte, int>(ref buffer[EVENT_DATA_LENGTH_POS]) = this.EventDataLength;
+            Unsafe.As<byte, int>(ref buffer[offset + EVENT_DATA_LENGTH_POS]) = this.EventDataLength;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

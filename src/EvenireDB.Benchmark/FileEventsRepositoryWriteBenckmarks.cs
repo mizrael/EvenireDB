@@ -30,7 +30,7 @@ public class FileEventsRepositoryWriteBenckmarks
 
     [Benchmark(Baseline = true)]
     [ArgumentsSource(nameof(Data))]    
-    public async Task WriteAsync_Baseline(Event[] events)
+    public async Task AppendAsync_Baseline(Event[] events)
     {
         var sut = new FileEventsRepository(_repoConfig, _extentInfoProvider);
         await sut.AppendAsync(Guid.NewGuid(), events);

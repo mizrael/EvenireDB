@@ -19,7 +19,7 @@ namespace EvenireDB
             _repo = repo;
         }
 
-        private async ValueTask<CachedEvents> EventsFactory(Guid streamId, CancellationToken cancellationToken)
+        private async ValueTask<CachedEvents> Factory(Guid streamId, CancellationToken cancellationToken)
         {
             _logger.ReadingStreamFromRepository(streamId);
 
@@ -30,11 +30,9 @@ namespace EvenireDB
         }
 
         public ValueTask<CachedEvents> EnsureStreamAsync(Guid streamId, CancellationToken cancellationToken)
-        => _cache.GetOrAddAsync(streamId, this.EventsFactory, cancellationToken);
+        => _cache.GetOrAddAsync(streamId, this.Factory, cancellationToken);
 
         public void Update(Guid streamId, CachedEvents entry)
-        {
-            _cache.AddOrUpdate(streamId, entry);
-        }
+        => _cache.AddOrUpdate(streamId, entry);
     }
 }
