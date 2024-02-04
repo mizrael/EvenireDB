@@ -19,7 +19,11 @@ namespace EvenireDB
             _logger = logger;
         }
         
-        public async ValueTask<IOperationResult> AppendAsync(Guid streamId, IEnumerable<EventData> incomingEvents, CancellationToken cancellationToken = default)
+        public async ValueTask<IOperationResult> AppendAsync(
+            Guid streamId, 
+            IEnumerable<EventData> incomingEvents, 
+            int? expectedVersion = null,
+            CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(incomingEvents, nameof(incomingEvents));
 
@@ -27,6 +31,9 @@ namespace EvenireDB
                 return new SuccessResult();
 
             CachedEvents entry = await _cache.EnsureStreamAsync(streamId, cancellationToken).ConfigureAwait(false);
+
+            if (expectedVersion.HasValue && entry.Events.Count != expectedVersion)
+                return FailureResult.VersionMismatch(streamId, expectedVersion.Value, entry.Events.Count);    
 
             entry.Semaphore.Wait(cancellationToken);
             try

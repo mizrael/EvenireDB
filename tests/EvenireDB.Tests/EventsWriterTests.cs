@@ -28,7 +28,7 @@ namespace EvenireDB.Tests
             var logger = Substitute.For<ILogger<EventsWriter>>();
             var sut = new EventsWriter(cache, channelWriter, idGenerator, logger);
 
-            await sut.AppendAsync(streamId, inputEvents, version: inputEvents.Count() - 1);
+            await sut.AppendAsync(streamId, inputEvents, expectedVersion: inputEvents.Count() - 1);
             var result = await sut.AppendAsync(streamId, inputEvents);
             result.Should().BeOfType<FailureResult>();
 
