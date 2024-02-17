@@ -74,7 +74,7 @@ namespace EvenireDB.Server.Tests
         public async Task Post_should_return_version_mismatch_when_stream_version_mismatch()
         {
             var streamId = Guid.NewGuid();
-            var dtos = BuildEventDataDTOs(1, new byte[500_001]); //TODO: from config
+            var dtos = BuildEventDataDTOs(10, new byte[500_001]); //TODO: from config
 
             var channel = _serverFixture.CreateGrpcChannel();
             var client = new EventsGrpcService.EventsGrpcServiceClient(channel);
@@ -89,7 +89,7 @@ namespace EvenireDB.Server.Tests
             var req2 = new AppendRequest()
             {
                 StreamId = streamId.ToString(),
-                ExpectedVersion = 71
+                ExpectedVersion = 42
             };
             req2.Events.AddRange(dtos);
             var response = await client.AppendAsync(req2);
