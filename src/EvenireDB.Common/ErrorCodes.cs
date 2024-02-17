@@ -6,5 +6,6 @@
         public const int DuplicateEvent = -2;
         public const int BadRequest = -3;
         public const int CannotInitiateWrite = -4;
+        public const int VersionMismatch = -5;
     }
 }

@@ -2,6 +2,7 @@
 using BenchmarkDotNet.Engines;
 using EvenireDB;
 using EvenireDB.Common;
+using EvenireDB.Extents;
 using EvenireDB.Utils;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Threading.Channels;
@@ -26,8 +27,9 @@ public class EventsProviderBenckmarks
         if (!Directory.Exists(dataPath))
             Directory.CreateDirectory(dataPath);
 
-        var repoConfig = new FileEventsRepositoryConfig(dataPath);
-        var repo = new FileEventsRepository(repoConfig);
+        var repoConfig = new FileEventsRepositoryConfig();
+        var extentInfoProvider = new ExtentInfoProvider(new ExtentInfoProviderConfig(dataPath));
+        var repo = new FileEventsRepository(repoConfig, extentInfoProvider);
 
         var cache = new EventsCache(
             new NullLogger<EventsCache>(),

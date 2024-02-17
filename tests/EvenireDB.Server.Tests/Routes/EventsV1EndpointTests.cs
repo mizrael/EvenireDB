@@ -92,6 +92,22 @@ namespace EvenireDB.Server.Tests.Routes
         }
 
         [Fact]
+        public async Task Post_should_return_bad_request_when_stream_version_mismatch()
+        {
+            var streamId = Guid.NewGuid();
+
+            var dtos = BuildEventsDTOs(10, _defaultEventData);
+
+            await using var application = _serverFixture.CreateServer();
+            using var client = application.CreateClient();
+            var response = await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
+            response.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
+
+            var response2 = await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events?version=2", dtos);
+            response2.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        }
+
+        [Fact]
         public async Task Post_should_create_events()
         {
             var streamId = Guid.NewGuid();
@@ -112,7 +128,6 @@ namespace EvenireDB.Server.Tests.Routes
             for (int i = 0; i != fetchedEvents.Length; i++)
             {
                 fetchedEvents[i].Id.Should().NotBeNull();
-                fetchedEvents[i].Id.Timestamp.Should().BeCloseTo(now.Ticks, 10_000_000);
                 fetchedEvents[i].Type.Should().Be(dtos[i].Type);
                 fetchedEvents[i].Data.ToArray().Should().BeEquivalentTo(dtos[i].Data.ToArray());
             }

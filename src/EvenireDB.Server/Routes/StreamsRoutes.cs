@@ -32,6 +32,7 @@ namespace EvenireDB.Server.Routes
             [FromServices] EventMapper mapper,
             [FromServices] IEventsWriter writer,
             Guid streamId,
+            [FromQuery(Name = "version")] int? expectedVersion,
             [FromBody] EventDataDTO[]? dtos)
         {
             if(dtos is null)
@@ -49,10 +50,11 @@ namespace EvenireDB.Server.Routes
                 return Results.BadRequest();
             }
 
-            var result = await writer.AppendAsync(streamId, events);
+            var result = await writer.AppendAsync(streamId, events, expectedVersion);
             return result switch
             {
                 FailureResult { Code: ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),
+                FailureResult { Code: ErrorCodes.VersionMismatch } d => Results.BadRequest(d.Message),
                 FailureResult => Results.StatusCode(500),
                 _ => Results.AcceptedAtRoute(nameof(GetEvents), new { streamId })
             };

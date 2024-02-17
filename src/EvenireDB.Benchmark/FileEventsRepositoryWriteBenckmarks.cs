@@ -1,14 +1,14 @@
 ﻿using BenchmarkDotNet.Attributes;
 using EvenireDB;
-using Microsoft.Diagnostics.Tracing.Parsers.Kernel;
+using EvenireDB.Extents;
 using System.Buffers;
-using System.Runtime.CompilerServices;
 
 public class FileEventsRepositoryWriteBenckmarks
 {
     private readonly static byte[] _data = Enumerable.Repeat((byte)42, 100).ToArray();
 
     private FileEventsRepositoryConfig _repoConfig;
+    private IExtentInfoProvider _extentInfoProvider;
     private IEventDataValidator _factory;
 
     private Event[] BuildEvents(int count)
@@ -24,14 +24,15 @@ public class FileEventsRepositoryWriteBenckmarks
             Directory.CreateDirectory(dataPath);
 
         _factory = new EventDataValidator(500_000);
-        _repoConfig = new FileEventsRepositoryConfig(dataPath);
+        _extentInfoProvider = new ExtentInfoProvider(new ExtentInfoProviderConfig(dataPath));
+        _repoConfig = new FileEventsRepositoryConfig();
     }
 
     [Benchmark(Baseline = true)]
     [ArgumentsSource(nameof(Data))]    
-    public async Task WriteAsync_Baseline(Event[] events)
+    public async Task AppendAsync_Baseline(Event[] events)
     {
-        var sut = new FileEventsRepository(_repoConfig);
+        var sut = new FileEventsRepository(_repoConfig, _extentInfoProvider);
         await sut.AppendAsync(Guid.NewGuid(), events);
     }
 

@@ -18,7 +18,9 @@ builder.WebHost.ConfigureKestrel((context, options) =>
     options.ListenAnyIP(serverConfig.GrpcSettings.Port, o => o.Protocols = HttpProtocols.Http2);
 });
 
-builder.Services.AddGrpc();
+builder.Services.AddGrpc(opts =>{
+    opts.MaxReceiveMessageSize = 16 * 1024 * 1024; 
+});
 builder.Services.AddGrpcHealthChecks();
 
 builder.Services.AddHealthChecks();

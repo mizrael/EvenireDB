@@ -57,7 +57,8 @@ namespace EvenireDB.Server.Grpc
                     events.Add(@event);
                 }
                 
-                var result = await _writer.AppendAsync(streamId, events);                
+                var result = await _writer.AppendAsync(streamId, events, request.ExpectedVersion)
+                                          .ConfigureAwait(false);                
 
                 if (result is FailureResult failure)
                 {

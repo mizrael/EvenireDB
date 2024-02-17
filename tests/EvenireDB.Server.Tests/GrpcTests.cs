@@ -70,6 +70,34 @@ namespace EvenireDB.Server.Tests
             response.Error.Code.Should().Be(ErrorCodes.BadRequest);
         }
 
+        [Fact]
+        public async Task Post_should_return_version_mismatch_when_stream_version_mismatch()
+        {
+            var streamId = Guid.NewGuid();
+            var dtos = BuildEventDataDTOs(10, _defaultEventData); 
+
+            var channel = _serverFixture.CreateGrpcChannel();
+            var client = new EventsGrpcService.EventsGrpcServiceClient(channel);
+
+            var req = new AppendRequest()
+            {
+                StreamId = streamId.ToString()
+            };
+            req.Events.AddRange(dtos);
+            await client.AppendAsync(req);
+
+            var req2 = new AppendRequest()
+            {
+                StreamId = streamId.ToString(),
+                ExpectedVersion = 42
+            };
+            req2.Events.AddRange(dtos);
+            var response = await client.AppendAsync(req2);
+            response.Should().NotBeNull();
+            response.Error.Should().NotBeNull();
+            response.Error.Code.Should().Be(ErrorCodes.VersionMismatch, because: $"stream version mismatch expected. Got: {response.Error.Message}");
+        }
+
         [Fact(Skip = "TBD")]
         public async Task Post_should_return_conflict_when_input_already_in_stream()
         {

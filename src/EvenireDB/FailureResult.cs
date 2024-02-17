@@ -23,5 +23,10 @@ namespace EvenireDB
         => new FailureResult(
                 ErrorCodes.CannotInitiateWrite,
                 $"unable to write events for stream '{streamId}'.");
+
+        internal static IOperationResult VersionMismatch(Guid streamId, int expected, int actual)
+        => new FailureResult(
+                ErrorCodes.VersionMismatch,
+                $"stream '{streamId}' is at version {actual} instead of {expected}.");
     }
 }
