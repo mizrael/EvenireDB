@@ -74,7 +74,7 @@ namespace EvenireDB.Server.Tests
         public async Task Post_should_return_version_mismatch_when_stream_version_mismatch()
         {
             var streamId = Guid.NewGuid();
-            var dtos = BuildEventDataDTOs(10, new byte[500_001]); //TODO: from config
+            var dtos = BuildEventDataDTOs(10, _defaultEventData); 
 
             var channel = _serverFixture.CreateGrpcChannel();
             var client = new EventsGrpcService.EventsGrpcServiceClient(channel);
@@ -95,7 +95,7 @@ namespace EvenireDB.Server.Tests
             var response = await client.AppendAsync(req2);
             response.Should().NotBeNull();
             response.Error.Should().NotBeNull();
-            response.Error.Code.Should().Be(ErrorCodes.VersionMismatch);
+            response.Error.Code.Should().Be(ErrorCodes.VersionMismatch, because: $"stream version mismatch expected. Got: {response.Error.Message}");
         }
 
         [Fact(Skip = "TBD")]
