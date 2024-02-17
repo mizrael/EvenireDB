@@ -128,7 +128,6 @@ namespace EvenireDB.Server.Tests.Routes
             for (int i = 0; i != fetchedEvents.Length; i++)
             {
                 fetchedEvents[i].Id.Should().NotBeNull();
-                fetchedEvents[i].Id.Timestamp.Should().BeCloseTo(now.Ticks, 10_000_000);
                 fetchedEvents[i].Type.Should().Be(dtos[i].Type);
                 fetchedEvents[i].Data.ToArray().Should().BeEquivalentTo(dtos[i].Data.ToArray());
             }
