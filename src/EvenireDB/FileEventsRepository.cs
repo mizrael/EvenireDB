@@ -3,7 +3,6 @@ using EvenireDB.Extents;
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace EvenireDB
@@ -23,20 +22,86 @@ namespace EvenireDB
             _config = config ?? throw new ArgumentNullException(nameof(config));
         }
 
-        public async IAsyncEnumerable<Event> ReadAsync(
+        public async ValueTask<IEnumerable<Event>> ReadPageAsync(
             Guid streamId,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+            int streamPosition,
+            CancellationToken cancellationToken = default)
         {
             var extentInfo = _extentInfoProvider.GetLatest(streamId);
             if (!File.Exists(extentInfo.DataPath) || !File.Exists(extentInfo.HeadersPath))
-                yield break;
+                return Array.Empty<Event>();
 
             using var headersStream = new FileStream(extentInfo.HeadersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
             var headers = new List<RawEventHeader>();
             int dataBufferSize = 0;
 
+            int pageSize = RawEventHeader.SIZE * (int)_config.MaxPageSize;
+            int headerBufferOffset = RawEventHeader.SIZE * streamPosition;
+
             int headerBufferLen = RawEventHeader.SIZE * (int)_config.MaxPageSize;
+            var headersBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
+            
+            try
+            {
+                while (true)
+                {
+                    int bytesRead = await headersStream.ReadAsync(headersBuffer, offset: headerBufferOffset, count: pageSize, cancellationToken)
+                                                       .ConfigureAwait(false);
+                    if (bytesRead == 0)
+                        break;
+
+                    int offset = 0;
+                    while (offset < bytesRead)
+                    {
+                        var header = new RawEventHeader(headersBuffer.AsSpan(offset, RawEventHeader.SIZE));
+                        headers.Add(header);
+
+                        dataBufferSize += header.EventDataLength;
+                        offset += RawEventHeader.SIZE;
+                    }
+                    headerBufferOffset += offset;
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(headersBuffer);
+            }
+
+            if (headers.Count == 0)
+                return Array.Empty<Event>();
+
+            return null;
+        }
+
+        public async ValueTask<IAsyncEnumerable<Event>> ReadAsync(
+            Guid streamId,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            var extentInfo = _extentInfoProvider.GetLatest(streamId);
+            if (!File.Exists(extentInfo.DataPath) || !File.Exists(extentInfo.HeadersPath))
+            
+            //     yield break;
+
+            var (headers, dataBufferSize) = await ReadHeadersAsync(extentInfo, 0, (int)_config.MaxPageSize, cancellationToken).ConfigureAwait(false);
+            // if (headers.Count == 0)
+            //     yield break;
+            
+            return ReadDataAsync(extentInfo, headers, dataBufferSize, cancellationToken);
+        }
+
+        private static async ValueTask<(List<RawEventHeader> headers, int dataBufferSize)> ReadHeadersAsync(
+            ExtentInfo extentInfo,
+            int streamVersion,
+            int pageSize,
+            CancellationToken cancellationToken)
+        {
+            using var headersStream = new FileStream(extentInfo.HeadersPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+
+            var headers = new List<RawEventHeader>();
+            int dataBufferSize = 0;
+            
+            int headerBufferLen = RawEventHeader.SIZE * pageSize;
             var headersBuffer = ArrayPool<byte>.Shared.Rent(headerBufferLen);
             var headersBufferMem = headersBuffer.AsMemory(0, headerBufferLen);
 
@@ -65,13 +130,18 @@ namespace EvenireDB
                 ArrayPool<byte>.Shared.Return(headersBuffer);
             }
 
-            // we exit early if no headers found
-            if (headers.Count == 0)
-                yield break;
+            return (headers, dataBufferSize);
+        }
 
+        private static async IAsyncEnumerable<Event> ReadDataAsync(
+            ExtentInfo extentInfo, 
+            IList<RawEventHeader> headers, 
+            int dataBufferSize, 
+            [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
             // now we read the data for all the events in a single buffer
             // so that we can parse it directly, avoiding accessing the file any longer
-            using var dataStream = new FileStream(extentInfo.DataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            var dataStream = new FileStream(extentInfo.DataPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             dataStream.Position = headers[0].DataPosition;
 
             var dataBuffer = ArrayPool<byte>.Shared.Rent(dataBufferSize);
