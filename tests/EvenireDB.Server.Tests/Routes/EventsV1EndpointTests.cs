@@ -118,7 +118,8 @@ namespace EvenireDB.Server.Tests.Routes
 
             await using var application = _serverFixture.CreateServer();
             using var client = application.CreateClient();
-            await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
+            var createResp = await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
+            createResp.EnsureSuccessStatusCode();
 
             var response = await client.GetAsync($"/api/v1/streams/{streamId}/events");
             var fetchedEvents = await response.Content.ReadFromJsonAsync<EventDTO[]>();

@@ -1,6 +1,4 @@
 ﻿using EvenireDB.Common;
-using Microsoft.Extensions.Logging;
-using System.Threading.Channels;
 
 namespace EvenireDB.Tests
 {
@@ -10,11 +8,9 @@ namespace EvenireDB.Tests
 
         [Fact]
         public async Task ReadAsync_should_return_empty_collection_when_data_not_available()
-        {
-            var repo = Substitute.For<IEventsRepository>();            
-            var cache = Substitute.For<IEventsCache>();            
-            var logger = Substitute.For<ILogger<EventsReader>>();
-            var sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
+        {    
+            var cache = Substitute.For<IEventsCache>();          
+            var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
             var events = await sut.ReadAsync(Guid.NewGuid(), StreamPosition.Start)
                                   .ToListAsync();
@@ -34,9 +30,7 @@ namespace EvenireDB.Tests
             cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
-            var repo = Substitute.For<IEventsRepository>();            
-            var logger = Substitute.For<ILogger<EventsReader>>();
-            var sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
+            var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
             var events = await sut.ReadAsync(streamId, StreamPosition.Start)
                                     .ToListAsync();
@@ -57,10 +51,8 @@ namespace EvenireDB.Tests
             var cache = Substitute.For<IEventsCache>();
             cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
-
-            var repo = Substitute.For<IEventsRepository>();
-            var logger = Substitute.For<ILogger<EventsReader>>();
-            var sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
+            
+            var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
             var expectedEvents = sourceEvents.Skip(142).ToArray().Reverse();
 
@@ -84,9 +76,7 @@ namespace EvenireDB.Tests
             cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
-            var repo = Substitute.For<IEventsRepository>();
-            var logger = Substitute.For<ILogger<EventsReader>>();
-            var sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
+            var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
             var offset = 11;
             StreamPosition startPosition = (uint)(sourceEvents.Count - offset);
@@ -114,9 +104,7 @@ namespace EvenireDB.Tests
             cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
-            var repo = Substitute.For<IEventsRepository>();
-            var logger = Substitute.For<ILogger<EventsReader>>();
-            var sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
+            var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
             var startPosition = EventsReaderConfig.Default.MaxPageSize / 2;
 
@@ -142,9 +130,7 @@ namespace EvenireDB.Tests
             cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
-            var repo = Substitute.For<IEventsRepository>();
-            var logger = Substitute.For<ILogger<EventsReader>>();
-            var sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
+            var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
             var expectedEvents = sourceEvents.Take((int)EventsReaderConfig.Default.MaxPageSize);
 
@@ -168,9 +154,7 @@ namespace EvenireDB.Tests
             cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
-            var repo = Substitute.For<IEventsRepository>();
-            var logger = Substitute.For<ILogger<EventsReader>>();
-            var sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
+            var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
             StreamPosition startPosition = 11;
             var expectedEvents = sourceEvents.Skip(11).Take((int)EventsReaderConfig.Default.MaxPageSize);

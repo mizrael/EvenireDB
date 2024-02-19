@@ -9,6 +9,6 @@ namespace EvenireDB
             Guid streamId, 
             StreamPosition startPosition,
             Direction direction = Direction.Forward, 
-            [EnumeratorCancellation] CancellationToken cancellationToken = default);
+            CancellationToken cancellationToken = default);
     }
 }

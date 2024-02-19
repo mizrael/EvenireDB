@@ -11,7 +11,7 @@ namespace EvenireDB.Extents
                 Directory.CreateDirectory(config.BasePath);
         }
 
-        public ExtentInfo GetLatest(Guid streamId)
+        public ExtentInfo Get(Guid streamId)
         {
             // TODO: tests
             var key = streamId.ToString("N");
