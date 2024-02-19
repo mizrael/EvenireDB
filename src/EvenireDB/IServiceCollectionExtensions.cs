@@ -1,4 +1,5 @@
 ﻿using EvenireDB.Extents;
+using EvenireDB.Persistence;
 using EvenireDB.Server;
 using EvenireDB.Utils;
 using Microsoft.Extensions.DependencyInjection;
@@ -54,7 +55,9 @@ namespace EvenireDB
                 return new ExtentInfoProviderConfig(dataPath);
             })
             .AddSingleton<IExtentInfoProvider, ExtentInfoProvider>()
-            .AddSingleton<IEventsRepository, FileEventsRepository>()
+            .AddSingleton<IDataRepository, DataRepository>()
+            .AddSingleton<IHeadersRepository, HeadersRepository>()
+            .AddSingleton<IEventsProvider, EventsProvider>()
             .AddHostedService<IncomingEventsPersistenceWorker>()
             .AddSingleton(ctx =>
             {

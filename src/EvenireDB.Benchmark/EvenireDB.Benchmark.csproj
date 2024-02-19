@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BenchmarkDotNet" Version="0.13.8" />
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
 	  <PackageReference Include="System.Linq.Async" Version="6.0.1" />
 	  <PackageReference Include="ObjectLayoutInspector" Version="0.1.4" />
   </ItemGroup>

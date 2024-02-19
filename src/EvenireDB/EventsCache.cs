@@ -1,4 +1,5 @@
-﻿using EvenireDB.Utils;
+﻿using EvenireDB.Persistence;
+using EvenireDB.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace EvenireDB
@@ -7,12 +8,12 @@ namespace EvenireDB
     {
         private readonly ICache<Guid, CachedEvents> _cache;
         private readonly ILogger<EventsCache> _logger;
-        private readonly IEventsRepository _repo;
+        private readonly IEventsProvider _repo;
 
         public EventsCache(
             ILogger<EventsCache> logger,
             ICache<Guid, CachedEvents> cache,
-            IEventsRepository repo)
+            IEventsProvider repo)
         {
             _logger = logger;
             _cache = cache;
@@ -24,7 +25,7 @@ namespace EvenireDB
             _logger.ReadingStreamFromRepository(streamId);
 
             var persistedEvents = new List<Event>();
-            await foreach (var @event in _repo.ReadAsync(streamId, cancellationToken))
+            await foreach (var @event in _repo.ReadAsync(streamId, cancellationToken: cancellationToken))
                 persistedEvents.Add(@event);
             return new CachedEvents(persistedEvents, new SemaphoreSlim(1));
         }

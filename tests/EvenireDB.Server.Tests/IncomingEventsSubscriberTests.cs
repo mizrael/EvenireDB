@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EvenireDB.Persistence;
+using Microsoft.Extensions.Logging;
 using System.Threading.Channels;
 
 namespace EvenireDB.Server.Tests
@@ -9,7 +10,7 @@ namespace EvenireDB.Server.Tests
         public async Task Service_should_handle_exceptions_gracefully()
         {
             var channel = Channel.CreateBounded<IncomingEventsGroup>(10);
-            var repo = Substitute.For<IEventsRepository>();
+            var repo = Substitute.For<IEventsProvider>();
             repo.WhenForAnyArgs(r => r.AppendAsync(Arg.Any<Guid>(), null, default))
                 .Throw<Exception>();
 

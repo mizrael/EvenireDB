@@ -1,4 +1,5 @@
 ﻿using EvenireDB.Common;
+using EvenireDB.Persistence;
 using Microsoft.Extensions.Logging;
 using System.Runtime.CompilerServices;
 
@@ -8,19 +9,13 @@ namespace EvenireDB
     {
         private readonly IEventsCache _cache;
         private readonly EventsReaderConfig _config;
-        private readonly IEventsRepository _repo;
-        private readonly ILogger<EventsReader> _logger;
-
+        
         public EventsReader(
-            EventsReaderConfig config,
-            IEventsRepository repo,
-            IEventsCache cache,
-            ILogger<EventsReader> logger)
+            EventsReaderConfig config,            
+            IEventsCache cache)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _config = config ?? throw new ArgumentNullException(nameof(config));
-            _repo = repo ?? throw new ArgumentNullException(nameof(repo));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async IAsyncEnumerable<Event> ReadAsync(

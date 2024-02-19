@@ -29,7 +29,7 @@
         }
 
         public Event[] BuildEvents(int count, byte[]? data = null)
-            => Enumerable.Range(0, count).Select(i => new Event(new EventId(DateTime.UtcNow.Ticks, 0), "lorem", data ?? GenerateRandomData())).ToArray();
+            => Enumerable.Range(0, count).Select(i => new Event(new EventId(DateTime.UtcNow.Ticks, i), "lorem", data ?? GenerateRandomData())).ToArray();
 
         private static byte[] GenerateRandomData()
         {

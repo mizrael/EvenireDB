@@ -3,6 +3,7 @@ using BenchmarkDotNet.Engines;
 using EvenireDB;
 using EvenireDB.Common;
 using EvenireDB.Extents;
+using EvenireDB.Persistence;
 using EvenireDB.Utils;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Threading.Channels;
@@ -29,7 +30,9 @@ public class EventsProviderBenckmarks
 
         var repoConfig = new FileEventsRepositoryConfig();
         var extentInfoProvider = new ExtentInfoProvider(new ExtentInfoProviderConfig(dataPath));
-        var repo = new FileEventsRepository(repoConfig, extentInfoProvider);
+        var dataRepo = new DataRepository();
+        var headersRepo = new HeadersRepository();
+        var repo = new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
 
         var cache = new EventsCache(
             new NullLogger<EventsCache>(),
@@ -38,7 +41,7 @@ public class EventsProviderBenckmarks
 
         var logger = new NullLogger<EventsReader>();
 
-        _sut = new EventsReader(EventsReaderConfig.Default, repo, cache, logger);
+        _sut = new EventsReader(EventsReaderConfig.Default, cache);
 
         var events = Enumerable.Range(0, (int)this.EventsCount).Select(i => new Event(new EventId(i, 0), "lorem", _data)).ToArray();
         Task.WaitAll(repo.AppendAsync(_streamId, events).AsTask());
