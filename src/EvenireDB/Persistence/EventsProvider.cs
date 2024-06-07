@@ -41,7 +41,17 @@ internal class EventsProvider : IEventsProvider
     {
         var extentInfo = _extentInfoProvider.Get(streamId);
 
-        var inHeaders = _dataRepo.AppendAsync(extentInfo, events, cancellationToken);
-        await _headersRepo.AppendAsync(extentInfo, inHeaders, cancellationToken);
+        var semaphore = _streamLocks.GetOrAdd(streamId, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync(cancellationToken);
+
+        try
+        {
+            var inHeaders = _dataRepo.AppendAsync(extentInfo, events, cancellationToken);
+            await _headersRepo.AppendAsync(extentInfo, inHeaders, cancellationToken);
+        }
+        finally
+        {
+            semaphore.Release();
+        }   
     }
 }
