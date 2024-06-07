@@ -27,8 +27,12 @@ namespace EvenireDB.Server
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                using var process = Process.GetCurrentProcess();
+                var gcMemoryInfo = GC.GetGCMemoryInfo();
+                var totalMemory = GC.GetTotalMemory(false);
                 
+                _logger.LogInformation("{TotalMemory}, {TotalCommittedBytes}", totalMemory, gcMemoryInfo.TotalCommittedBytes);
+
+                using var process = Process.GetCurrentProcess();
                 bool needDrop = process.PrivateMemorySize64 > _settings.MaxAllowedAllocatedBytes;
                 if (needDrop)
                 {
