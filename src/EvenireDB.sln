@@ -30,7 +30,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Protos", "Protos", "{1CC979
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Grpc", "EvenireDB.Grpc\EvenireDB.Grpc.csproj", "{DF4DDF36-7203-467C-898C-C5224A9A6B41}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvenireDB.Common", "EvenireDB.Common\EvenireDB.Common.csproj", "{CA95FFB9-A44C-4DF0-B4C7-D03C0F9A660D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Common", "EvenireDB.Common\EvenireDB.Common.csproj", "{CA95FFB9-A44C-4DF0-B4C7-D03C0F9A660D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{0BFC47FA-4EFF-41D4-A7F1-EEBAEB44F461}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EvenireDB.Tools.EventsGenerator", "tools\EvenireDB.Tools.EventsGenerator\EvenireDB.Tools.EventsGenerator.csproj", "{90FD3F30-39AF-4F30-8403-C4F799A0C67A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -78,6 +82,10 @@ Global
 		{CA95FFB9-A44C-4DF0-B4C7-D03C0F9A660D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA95FFB9-A44C-4DF0-B4C7-D03C0F9A660D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA95FFB9-A44C-4DF0-B4C7-D03C0F9A660D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{90FD3F30-39AF-4F30-8403-C4F799A0C67A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{90FD3F30-39AF-4F30-8403-C4F799A0C67A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{90FD3F30-39AF-4F30-8403-C4F799A0C67A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{90FD3F30-39AF-4F30-8403-C4F799A0C67A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -87,6 +95,7 @@ Global
 		{57498174-AE43-4872-8DD1-D1AC649DFD00} = {CDD60004-8C27-46E1-9235-9376B86E9003}
 		{FC54BD0B-1471-4252-8B3F-97BE64B90B1A} = {CDD60004-8C27-46E1-9235-9376B86E9003}
 		{B0B002EB-6E66-4D86-B03B-7CB2AABD865E} = {967C1ED1-EA6E-4C72-BB85-38D8D3057A5F}
+		{90FD3F30-39AF-4F30-8403-C4F799A0C67A} = {0BFC47FA-4EFF-41D4-A7F1-EEBAEB44F461}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8D2FA660-798C-4C70-9A70-59435A090136}

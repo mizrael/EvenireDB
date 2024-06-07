@@ -24,7 +24,7 @@ namespace EvenireDB.Server.Routes
             [FromQuery(Name = "pos")] uint startPosition = 0,
             [FromQuery(Name = "dir")] Direction direction = Direction.Forward)
         {
-            await foreach (var @event in reader.ReadAsync(streamId, direction: direction, startPosition: startPosition))
+            await foreach (var @event in reader.ReadAsync(streamId, direction: direction, startPosition: startPosition).ConfigureAwait(false))
                 yield return EventDTO.FromModel(@event);
         }
 
@@ -36,7 +36,7 @@ namespace EvenireDB.Server.Routes
             [FromBody] EventDataDTO[]? dtos)
         {
             if(dtos is null)
-                return Results.BadRequest();
+                return Results.BadRequest(new ApiError(ErrorCodes.BadRequest, "No events provided"));
 
             EventData[] events;
 
@@ -44,17 +44,18 @@ namespace EvenireDB.Server.Routes
             {
                 events = mapper.ToModels(dtos);
             }
-            catch
+            catch(Exception ex)
             {
-                // TODO: build proper response
-                return Results.BadRequest();
+                return Results.BadRequest(new ApiError(ErrorCodes.BadRequest, ex.Message));
             }
 
-            var result = await writer.AppendAsync(streamId, events, expectedVersion);
+            var result = await writer.AppendAsync(streamId, events, expectedVersion)
+                                     .ConfigureAwait(false);
             return result switch
             {
-                FailureResult { Code: ErrorCodes.DuplicateEvent } d => Results.Conflict(d.Message),
-                FailureResult { Code: ErrorCodes.VersionMismatch } d => Results.BadRequest(d.Message),
+                FailureResult { Code: ErrorCodes.DuplicateEvent } d => Results.Conflict(new ApiError(ErrorCodes.DuplicateEvent, d.Message)),
+                FailureResult { Code: ErrorCodes.VersionMismatch } d => Results.BadRequest(new ApiError(ErrorCodes.VersionMismatch, d.Message)),
+                FailureResult { Code: ErrorCodes.BadRequest } d => Results.BadRequest(new ApiError(ErrorCodes.BadRequest, d.Message)),
                 FailureResult => Results.StatusCode(500),
                 _ => Results.AcceptedAtRoute(nameof(GetEvents), new { streamId })
             };

@@ -25,6 +25,9 @@ namespace EvenireDB
             int? expectedVersion = null,
             CancellationToken cancellationToken = default)
         {
+            if(streamId == Guid.Empty)
+                return FailureResult.InvalidStream(streamId);
+
             ArgumentNullException.ThrowIfNull(incomingEvents, nameof(incomingEvents));
 
             if (!incomingEvents.Any())
