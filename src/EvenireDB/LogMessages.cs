@@ -28,7 +28,7 @@ namespace EvenireDB
         [LoggerMessage(
             EventId = (int)EventIds.HighMemoryUsageDetected,
             Level = LogLevel.Warning,
-            Message = "Memory usage is {MemoryUsage} bytes, more than the allowed value: {MaxAllowedAllocatedBytes}. Dropping some cached streams")]
+            Message = "Memory usage is {MemoryUsage} bytes, more than the allowed value: {MaxAllowedAllocatedBytes}. Dropping some cached streams.")]
         public static partial void HighMemoryUsageDetected(this ILogger logger, long memoryUsage, long maxAllowedAllocatedBytes);
 
         [LoggerMessage(

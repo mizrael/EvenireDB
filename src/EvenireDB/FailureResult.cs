@@ -13,6 +13,11 @@ namespace EvenireDB
         public string Message { get; } = string.Empty;
         public int Code { get; } = ErrorCodes.Unknown;
 
+        public static FailureResult InvalidStream(Guid streamId)
+        => new FailureResult(
+                ErrorCodes.BadRequest,
+                $"invalid stream id: {streamId}.");
+
         public static FailureResult DuplicateEvent(Event? @event)
         => new FailureResult(
                 ErrorCodes.DuplicateEvent,

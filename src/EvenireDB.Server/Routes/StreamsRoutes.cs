@@ -55,6 +55,7 @@ namespace EvenireDB.Server.Routes
             {
                 FailureResult { Code: ErrorCodes.DuplicateEvent } d => Results.Conflict(new ApiError(ErrorCodes.DuplicateEvent, d.Message)),
                 FailureResult { Code: ErrorCodes.VersionMismatch } d => Results.BadRequest(new ApiError(ErrorCodes.VersionMismatch, d.Message)),
+                FailureResult { Code: ErrorCodes.BadRequest } d => Results.BadRequest(new ApiError(ErrorCodes.BadRequest, d.Message)),
                 FailureResult => Results.StatusCode(500),
                 _ => Results.AcceptedAtRoute(nameof(GetEvents), new { streamId })
             };
