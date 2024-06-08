@@ -2,11 +2,9 @@
 using BenchmarkDotNet.Engines;
 using EvenireDB;
 using EvenireDB.Common;
-using EvenireDB.Extents;
 using EvenireDB.Persistence;
 using EvenireDB.Utils;
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Threading.Channels;
 
 public class EventsProviderBenckmarks
 {

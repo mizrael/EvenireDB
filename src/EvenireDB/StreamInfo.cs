@@ -1,4 +1,4 @@
-namespace EvenireDB.Extents;
+namespace EvenireDB;
 
 public readonly record struct StreamInfo(
     Guid StreamId, 

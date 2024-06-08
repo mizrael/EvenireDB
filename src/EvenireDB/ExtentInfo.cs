@@ -1,4 +1,4 @@
-namespace EvenireDB.Extents;
+namespace EvenireDB;
 
 public readonly struct ExtentInfo
 {

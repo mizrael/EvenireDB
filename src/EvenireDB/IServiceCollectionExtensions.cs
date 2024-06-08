@@ -1,9 +1,7 @@
-﻿using EvenireDB.Extents;
-using EvenireDB.Persistence;
+﻿using EvenireDB.Persistence;
 using EvenireDB.Server;
 using EvenireDB.Utils;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System.Threading.Channels;
 
 namespace EvenireDB

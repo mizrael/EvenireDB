@@ -1,6 +1,4 @@
-﻿using EvenireDB.Extents;
-
-namespace EvenireDB.Persistence; 
+﻿namespace EvenireDB.Persistence; 
 
 internal interface IDataRepository
 {

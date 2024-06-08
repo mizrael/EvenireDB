@@ -1,4 +1,4 @@
-namespace EvenireDB.Extents;
+namespace EvenireDB;
 
 public interface IStreamInfoProvider
 {

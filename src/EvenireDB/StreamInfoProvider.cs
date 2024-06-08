@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace EvenireDB.Extents;
+namespace EvenireDB;
 
 internal record StreamInfoProviderConfig(string BasePath);
 
