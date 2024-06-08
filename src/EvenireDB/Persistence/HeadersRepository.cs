@@ -7,6 +7,8 @@ namespace EvenireDB.Persistence;
 
 internal class HeadersRepository : IHeadersRepository
 {
+    private readonly int _headerSize = Marshal.SizeOf<RawHeader>();
+
     public async ValueTask AppendAsync(ExtentInfo extentInfo, IAsyncEnumerable<RawHeader> headers, CancellationToken cancellationToken = default)
     {
         var headerSize = Marshal.SizeOf<RawHeader>();
@@ -38,24 +40,20 @@ internal class HeadersRepository : IHeadersRepository
         int? take = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var headerSize = Marshal.SizeOf<RawHeader>();
-
-        var streamBufferSize = headerSize * take.GetValueOrDefault(100);
+        var streamBufferSize = _headerSize * take.GetValueOrDefault(100);
 
         using var stream = new FileStream(extentInfo.HeadersPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: streamBufferSize, useAsync: true);
 
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(headerSize);
+        byte[] buffer = ArrayPool<byte>.Shared.Rent(_headerSize);
 
         try
         {
-
-
             if (skip.HasValue)
-                stream.Seek(skip.Value * headerSize, SeekOrigin.Begin);
+                stream.Seek(skip.Value * _headerSize, SeekOrigin.Begin);
 
             while (!cancellationToken.IsCancellationRequested)
             {
-                var bytesRead = await stream.ReadAsync(buffer, 0, headerSize, cancellationToken);
+                var bytesRead = await stream.ReadAsync(buffer, 0, _headerSize, cancellationToken);
                 if (bytesRead == 0)
                     yield break;
 
@@ -66,7 +64,7 @@ internal class HeadersRepository : IHeadersRepository
                         yield break;
                 }
 
-                var header = MemoryMarshal.Read<RawHeader>(buffer.AsSpan(0, headerSize));
+                var header = MemoryMarshal.Read<RawHeader>(buffer.AsSpan(0, _headerSize));
                 yield return header;
             }
         }

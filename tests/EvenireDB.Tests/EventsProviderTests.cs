@@ -12,10 +12,10 @@ namespace EvenireDB.Tests
             _fixture = fixture;
         }
 
-        private EventsProvider CreateSut(Guid streamId, out IExtentInfoProvider extentInfoProvider)
+        private EventsProvider CreateSut(Guid streamId, out IStreamInfoProvider extentInfoProvider)
         {
             var config = _fixture.CreateExtentsConfig(streamId);
-            extentInfoProvider = new ExtentInfoProvider(config);
+            extentInfoProvider = new StreamInfoProvider(config);
             var dataRepo = new DataRepository();
             var headersRepo = new HeadersRepository();
             return new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
@@ -34,7 +34,7 @@ namespace EvenireDB.Tests
 
             await sut.AppendAsync(streamId, events);
 
-            var extentInfo = extentInfoProvider.Get(streamId);
+            var extentInfo = extentInfoProvider.GetExtentInfo(streamId);
             var bytes = File.ReadAllBytes(extentInfo.DataPath);
             Assert.Equal(expectedFileSize, bytes.Length);
         }
@@ -54,7 +54,7 @@ namespace EvenireDB.Tests
             foreach (var events in batches)
                 await sut.AppendAsync(streamId, events);
 
-            var extentInfo = extentInfoProvider.Get(streamId);
+            var extentInfo = extentInfoProvider.GetExtentInfo(streamId);
             var bytes = File.ReadAllBytes(extentInfo.DataPath);
             Assert.Equal(expectedFileSize, bytes.Length);
         }

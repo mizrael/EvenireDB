@@ -52,9 +52,9 @@ namespace EvenireDB
                         dataPath = Path.Combine(AppContext.BaseDirectory, dataPath);
                 }
 
-                return new ExtentInfoProviderConfig(dataPath);
+                return new StreamInfoProviderConfig(dataPath);
             })
-            .AddSingleton<IExtentInfoProvider, ExtentInfoProvider>()
+            .AddSingleton<IStreamInfoProvider, StreamInfoProvider>()
             .AddSingleton<IDataRepository, DataRepository>()
             .AddSingleton<IHeadersRepository, HeadersRepository>()
             .AddSingleton<IEventsProvider, EventsProvider>()

@@ -29,7 +29,7 @@ public class EventsProviderBenckmarks
             Directory.CreateDirectory(dataPath);
 
         var repoConfig = new FileEventsRepositoryConfig();
-        var extentInfoProvider = new ExtentInfoProvider(new ExtentInfoProviderConfig(dataPath));
+        var extentInfoProvider = new StreamInfoProvider(new StreamInfoProviderConfig(dataPath));
         var dataRepo = new DataRepository();
         var headersRepo = new HeadersRepository();
         var repo = new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
