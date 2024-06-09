@@ -10,6 +10,8 @@ internal class HeadersRepository : IHeadersRepository
 
     public async ValueTask AppendAsync(ExtentInfo extentInfo, IAsyncEnumerable<RawHeader> headers, CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(extentInfo, nameof(extentInfo));
+        
         var headerSize = Marshal.SizeOf<RawHeader>();
         byte[] buffer = ArrayPool<byte>.Shared.Rent(headerSize);
 

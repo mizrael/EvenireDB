@@ -13,14 +13,14 @@ internal class ExtentInfoProvider : IExtentInfoProvider
             Directory.CreateDirectory(config.BasePath);
     }
 
-    public ExtentInfo? GetExtentInfo(Guid streamId)
+    public ExtentInfo? GetExtentInfo(Guid streamId, bool skipCheck = false)
     {
         // TODO: tests
         var key = streamId.ToString("N");
         int extentNumber = 0; // TODO: calculate
 
         var headersPath = Path.Combine(_config.BasePath, $"{key}_{extentNumber}_headers.dat");
-        if(!File.Exists(headersPath))
+        if(!skipCheck && !File.Exists(headersPath))
             return null;
         
         return new ExtentInfo
