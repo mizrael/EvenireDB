@@ -3,7 +3,7 @@ namespace EvenireDB.Tests;
 public class StreamInfoProviderTests
 {
     [Fact]
-    public async Task DeleteStreamAsync_should_do_nothing_when_stream_does_not_exist()
+    public async Task DeleteStreamAsync_should_throw_when_stream_does_not_exist()
     {
         var streamId = Guid.NewGuid();
 
@@ -12,7 +12,8 @@ public class StreamInfoProviderTests
         var logger = Substitute.For<ILogger<StreamInfoProvider>>();
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
 
-        await sut.DeleteStreamAsync(streamId);
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+            await sut.DeleteStreamAsync(streamId));
 
         var exists = sut.GetStreamInfo(streamId) is not null;
         exists.Should().BeFalse();
