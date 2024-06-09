@@ -32,8 +32,8 @@ public class EventsProviderBenckmarks
         var headersRepo = new HeadersRepository();
         var repo = new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
 
-        var cache = new EventsCache(
-            new NullLogger<EventsCache>(),
+        var cache = new StreamsCache(
+            new NullLogger<StreamsCache>(),
             new LRUCache<Guid, CachedEvents>(this.EventsCount),
             repo);
 

@@ -9,7 +9,7 @@ namespace EvenireDB.Tests
         [Fact]
         public async Task ReadAsync_should_return_empty_collection_when_data_not_available()
         {    
-            var cache = Substitute.For<IEventsCache>();          
+            var cache = Substitute.For<IStreamsCache>();          
             var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
             var events = await sut.ReadAsync(Guid.NewGuid(), StreamPosition.Start)
@@ -26,8 +26,8 @@ namespace EvenireDB.Tests
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                .ToList();
 
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var sut = new EventsReader(EventsReaderConfig.Default, cache);
@@ -48,8 +48,8 @@ namespace EvenireDB.Tests
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                 .ToList();
 
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
             
             var sut = new EventsReader(EventsReaderConfig.Default, cache);
@@ -72,8 +72,8 @@ namespace EvenireDB.Tests
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                .ToList();
 
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var sut = new EventsReader(EventsReaderConfig.Default, cache);
@@ -100,8 +100,8 @@ namespace EvenireDB.Tests
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                .ToList();
 
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var sut = new EventsReader(EventsReaderConfig.Default, cache);
@@ -126,8 +126,8 @@ namespace EvenireDB.Tests
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                .ToList();
 
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var sut = new EventsReader(EventsReaderConfig.Default, cache);
@@ -150,8 +150,8 @@ namespace EvenireDB.Tests
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                .ToList();
 
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>())
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>())
                  .Returns(new ValueTask<CachedEvents>(new CachedEvents(sourceEvents, new SemaphoreSlim(1))));
 
             var sut = new EventsReader(EventsReaderConfig.Default, cache);

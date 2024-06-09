@@ -7,12 +7,12 @@ namespace EvenireDB
 {
     internal class EventsReader : IEventsReader
     {
-        private readonly IEventsCache _cache;
+        private readonly IStreamsCache _cache;
         private readonly EventsReaderConfig _config;
         
         public EventsReader(
             EventsReaderConfig config,            
-            IEventsCache cache)
+            IStreamsCache cache)
         {
             _cache = cache ?? throw new ArgumentNullException(nameof(cache));
             _config = config ?? throw new ArgumentNullException(nameof(config));
@@ -27,7 +27,7 @@ namespace EvenireDB
             if (startPosition < 0)
                 throw new ArgumentOutOfRangeException(nameof(startPosition));
 
-            CachedEvents entry = await _cache.EnsureStreamAsync(streamId, cancellationToken).ConfigureAwait(false);
+            CachedEvents entry = await _cache.GetEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
             if (entry?.Events == null || entry.Events.Count == 0)
                 yield break;

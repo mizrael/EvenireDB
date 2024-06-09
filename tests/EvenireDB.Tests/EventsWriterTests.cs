@@ -17,8 +17,8 @@ namespace EvenireDB.Tests
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                 .ToArray();
 
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
 
             var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
             channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(true);
@@ -43,8 +43,8 @@ namespace EvenireDB.Tests
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                 .ToArray();
 
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1,1)));
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1,1)));
            
             var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
             channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(false);
@@ -70,8 +70,8 @@ namespace EvenireDB.Tests
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                 .ToArray();            
             
-            var cache = Substitute.For<IEventsCache>();
-            cache.EnsureStreamAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
+            var cache = Substitute.For<IStreamsCache>();
+            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
 
             var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
             channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(true);

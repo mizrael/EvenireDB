@@ -6,10 +6,12 @@ internal class StreamInfoProvider : IStreamInfoProvider
 {
     private readonly int _headerSize = Marshal.SizeOf<RawHeader>();
     private readonly IExtentInfoProvider _extentInfoProvider;
-
-    public StreamInfoProvider(IExtentInfoProvider extentInfoProvider)
+    private readonly IStreamsCache _cache;
+    
+    public StreamInfoProvider(IExtentInfoProvider extentInfoProvider, IStreamsCache cache)
     {
         _extentInfoProvider = extentInfoProvider ?? throw new ArgumentNullException(nameof(extentInfoProvider));
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
     }
 
     public StreamInfo GetStreamInfo(Guid streamId)
@@ -21,6 +23,7 @@ internal class StreamInfoProvider : IStreamInfoProvider
         return new StreamInfo(
             streamId,
             headersCount,
+            _cache.ContainsKey(streamId),
             fileInfo.CreationTimeUtc,
             fileInfo.LastWriteTimeUtc);
     }

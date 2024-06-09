@@ -6,12 +6,12 @@ namespace EvenireDB
     // TODO: append to a transaction log
     public class EventsWriter : IEventsWriter
     {
-        private readonly IEventsCache _cache;
+        private readonly IStreamsCache _cache;
         private readonly ChannelWriter<IncomingEventsGroup> _writer;
         private readonly IEventIdGenerator _idGenerator;
         private readonly ILogger<EventsWriter> _logger;
 
-        public EventsWriter(IEventsCache cache, ChannelWriter<IncomingEventsGroup> writer, IEventIdGenerator idGenerator, ILogger<EventsWriter> logger)
+        public EventsWriter(IStreamsCache cache, ChannelWriter<IncomingEventsGroup> writer, IEventIdGenerator idGenerator, ILogger<EventsWriter> logger)
         {
             _cache = cache;
             _writer = writer;
@@ -33,7 +33,7 @@ namespace EvenireDB
             if (!incomingEvents.Any())
                 return new SuccessResult();
 
-            CachedEvents entry = await _cache.EnsureStreamAsync(streamId, cancellationToken).ConfigureAwait(false);
+            CachedEvents entry = await _cache.GetEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
             if (expectedVersion.HasValue && entry.Events.Count != expectedVersion)
                 return FailureResult.VersionMismatch(streamId, expectedVersion.Value, entry.Events.Count);    

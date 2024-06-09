@@ -22,7 +22,7 @@ namespace EvenireDB
             {
                 return new LRUCache<Guid, CachedEvents>(settings.MaxInMemoryStreamsCount);
             })
-            .AddSingleton<IEventsCache, EventsCache>()
+            .AddSingleton<IStreamsCache, StreamsCache>()
             .AddSingleton(ctx =>
             {
 
