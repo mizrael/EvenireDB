@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using EvenireDB.Exceptions;
 using Microsoft.Extensions.Logging;
 
 namespace EvenireDB;
@@ -56,6 +57,9 @@ internal class StreamInfoProvider : IStreamInfoProvider
     public async ValueTask DeleteStreamAsync(Guid streamId, CancellationToken cancellationToken = default)
     {
         var extent = _extentInfoProvider.GetExtentInfo(streamId);
+        if (extent is null)
+            throw new ArgumentException($"Stream '{streamId}' does not exist.");
+
         var deleted = false;
         int attempt = 0;
 
@@ -83,7 +87,9 @@ internal class StreamInfoProvider : IStreamInfoProvider
             }
         }
 
-        if (deleted)
-            _logger.StreamDeleted(streamId);
+        if (!deleted)
+            throw new StreamException(streamId, $"Failed to delete stream '{streamId}'.");
+
+        _logger.StreamDeleted(streamId);
     }
 }
