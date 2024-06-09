@@ -11,10 +11,10 @@ namespace EvenireDB.Tests
             _fixture = fixture;
         }
 
-        private EventsProvider CreateSut(Guid streamId, out IStreamInfoProvider extentInfoProvider)
+        private EventsProvider CreateSut(Guid streamId, out IExtentInfoProvider extentInfoProvider)
         {
             var config = _fixture.CreateExtentsConfig(streamId);
-            extentInfoProvider = new StreamInfoProvider(config);
+            extentInfoProvider = new ExtentInfoProvider(config);
             var dataRepo = new DataRepository();
             var headersRepo = new HeadersRepository();
             return new EventsProvider(headersRepo, dataRepo, extentInfoProvider);

@@ -2,35 +2,19 @@ using System.Runtime.InteropServices;
 
 namespace EvenireDB;
 
-internal record StreamInfoProviderConfig(string BasePath);
-
 internal class StreamInfoProvider : IStreamInfoProvider
 {
-    private readonly StreamInfoProviderConfig _config;
     private readonly int _headerSize = Marshal.SizeOf<RawHeader>();
+    private readonly IExtentInfoProvider _extentInfoProvider;
 
-    public StreamInfoProvider(StreamInfoProviderConfig config)
+    public StreamInfoProvider(IExtentInfoProvider extentInfoProvider)
     {
-        _config = config ?? throw new ArgumentNullException(nameof(config));
-        if (!Directory.Exists(_config.BasePath))
-            Directory.CreateDirectory(config.BasePath);
-    }
-
-    public ExtentInfo GetExtentInfo(Guid streamId)
-    {
-        // TODO: tests
-        var key = streamId.ToString("N");
-        int extentNumber = 0; // TODO: calculate
-        return new ExtentInfo
-        {
-            DataPath = Path.Combine(_config.BasePath, $"{key}_{extentNumber}_data.dat"),
-            HeadersPath = Path.Combine(_config.BasePath, $"{key}_{extentNumber}_headers.dat"),
-        };
+        _extentInfoProvider = extentInfoProvider ?? throw new ArgumentNullException(nameof(extentInfoProvider));
     }
 
     public StreamInfo GetStreamInfo(Guid streamId)
-    {   
-        var extent = this.GetExtentInfo(streamId);
+    {
+        var extent = _extentInfoProvider.GetExtentInfo(streamId);
 
         var fileInfo = new FileInfo(extent.HeadersPath);
         var headersCount = fileInfo.Length / _headerSize;
@@ -43,11 +27,10 @@ internal class StreamInfoProvider : IStreamInfoProvider
 
     public IEnumerable<StreamInfo> GetStreamsInfo()
     {
-        var headersFiles = Directory.GetFiles(_config.BasePath, "*_headers.dat");
-        foreach(var headerFile in headersFiles)
+        var allExtents = _extentInfoProvider.GetExtentsInfo();
+        foreach (var extent in allExtents)
         {
-            var key = Path.GetFileNameWithoutExtension(headerFile).Split('_')[0];
-            yield return GetStreamInfo(Guid.Parse(key));
+            yield return GetStreamInfo(extent.StreamId);
         }
     }
 }
