@@ -38,4 +38,7 @@ internal class StreamsCache : IStreamsCache
 
     public bool ContainsKey(Guid streamId)
     => _cache.ContainsKey(streamId);
+
+    public void Remove(Guid streamId)
+    => _cache.Remove(streamId);
 }
