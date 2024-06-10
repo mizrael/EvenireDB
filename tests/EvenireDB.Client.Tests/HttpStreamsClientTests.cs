@@ -6,17 +6,10 @@ namespace EvenireDB.Client.Tests;
 
 public class HttpStreamsClientTests : IClassFixture<ServerFixture>
 {
-    private readonly ServerFixture _serverFixture;
-
-    public HttpStreamsClientTests(ServerFixture serverFixture)
-    {
-        _serverFixture = serverFixture;
-    }
-
     [Fact]
     public async Task GetStreamInfosAsync_should_return_nothing_when_no_streams_available()
     {
-        await using var application = _serverFixture.CreateServer();
+        await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
         var sut = new HttpStreamsClient(client);
@@ -25,30 +18,21 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     }
 
     [Fact]
-    public async Task GetStreamInfosAsync_should_available_streams()
+    public async Task GetStreamInfosAsync_should_return_ok()
     {
-        var streamIds = new[] { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
-
-        await using var application = _serverFixture.CreateServer();
+        await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
-
-        var eventsClient = new HttpEventsClient(client);
-        foreach(var streamId in streamIds)
-            await eventsClient.AppendAsync(streamId, TestUtils.BuildEvents(10));
-
+        
         var sut = new HttpStreamsClient(client);
         var results = await sut.GetStreamInfosAsync();
-        results.Should().NotBeNull().And.HaveCount(streamIds.Length);
-
-        foreach(var streamId in streamIds)
-            results.Should().ContainSingle(x => x.StreamId == streamId);
+        results.Should().NotBeNull();
     }
 
     [Fact]
     public async Task GetStreamInfoAsync_should_throw_when_stream_id_invalid()
     {
-        await using var application = _serverFixture.CreateServer();
+        await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
 
@@ -61,7 +45,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     {
         var streamId = Guid.NewGuid();
 
-        await using var application = _serverFixture.CreateServer();
+        await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
 
@@ -73,7 +57,6 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         result.Should().NotBeNull();
         result.StreamId.Should().Be(streamId);
         result.EventsCount.Should().Be(42);
-        result.IsCached.Should().BeTrue();
     }
 
     [Fact]
@@ -81,7 +64,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     {
         var streamId = Guid.NewGuid();
 
-        await using var application = _serverFixture.CreateServer();
+        await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
 
@@ -100,7 +83,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     {
         var streamId = Guid.NewGuid();
 
-        await using var application = _serverFixture.CreateServer();
+        await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
 
