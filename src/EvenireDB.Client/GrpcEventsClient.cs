@@ -1,4 +1,5 @@
-﻿using EvenireDB.Common;
+﻿using EvenireDB.Client.Exceptions;
+using EvenireDB.Common;
 using Grpc.Core;
 using GrpcEvents;
 using System.Runtime.CompilerServices;

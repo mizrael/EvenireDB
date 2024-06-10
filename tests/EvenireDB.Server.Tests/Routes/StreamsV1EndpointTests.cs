@@ -1,5 +1,4 @@
-﻿using EvenireDB.Server.DTO;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes;
 
@@ -13,6 +12,37 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
     }
 
     [Fact]
+    public async Task GetStreams_should_return_not_found_when_stream_id_invalid()
+    {
+        await using var application = _serverFixture.CreateServer();
+
+        using var client = application.CreateClient();
+        var response = await client.GetAsync($"/api/v1/streams/{Guid.NewGuid()}");
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetStreams_should_return_ok_when_stream_id_valid()
+    {
+        await using var application = _serverFixture.CreateServer();
+
+        using var client = application.CreateClient();
+
+        var streamId = Guid.NewGuid();
+
+        var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
+        await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
+
+        var response = await client.GetAsync($"/api/v1/streams/{streamId}");
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+
+        var stream = await response.Content.ReadFromJsonAsync<StreamInfo>();
+        stream.Should().NotBeNull();
+        stream.StreamId.Should().Be(streamId);
+        stream.EventsCount.Should().Be(10);
+    }
+
+    [Fact]
     public async Task GetStreams_should_return_empty_when_no_streams_available()
     {
         await using var application = _serverFixture.CreateServer();
@@ -21,7 +51,7 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         var response = await client.GetAsync("/api/v1/streams");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
-        var streams = await response.Content.ReadFromJsonAsync<object[]>();
+        var streams = await response.Content.ReadFromJsonAsync<StreamInfo[]>();
         streams.Should().NotBeNull().And.BeEmpty();
     }
 
@@ -40,10 +70,11 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         var response = await client.GetAsync("/api/v1/streams");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
-        var streams = await response.Content.ReadFromJsonAsync<object[]>();
+        var streams = await response.Content.ReadFromJsonAsync<StreamInfo[]>();
         streams.Should().NotBeNull()
                     .And.NotBeEmpty()
-                    .And.HaveCount(1);
+                    .And.HaveCount(1)
+                    .And.Contain(s => s.StreamId == streamId);
     }
 
     [Fact]

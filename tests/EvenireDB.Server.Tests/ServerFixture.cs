@@ -1,54 +1,78 @@
 ﻿using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 
-namespace EvenireDB.Server.Tests
+namespace EvenireDB.Server.Tests;
+
+public class ServerFixture : IAsyncLifetime
 {
-    public class ServerFixture : IAsyncLifetime
+    private struct ServerInfo
     {
-        private readonly List<IDisposable> _instances = new();
+        public IDisposable application;
+        public string tempDataFolder;
+    }
 
-        public WebApplicationFactory<Program> CreateServer()
-        {
-            var application = new WebApplicationFactory<Program>();
-            
-            _instances.Add(application);
-            return application;
-        }
+    private readonly List<ServerInfo> _servers = new();
+    private readonly List<IDisposable> _toDispose = new();
 
-        public GrpcChannel CreateGrpcChannel()
+    public WebApplicationFactory<Program> CreateServer()
+    {
+        var dataFolder = Directory.CreateTempSubdirectory("eveniredb-tests");
+
+        var application = new TestServerWebApplicationFactory(dataFolder);
+
+        _servers.Add(new ServerInfo()
         {
-            var application = CreateServer();
-            
-            var handler = application.Server.CreateHandler();
-            _instances.Add(handler);
-            
-            var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions()
+            application = application,
+            tempDataFolder = dataFolder.FullName
+        });
+
+        return application;
+    }
+
+    public GrpcChannel CreateGrpcChannel()
+    {
+        var application = CreateServer();
+
+        var handler = application.Server.CreateHandler();
+        _toDispose.Add(handler);
+
+        var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions()
+        {
+            HttpHandler = handler,
+        });
+        _toDispose.Add(channel);
+
+        return channel;
+    }
+
+    public Task InitializeAsync()
+    => Task.CompletedTask;
+
+    public Task DisposeAsync()
+    {
+        foreach(var disposable in _toDispose)
+            disposable.Dispose();
+        _toDispose.Clear();
+
+        foreach (var instance in _servers)
+        {
+            instance.application?.Dispose();
+
+            try
             {
-                HttpHandler = handler,
-            });
-            _instances.Add(channel);
-
-            return channel;
-        }
-
-        public Task InitializeAsync()
-        => Task.CompletedTask;
-
-        public Task DisposeAsync()
-        {
-            foreach (var instance in _instances)
-                instance.Dispose();
-            _instances.Clear();
-
-            if (Directory.Exists("./data"))
                 lock (this)
                 {
-                    if (Directory.Exists("./data"))
-                        Directory.Delete("./data", true);
+                    if (Directory.Exists(instance.tempDataFolder))
+                        Directory.Delete(instance.tempDataFolder, true);
                 }
-
-            return Task.CompletedTask;
+            }
+            catch
+            {
+                // best effort
+            }
         }
+
+        _servers.Clear();
+
+        return Task.CompletedTask;
     }
 }

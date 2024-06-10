@@ -46,7 +46,9 @@ public static class StreamsRoutes
         Guid streamId)
     {
         var result = provider.GetStreamInfo(streamId);
-        return Results.Ok(result);
+        return (result is null) ?
+            Results.NotFound() :
+            Results.Ok(result);
     }
 
     private static async IAsyncEnumerable<EventDTO> GetEventsAsync(
