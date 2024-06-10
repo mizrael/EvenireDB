@@ -58,8 +58,39 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
                 countToRemove--;
             }
 
-            if(curr is not null)
+            if (curr is not null)
                 curr.Next = null;
+        }
+    }
+
+    public void Remove(TKey key)
+    {
+        if (!_cache.TryGetValue(key, out var node))
+            return;
+
+        SemaphoreSlim semaphore = GetSemaphore(key);
+        semaphore.Wait();
+
+        try
+        {
+            if (_head == node)
+                _head = node.Next;
+
+            if (_tail == node)
+                _tail = node.Previous;
+
+            if (node.Previous != null)
+                node.Previous.Next = node.Next;
+
+            if (node.Next != null)
+                node.Next.Previous = node.Previous;
+
+            _cache.Remove(key);
+            _semaphores.Remove(key);
+        }
+        finally
+        {
+            semaphore.Release();
         }
     }
 
@@ -184,6 +215,8 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
     }
 
     public uint Count => (uint)_cache.Count;
+
+    public IEnumerable<TKey> Keys => _cache.Keys;
 
     protected virtual void Dispose(bool disposing)
     {

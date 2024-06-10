@@ -6,14 +6,9 @@ using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-                     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
-                     .AddEnvironmentVariables();
-
-var serverConfig = builder.Configuration.GetSection("Server").Get<EvenireServerSettings>()!;
-
 builder.WebHost.ConfigureKestrel((context, options) =>
 {
+    var serverConfig = context.Configuration.GetSection("Evenire").Get<EvenireServerSettings>()!;
     options.ListenAnyIP(serverConfig.HttpSettings.Port, o => o.Protocols = HttpProtocols.Http1AndHttp2);
     options.ListenAnyIP(serverConfig.GrpcSettings.Port, o => o.Protocols = HttpProtocols.Http2);
 });
@@ -29,8 +24,10 @@ builder.Services.AddProblemDetails(options =>
     options.CustomizeProblemDetails = ctx =>
             ctx.ProblemDetails.Extensions.Add("nodeId", Environment.MachineName));
 
+builder.Services.Configure<EvenireServerSettings>(builder.Configuration.GetSection("Evenire"));
+
 builder.Services
-   .AddEvenire(serverConfig)
+   .AddEvenire()
    .AddSingleton<EventMapper>();
 
 var app = builder.Build();
@@ -46,6 +43,8 @@ app.MapEventsRoutes();
    
 app.Lifetime.ApplicationStarted.Register(() =>
 {
+    var settings = app.Services.GetServerSettings();
+
     var version = Assembly.GetExecutingAssembly().GetName().Version;
     Console.ForegroundColor = ConsoleColor.Yellow;
     Console.WriteLine("\n\n********************************************************\n");
@@ -55,7 +54,7 @@ app.Lifetime.ApplicationStarted.Register(() =>
     Console.WriteLine("Server configuration:");
 
     Console.ForegroundColor = ConsoleColor.White;
-    Console.WriteLine(JsonSerializer.Serialize(serverConfig, new JsonSerializerOptions()
+    Console.WriteLine(JsonSerializer.Serialize(settings, new JsonSerializerOptions()
     {
         WriteIndented = true
     }));

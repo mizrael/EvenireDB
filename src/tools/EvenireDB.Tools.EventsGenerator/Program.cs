@@ -1,4 +1,5 @@
 ﻿using EvenireDB.Client;
+using EvenireDB.Client.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 using System.Text;

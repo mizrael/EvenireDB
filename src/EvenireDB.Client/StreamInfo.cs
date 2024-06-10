@@ -1,4 +1,4 @@
-namespace EvenireDB;
+﻿namespace EvenireDB.Client;
 
 public record StreamInfo(
     Guid StreamId,

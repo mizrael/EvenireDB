@@ -12,10 +12,26 @@ public static class StreamsRoutes
                     .HasApiVersion(1.0);
         v1.MapGet("", GetStreams).WithName(nameof(GetStreams));
         v1.MapGet("/{streamId:guid}", GetStreamInfo).WithName(nameof(GetStreamInfo));
-        v1.MapGet("/{streamId:guid}/events", GetEvents).WithName(nameof(GetEvents));
-        v1.MapPost("/{streamId:guid}/events", SaveEvents).WithName(nameof(SaveEvents));
+        v1.MapDelete("/{streamId:guid}", DeleteSteamAsync).WithName(nameof(DeleteSteamAsync));
+        v1.MapGet("/{streamId:guid}/events", GetEventsAsync).WithName(nameof(GetEventsAsync));
+        v1.MapPost("/{streamId:guid}/events", AppendEventsAsync).WithName(nameof(AppendEventsAsync));
 
         return app;
+    }
+
+    private static async ValueTask<IResult> DeleteSteamAsync(
+        [FromServices] IStreamInfoProvider provider,
+        Guid streamId)
+    {
+        try
+        {
+            await provider.DeleteStreamAsync(streamId);
+            return Results.NoContent();
+        }
+        catch (ArgumentException)
+        {
+            return Results.NotFound();
+        }
     }
 
     private static IResult GetStreams(
@@ -30,10 +46,12 @@ public static class StreamsRoutes
         Guid streamId)
     {
         var result = provider.GetStreamInfo(streamId);
-        return Results.Ok(result);
+        return (result is null) ?
+            Results.NotFound() :
+            Results.Ok(result);
     }
 
-    private static async IAsyncEnumerable<EventDTO> GetEvents(
+    private static async IAsyncEnumerable<EventDTO> GetEventsAsync(
         [FromServices] IEventsReader reader,
         Guid streamId,
         [FromQuery(Name = "pos")] uint startPosition = 0,
@@ -43,7 +61,7 @@ public static class StreamsRoutes
             yield return EventDTO.FromModel(@event);
     }
 
-    private static async ValueTask<IResult> SaveEvents(
+    private static async ValueTask<IResult> AppendEventsAsync(
         [FromServices] EventMapper mapper,
         [FromServices] IEventsWriter writer,
         Guid streamId,
@@ -72,7 +90,7 @@ public static class StreamsRoutes
             FailureResult { Code: ErrorCodes.VersionMismatch } d => Results.BadRequest(new ApiError(ErrorCodes.VersionMismatch, d.Message)),
             FailureResult { Code: ErrorCodes.BadRequest } d => Results.BadRequest(new ApiError(ErrorCodes.BadRequest, d.Message)),
             FailureResult => Results.StatusCode(500),
-            _ => Results.AcceptedAtRoute(nameof(GetEvents), new { streamId })
+            _ => Results.AcceptedAtRoute(nameof(GetEventsAsync), new { streamId })
         };
     }
 }

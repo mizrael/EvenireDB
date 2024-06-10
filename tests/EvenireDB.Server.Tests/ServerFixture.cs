@@ -1,54 +1,45 @@
 ﻿using Grpc.Net.Client;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 
-namespace EvenireDB.Server.Tests
+namespace EvenireDB.Server.Tests;
+
+public class ServerFixture : IAsyncLifetime
 {
-    public class ServerFixture : IAsyncLifetime
+    private readonly List<IDisposable> _toDispose = new();
+
+    public WebApplicationFactory<Program> CreateServer()
     {
-        private readonly List<IDisposable> _instances = new();
+        var application = new TestServerWebApplicationFactory();
 
-        public WebApplicationFactory<Program> CreateServer()
+        _toDispose.Add(application);
+
+        return application;
+    }
+
+    public GrpcChannel CreateGrpcChannel()
+    {
+        var application = CreateServer();
+
+        var handler = application.Server.CreateHandler();
+        _toDispose.Add(handler);
+
+        var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions()
         {
-            var application = new WebApplicationFactory<Program>();
-            
-            _instances.Add(application);
-            return application;
-        }
+            HttpHandler = handler,
+        });
+        _toDispose.Add(channel);
 
-        public GrpcChannel CreateGrpcChannel()
-        {
-            var application = CreateServer();
-            
-            var handler = application.Server.CreateHandler();
-            _instances.Add(handler);
-            
-            var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions()
-            {
-                HttpHandler = handler,
-            });
-            _instances.Add(channel);
+        return channel;
+    }
 
-            return channel;
-        }
+    public Task InitializeAsync()
+    => Task.CompletedTask;
 
-        public Task InitializeAsync()
-        => Task.CompletedTask;
+    public Task DisposeAsync()
+    {
+        foreach (var disposable in _toDispose)
+            disposable.Dispose();
+        _toDispose.Clear();
 
-        public Task DisposeAsync()
-        {
-            foreach (var instance in _instances)
-                instance.Dispose();
-            _instances.Clear();
-
-            if (Directory.Exists("./data"))
-                lock (this)
-                {
-                    if (Directory.Exists("./data"))
-                        Directory.Delete("./data", true);
-                }
-
-            return Task.CompletedTask;
-        }
+        return Task.CompletedTask;
     }
 }

@@ -24,7 +24,7 @@ internal class EventsProvider : IEventsProvider
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var extentInfo = _extentInfoProvider.GetExtentInfo(streamId);
-        if (!File.Exists(extentInfo.DataPath) || !File.Exists(extentInfo.HeadersPath))
+        if (extentInfo is null || !File.Exists(extentInfo.DataPath) || !File.Exists(extentInfo.HeadersPath))
             yield break;
 
         var headersCursor = _headersRepo.ReadAsync(extentInfo, skip, take, cancellationToken);
@@ -38,7 +38,7 @@ internal class EventsProvider : IEventsProvider
         Guid streamId,
         IEnumerable<Event> events, CancellationToken cancellationToken = default)
     {
-        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId);
+        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId, true);
 
         var semaphore = _streamLocks.GetOrAdd(streamId, _ => new SemaphoreSlim(1, 1));
         await semaphore.WaitAsync(cancellationToken);

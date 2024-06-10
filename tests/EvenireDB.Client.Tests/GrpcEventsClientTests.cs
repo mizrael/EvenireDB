@@ -1,4 +1,5 @@
-﻿using EvenireDB.Common;
+﻿using EvenireDB.Client.Exceptions;
+using EvenireDB.Common;
 using EvenireDB.Server.Tests;
 
 namespace EvenireDB.Client.Tests
