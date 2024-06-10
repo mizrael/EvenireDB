@@ -49,7 +49,7 @@ public class ServerFixture : IAsyncLifetime
 
     public Task DisposeAsync()
     {
-        foreach(var disposable in _toDispose)
+        foreach (var disposable in _toDispose)
             disposable.Dispose();
         _toDispose.Clear();
 
