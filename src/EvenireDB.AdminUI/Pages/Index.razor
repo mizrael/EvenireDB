@@ -6,21 +6,37 @@
 <h1>EvenireDB Admin panel</h1>
 
 <h2>Streams</h2>
-@if(_streams is null)
+@if (_streams is null)
 {
-    <span>Loading streams...</span>
-}else{
-    foreach(var stream in _streams)
-    {
-    <div>
-        <h3>@stream.StreamId</h3>
-        <p>@stream.IsCached</p>
+    <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100"
+             aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
     </div>
+}
+else
+{
+    foreach (var stream in _streams)
+    {
+        <div>
+            <h3>@stream.StreamId</h3>
+            <p>@stream.IsCached</p>
+        </div>
     }
 }
 
-@code{ 
+@if (_isFailed)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        An error has occurred while loading the data
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+}
+
+@code{
     private IEnumerable<StreamInfo>? _streams;
+    private bool _isFailed = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -29,14 +45,15 @@
 
     private async Task RefreshData()
     {
+        _isFailed = false;
         try
         {
             _streams = await streamsClient.GetStreamInfosAsync();
         }
         catch
         {
-            // TODO: log error
-            // TODO: display error            
+            _isFailed = true;
+            _streams = Array.Empty<StreamInfo>();            
         }
     }
 }
