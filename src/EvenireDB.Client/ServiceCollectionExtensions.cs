@@ -36,8 +36,8 @@ public static class ServiceCollectionExtensions
     {
         var delay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 5);
 
-        return services.AddHttpClient<TClient, TImplementation>(client => ConfigureClientSettings(client, config));
-                //.AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(delay));
+        return services.AddHttpClient<TClient, TImplementation>(client => ConfigureClientSettings(client, config))
+                        .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(delay));
     }
 
     private static void ConfigureClientSettings(HttpClient client, EvenireClientConfig config)
