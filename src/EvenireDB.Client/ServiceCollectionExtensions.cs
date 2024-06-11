@@ -6,33 +6,43 @@ namespace EvenireDB.Client;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddEvenireDB(this IServiceCollection services, EvenireConfig config)
+    public static IServiceCollection AddEvenireDB(this IServiceCollection services, EvenireClientConfig config)
     {
         if (config is null)
             throw new ArgumentNullException(nameof(config));
 
         if (config.UseGrpc)
         {
-            services.AddGrpcClient<GrpcEvents.EventsGrpcService.EventsGrpcServiceClient>(o =>
+            services.AddGrpcClient<GrpcEvents.EventsGrpcService.EventsGrpcServiceClient>(client =>
             {
-                o.Address = config.Uri;
+                client.Address = config.ServerUri;               
             });
             services.AddTransient<IEventsClient, GrpcEventsClient>();
         }
         else
-        {
-            var delay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 5);
-            services.AddHttpClient<IEventsClient, HttpEventsClient>(client => {
-                client.BaseAddress = config.Uri;
-            })
-            .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(delay));
-
-            services.AddHttpClient<IStreamsClient, HttpStreamsClient>(client => {
-                client.BaseAddress = config.Uri;
-            })
-            .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(delay));
+        {   
+            services.ConfigureHttpClient<IEventsClient, HttpEventsClient>(config);
         }
 
+        // this is mostly for admin operations and there're no gRPC services for this (yet)
+        services.ConfigureHttpClient<IStreamsClient, HttpStreamsClient>(config);
+
         return services;
+    }
+
+    private static IHttpClientBuilder ConfigureHttpClient<TClient, TImplementation>(this IServiceCollection services, EvenireClientConfig config)
+        where TClient : class
+        where TImplementation : class, TClient
+    {
+        var delay = Backoff.DecorrelatedJitterBackoffV2(medianFirstRetryDelay: TimeSpan.FromSeconds(1), retryCount: 5);
+
+        return services.AddHttpClient<TClient, TImplementation>(client => ConfigureClientSettings(client, config));
+                //.AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(delay));
+    }
+
+    private static void ConfigureClientSettings(HttpClient client, EvenireClientConfig config)
+    {
+        client.BaseAddress = config.ServerUri;
+        client.Timeout = config.Timeout;
     }
 }

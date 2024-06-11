@@ -1,0 +1,42 @@
+﻿@page "/"
+@inject EvenireDB.Client.IStreamsClient streamsClient
+
+<PageTitle>Index</PageTitle>
+
+<h1>EvenireDB Admin panel</h1>
+
+<h2>Streams</h2>
+@if(_streams is null)
+{
+    <span>Loading streams...</span>
+}else{
+    foreach(var stream in _streams)
+    {
+    <div>
+        <h3>@stream.StreamId</h3>
+        <p>@stream.IsCached</p>
+    </div>
+    }
+}
+
+@code{ 
+    private IEnumerable<StreamInfo>? _streams;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshData();
+    }
+
+    private async Task RefreshData()
+    {
+        try
+        {
+            _streams = await streamsClient.GetStreamInfosAsync();
+        }
+        catch
+        {
+            // TODO: log error
+            // TODO: display error            
+        }
+    }
+}
