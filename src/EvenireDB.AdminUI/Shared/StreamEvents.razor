@@ -6,7 +6,7 @@
     <ul class="list-group list-group-flush mb-2">
         @foreach (var evt in _events)
         {
-        <li class="list-group-item">@(evt.Id.Timestamp)-@evt.Id.Sequence @evt.Type @evt.Id.CreatedAt</li>
+            <li class="list-group-item">@(evt.Id.Timestamp)-@evt.Id.Sequence @evt.Type @evt.Id.CreatedAt</li>
         }
     </ul>
     <button @onclick="FetchEventsAsync" class="btn btn-primary" disabled="@(!_hasNextPage)">Load more</button>
