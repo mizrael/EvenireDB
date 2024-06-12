@@ -42,7 +42,10 @@ public static class ServiceCollectionExtensions
 
     private static void ConfigureClientSettings(HttpClient client, EvenireClientConfig config)
     {
-        client.BaseAddress = config.ServerUri;
+        var builder = new UriBuilder(config.ServerUri);
+        if(config.HttpSettings is not null)
+            builder.Port = config.HttpSettings.Port;
+        client.BaseAddress = builder.Uri;
         client.Timeout = config.Timeout;
     }
 }
