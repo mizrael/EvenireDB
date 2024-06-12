@@ -33,8 +33,7 @@ internal class HttpStreamsClient : IStreamsClient
                                         .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        var results = (await response.Content.ReadFromJsonAsync<StreamInfo[]>(cancellationToken: cancellationToken))
-                        ?? Array.Empty<StreamInfo>();
+        var results = (await response.Content.ReadFromJsonAsync<StreamInfo[]>(cancellationToken: cancellationToken)) ?? [];
         return results;
     }
 
@@ -49,8 +48,8 @@ internal class HttpStreamsClient : IStreamsClient
                 _ => new ClientException(ErrorCodes.Unknown, await response.Content.ReadAsStringAsync().ConfigureAwait(false))
             };
 
-        return await response.Content.ReadFromJsonAsync<StreamInfo>(cancellationToken: cancellationToken)
-                                     .ConfigureAwait(false);
-
+        var result = await response.Content.ReadFromJsonAsync<StreamInfo>(cancellationToken: cancellationToken)
+                                           .ConfigureAwait(false);
+        return result!;
     }
 }

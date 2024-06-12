@@ -49,7 +49,7 @@ public record Sensor
     private Sensor(Guid id, Reading[]? readings)
     {
         this.Id = id;
-        this.Readings = readings ?? Array.Empty<Reading>();
+        this.Readings = readings ?? [];
 
         this.Average = this.Readings.Select(r => r.Temperature).Average();
     }

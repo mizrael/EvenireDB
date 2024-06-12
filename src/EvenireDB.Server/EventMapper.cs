@@ -15,7 +15,7 @@ public class EventMapper
         if (dtos is null)
             throw new ArgumentNullException(nameof(dtos));
         if (dtos.Length == 0)
-            return Array.Empty<Event>();
+            return [];
 
         var events = new EventData[dtos.Length];
         for (int i = 0; i < dtos.Length; i++)
