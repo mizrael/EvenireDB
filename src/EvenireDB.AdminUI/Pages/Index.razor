@@ -7,10 +7,7 @@
 
 @if (_streams is null)
 {
-    <div class="progress">
-    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100"
-        aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
-</div>
+    <Loading></Loading>
 }
 else
 {
@@ -28,7 +25,9 @@ else
         @foreach (var stream in _streams)
             {
                 <tr>
-                    <th scope="row">@stream.StreamId</th>
+                    <th scope="row">
+                        <a href='/streams/@stream.StreamId' title='@stream.StreamId'>@stream.StreamId</a>
+                    </th>
                     <td>@stream.EventsCount</td>
                     <td>@stream.IsCached</td>
                     <td>@stream.CreatedAt</td>
@@ -41,12 +40,7 @@ else
 
 @if (_isFailed)
 {
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-    An error has occurred while loading the data
-    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-        <span aria-hidden="true">&times;</span>
-    </button>
-</div>
+    <ErrorAlert></ErrorAlert>
 }
 
 @code {

@@ -1,0 +1,46 @@
+﻿@page "/streams/{Id:guid}"
+@inject EvenireDB.Client.IStreamsClient streamsClient
+
+<PageTitle>Stream Details</PageTitle>
+
+<h1>Stream Details</h1>
+
+@if (_stream is null)
+{
+   <Loading></Loading>
+}
+else
+{
+    <div>@_stream.StreamId</div>
+}
+
+@if (_isFailed)
+{
+    <ErrorAlert></ErrorAlert>
+}
+
+@code {
+    private StreamInfo? _stream;
+    private bool _isFailed = false;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await RefreshData();
+    }
+
+    private async Task RefreshData()
+    {
+        _isFailed = false;
+        try
+        {
+            _stream = await streamsClient.GetStreamInfoAsync(this.Id);
+        }
+        catch
+        {
+            _isFailed = true;
+        }
+    }
+}
