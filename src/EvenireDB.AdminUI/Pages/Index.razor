@@ -40,7 +40,7 @@ else if(_status == OperationStatus.Success && _streams != null)
 
 @if (_status == OperationStatus.Failure)
 {
-    <CloseableAlert Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+    <CloseableAlert Message="An error has occurred while fetching data." Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
 }
 
 @code {

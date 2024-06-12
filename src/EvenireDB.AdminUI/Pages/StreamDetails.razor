@@ -1,5 +1,6 @@
 ﻿@page "/streams/{Id:guid}"
 @inject EvenireDB.Client.IStreamsClient streamsClient
+@inject EvenireDB.Client.IEventsClient eventsClient
 
 <PageTitle>Stream Details</PageTitle>
 
@@ -45,39 +46,85 @@ else if (_status == OperationStatus.Success && _stream != null)
         </div>
     </form>
 
-    <SendEvents StreamId="@_stream.StreamId" OnEventSent="RefreshData"></SendEvents>
+    <div id="streamDetailsAccordion">
+
+        <div class="card">
+            <div class="card-header" id="stream-events">
+                <h5 class="mb-0">
+                    <button class="btn btn-link collapsed" data-toggle="collapse" aria-controls="stream-events-body"
+                            data-target="#stream-events-body" aria-expanded="true">
+                        Stream Events
+                    </button>
+                </h5>
+            </div>
+
+            <div id="stream-events-body" class="collapse" aria-labelledby="stream-events">
+                <div class="card-body">
+                    <StreamEvents StreamId="@_stream.StreamId" @ref="_streamEvents"></StreamEvents>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-2">
+            <div class="card-header" id="send-events-head">
+                <h5 class="mb-0">
+                    <button class="btn btn-link" data-toggle="collapse" data-target="#send-events-body"
+                            aria-expanded="true" aria-controls="collapseOne">
+                        Send Events
+                    </button>
+                </h5>
+            </div>
+
+            <div id="send-events-body" class="collapse show" aria-labelledby="send-events-head">
+                <div class="card-body">
+                    <SendEvents StreamId="@_stream.StreamId" OnEventSent="RefreshDataAsync"></SendEvents>
+                </div>
+            </div>
+        </div>
+
+    </div>
 }
-
-<a href="/streams">Back to archive</a>
-
-@if (_status == OperationStatus.Failure)
+else if (_status == OperationStatus.Failure)
 {
-    <CloseableAlert Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+    <CloseableAlert Message="An error has occurred while fetching data." Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
 }
+
+<div class="col-sm-12 mt-4 p-0">
+    <a href="/streams">Back to archive</a>
+</div>
 
 @code {
     private StreamInfo? _stream;
     private OperationStatus _status = OperationStatus.None;
+    private StreamEvents _streamEvents;
 
     [Parameter]
     public Guid Id { get; set; }
 
     protected override async Task OnParametersSetAsync()
     {
-        await RefreshData();
+        await RefreshDataAsync();
     }
 
-    private async Task RefreshData()
+    private async Task RefreshDataAsync()
     {
         _status = OperationStatus.Processing;
+
+        _stream = null;
+        _streamEvents?.Reset();
+
         try
         {
             _stream = await streamsClient.GetStreamInfoAsync(this.Id);
+
             _status = OperationStatus.Success;
         }
         catch
         {
             _status = OperationStatus.Failure;
         }
+
+        if(_streamEvents is not null)
+            await _streamEvents!.FetchEventsAsync();
     }
 }

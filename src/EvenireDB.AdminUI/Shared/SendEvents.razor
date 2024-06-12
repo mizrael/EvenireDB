@@ -1,65 +1,62 @@
 ﻿@using System.ComponentModel.DataAnnotations
 @inject IEventsClient eventsClient
 
-<div class="card send-events">
-    <h5 class="card-header">Send Events</h5>
-    <div class="card-body">
-        <EditForm Model="Model"
-                  OnValidSubmit="async () => await OnSubmitAsync()" FormName="SendEventsToStream">
-            <AntiforgeryToken />
+<div class="send-events">
+    <EditForm Model="Model"
+              OnValidSubmit="async () => await OnSubmitAsync()" FormName="SendEventsToStream">
+        <AntiforgeryToken />
 
-            @if (StreamId is null)
-            {
-                <div class="form-group row">
-                    <label for="sendToStreamId" class="col-sm-2 col-form-label">Destination Stream Id</label>
-                    <div class="col-sm-10">
-                        <input type="text" class="form-control" readonly="@_sending"
-                               id="sendToStreamId" placeholder="Stream Id" @bind-value="Model.Id">
-                    </div>
-                </div>
-            }
-
+        @if (StreamId is null)
+        {
             <div class="form-group row">
-                <label for="sendToStreamEventType" class="col-sm-2 col-form-label">Event type</label>
+                <label for="sendToStreamId" class="col-sm-2 col-form-label">Destination Stream Id</label>
                 <div class="col-sm-10">
-                    <input type="text" class="form-control" readonly="@_sending" @bind-value="Model.EventType"
-                           id="sendToStreamEventType" placeholder="Event type">
+                    <input type="text" class="form-control" readonly="@_sending"
+                           id="sendToStreamId" placeholder="Stream Id" @bind-value="Model.Id">
                 </div>
             </div>
+        }
 
-            <div class="form-group row">
-                <label for="sendToStreamPayload" class="col-sm-2 col-form-label">Payload</label>
-                <div class="col-sm-10">
-                    <textarea class="form-control" readonly="@_sending" @bind="Model.Payload"
-                              id="sendToStreamPayload" rows="3"></textarea>
-                </div>
+        <div class="form-group row">
+            <label for="sendToStreamEventType" class="col-sm-2 col-form-label">Event type</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" readonly="@_sending" @bind-value="Model.EventType"
+                       id="sendToStreamEventType" placeholder="Event type">
             </div>
+        </div>
 
-            <DataAnnotationsValidator />
-            <ValidationSummary />
+        <div class="form-group row">
+            <label for="sendToStreamPayload" class="col-sm-2 col-form-label">Payload</label>
+            <div class="col-sm-10">
+                <textarea class="form-control" readonly="@_sending" @bind="Model.Payload"
+                          id="sendToStreamPayload" rows="3"></textarea>
+            </div>
+        </div>
 
-            @if (_status != OperationStatus.Processing)
-            {
-                <button type="submit" class="btn btn-primary">Send</button>
-            }
-        </EditForm>
+        <DataAnnotationsValidator />
+        <ValidationSummary />
 
-        @if (_status == OperationStatus.Processing)
+        @if (_status != OperationStatus.Processing)
         {
-            <Loading></Loading>
+            <button type="submit" class="btn btn-primary">Send</button>
         }
-        else if (_status == OperationStatus.Failure)
-        {
-            <CloseableAlert Message="an error has occurred while sending event to the stream."
-                            Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
-        }
-        else if (_status == OperationStatus.Success)
-        {
-            <CloseableAlert Message="Event sent!"
-                            Type="CloseableAlert.AlertTypes.Success"></CloseableAlert>
-        }
+    </EditForm>
 
-    </div>
+    @if (_status == OperationStatus.Processing)
+    {
+        <Loading></Loading>
+    }
+    else if (_status == OperationStatus.Failure)
+    {
+        <CloseableAlert Message="an error has occurred while sending event to the stream."
+                        Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+    }
+    else if (_status == OperationStatus.Success)
+    {
+        <CloseableAlert Message="Event sent!"
+                        Type="CloseableAlert.AlertTypes.Success"></CloseableAlert>
+    }
+
 </div>
 
 @code {

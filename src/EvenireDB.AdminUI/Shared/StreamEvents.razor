@@ -1,0 +1,76 @@
+﻿@using System.ComponentModel.DataAnnotations
+@inject IEventsClient eventsClient
+
+<div class="stream-events">
+
+    <ul class="list-group list-group-flush mb-2">
+        @foreach (var evt in _events)
+        {
+        <li class="list-group-item">@(evt.Id.Timestamp)-@evt.Id.Sequence @evt.Type @evt.Id.CreatedAt</li>
+        }
+    </ul>
+    <button @onclick="FetchEventsAsync" class="btn btn-primary" disabled="@(!_hasNextPage)">Load more</button>
+
+    @if (_status == OperationStatus.Processing)
+    {
+        <Loading></Loading>
+    }
+    else if (_status == OperationStatus.Failure)
+    {
+        <CloseableAlert Message="an error has occurred while pulling events."
+                        Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+    }
+
+
+
+</div>
+
+@code {
+    private List<Event> _events = new();
+    private List<Event> _nextEvents = new();
+    private uint _position = 0;
+
+    private bool _hasNextPage => _nextEvents.Any();
+
+    private OperationStatus _status = OperationStatus.None;
+
+    [Parameter]
+    public Guid? StreamId { get; set; } = null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await FetchEventsAsync();
+    }
+
+    public async Task FetchEventsAsync()
+    {
+        _events.Clear();
+        if (StreamId is null)
+            return;
+
+        if (_position == 0)
+        {
+            await foreach (var item in eventsClient.ReadAsync(StreamId.Value, position: _position, direction: EvenireDB.Common.Direction.Forward))
+                _events.Add(item);
+            
+            _position += (uint)_events.Count;
+        }
+        else
+        {
+            _events.AddRange(_nextEvents);
+
+            _position += (uint)_nextEvents.Count;
+        }
+
+        _nextEvents.Clear();
+        await foreach (var item in eventsClient.ReadAsync(StreamId.Value, position: _position, direction: EvenireDB.Common.Direction.Forward))
+            _nextEvents.Add(item);
+    }
+
+    public void Reset()
+    {
+        _events.Clear();
+        _nextEvents.Clear();
+        _position = 0;
+    }
+}
