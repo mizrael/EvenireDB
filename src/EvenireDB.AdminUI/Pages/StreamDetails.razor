@@ -5,11 +5,11 @@
 
 <h1>Stream Details</h1>
 
-@if (_stream is null)
+@if (_status == OperationStatus.Processing)
 {
     <Loading></Loading>
 }
-else
+else if (_status == OperationStatus.Success && _stream != null)
 {
     <form>
         <div class="form-group row">
@@ -44,18 +44,20 @@ else
             </div>
         </div>
     </form>
+
+    <SendEvents StreamId="@_stream.StreamId" OnEventSent="RefreshData"></SendEvents>
 }
 
-<a href="/streams">Back to archive</a> 
+<a href="/streams">Back to archive</a>
 
-@if (_isFailed)
+@if (_status == OperationStatus.Failure)
 {
-    <ErrorAlert></ErrorAlert>
+    <CloseableAlert Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
 }
 
 @code {
     private StreamInfo? _stream;
-    private bool _isFailed = false;
+    private OperationStatus _status = OperationStatus.None;
 
     [Parameter]
     public Guid Id { get; set; }
@@ -67,14 +69,15 @@ else
 
     private async Task RefreshData()
     {
-        _isFailed = false;
+        _status = OperationStatus.Processing;
         try
         {
             _stream = await streamsClient.GetStreamInfoAsync(this.Id);
+            _status = OperationStatus.Success;
         }
         catch
         {
-            _isFailed = true;
+            _status = OperationStatus.Failure;
         }
     }
 }

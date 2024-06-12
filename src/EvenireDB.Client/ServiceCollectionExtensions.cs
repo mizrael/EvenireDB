@@ -15,7 +15,10 @@ public static class ServiceCollectionExtensions
         {
             services.AddGrpcClient<GrpcEvents.EventsGrpcService.EventsGrpcServiceClient>(client =>
             {
-                client.Address = config.ServerUri;               
+                var builder = new UriBuilder(config.ServerUri);
+                if (config.GrpcSettings is not null)
+                    builder.Port = config.GrpcSettings.Port;
+                client.Address = builder.Uri;
             });
             services.AddTransient<IEventsClient, GrpcEventsClient>();
         }

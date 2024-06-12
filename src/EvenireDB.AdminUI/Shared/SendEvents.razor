@@ -1,0 +1,118 @@
+﻿@using System.ComponentModel.DataAnnotations
+@inject IEventsClient eventsClient
+
+<div class="card send-events">
+    <h5 class="card-header">Send Events</h5>
+    <div class="card-body">
+        <EditForm Model="Model"
+                  OnValidSubmit="async () => await OnSubmitAsync()" FormName="SendEventsToStream">
+            <AntiforgeryToken />
+
+            @if (StreamId is null)
+            {
+                <div class="form-group row">
+                    <label for="sendToStreamId" class="col-sm-2 col-form-label">Destination Stream Id</label>
+                    <div class="col-sm-10">
+                        <input type="text" class="form-control" readonly="@_sending"
+                               id="sendToStreamId" placeholder="Stream Id" @bind-value="Model.Id">
+                    </div>
+                </div>
+            }
+
+            <div class="form-group row">
+                <label for="sendToStreamEventType" class="col-sm-2 col-form-label">Event type</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" readonly="@_sending" @bind-value="Model.EventType"
+                           id="sendToStreamEventType" placeholder="Event type">
+                </div>
+            </div>
+
+            <div class="form-group row">
+                <label for="sendToStreamPayload" class="col-sm-2 col-form-label">Payload</label>
+                <div class="col-sm-10">
+                    <textarea class="form-control" readonly="@_sending" @bind="Model.Payload"
+                              id="sendToStreamPayload" rows="3"></textarea>
+                </div>
+            </div>
+
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            @if (_status != OperationStatus.Processing)
+            {
+                <button type="submit" class="btn btn-primary">Send</button>
+            }
+        </EditForm>
+
+        @if (_status == OperationStatus.Processing)
+        {
+            <Loading></Loading>
+        }
+        else if (_status == OperationStatus.Failure)
+        {
+            <CloseableAlert Message="an error has occurred while sending event to the stream."
+                            Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+        }
+        else if (_status == OperationStatus.Success)
+        {
+            <CloseableAlert Message="Event sent!"
+                            Type="CloseableAlert.AlertTypes.Success"></CloseableAlert>
+        }
+
+    </div>
+</div>
+
+@code {
+    private OperationStatus _status = OperationStatus.None;
+
+    private bool _sending => _status == OperationStatus.Processing;
+
+    [SupplyParameterFromForm]
+    private SendEventsModel? Model { get; set; }
+
+    [Parameter]
+    public Guid? StreamId { get; set; } = null;
+
+    protected override void OnInitialized() => Model ??= new();
+
+    protected override void OnParametersSet()
+    {
+        Model ??= new();
+        Model.Id = StreamId ?? Guid.Empty;
+    }
+
+    private async ValueTask OnSubmitAsync()
+    {
+        _status = OperationStatus.Processing;
+
+        try
+        {
+            var payload = System.Text.Encoding.UTF8.GetBytes(Model.Payload);
+            var @event = new EventData(Model.EventType, payload);
+            await eventsClient.AppendAsync(Model.Id, [@event]);
+
+            _status = OperationStatus.Success;
+
+            await OnEventSent.InvokeAsync();
+        }
+        catch
+        {
+            _status = OperationStatus.Failure;
+        }
+    }
+
+    [Parameter]
+    public EventCallback OnEventSent { get; set; }
+
+    public class SendEventsModel
+    {
+        [Required]
+        public Guid Id { get; set; }
+
+        [Required]
+        public string EventType { get; set; } = string.Empty;
+
+        [Required]
+        public string Payload { get; set; } = string.Empty;
+    }
+}

@@ -1,0 +1,20 @@
+﻿<div class="alert alert-@(Type.ToString().ToLower()) alert-dismissible fade show" role="alert">
+    @Message 
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+    </button>
+</div>
+
+@code{
+    public enum AlertTypes
+    {
+        Success,
+        Danger
+    }
+
+    [Parameter]
+    public string? Message { get; set; } = null;
+
+    [Parameter]
+    public AlertTypes Type { get; set; } = AlertTypes.Success;
+}
