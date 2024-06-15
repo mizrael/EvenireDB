@@ -1,0 +1,62 @@
+﻿<div class="modal fade" id="@_id" tabindex="-1" role="dialog" aria-labelledby="@(_id)-label" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="@(_id)-label">@Options?.Title</h5>
+                @if(Options?.ShowClose ?? true) { 
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                }
+            </div>
+            <div class="modal-body">
+                @ChildContent
+            </div>
+            <div class="modal-footer">
+                @if (Options?.ShowClose ?? true)
+                {
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                }
+                
+                @if(Options?.Buttons is not null)
+                {
+                    foreach (var button in Options.Buttons)
+                    {
+                        <button type="button" class="@button.CssClass" @onclick="() => button.Callback?.Invoke()">@button.Text</button>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#@_id">
+    @Options?.OpenButtonText
+</button>
+
+@code {
+    [Parameter]
+    public RenderFragment ChildContent {get;set;}
+
+    [Parameter]
+    public ModalOptions Options { get; set; }
+
+    private string _id;
+
+    protected override void OnInitialized()
+    {
+        _id = Guid.NewGuid().ToString("N");
+    }
+
+    public record ModalOptions(
+        string Title,
+        string OpenButtonText,
+        ModalButton[] Buttons,
+        bool ShowClose = true);
+
+    public record ModalButton(string Text, Action? Callback = null, string CssClass = "btn")
+    {
+        public static ModalButton Primary(string text, Action? callback = null)
+            => new ModalButton(text, callback, "btn btn-primary");
+    }
+}

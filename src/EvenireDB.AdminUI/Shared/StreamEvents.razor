@@ -6,7 +6,12 @@
     <ul class="list-group list-group-flush mb-2">
         @foreach (var evt in _events)
         {
-            <li class="list-group-item">@(evt.Id.Timestamp)-@evt.Id.Sequence @evt.Type @evt.Id.CreatedAt</li>
+            <li class="list-group-item">
+                <div>@(evt.Id.Timestamp)-@evt.Id.Sequence @evt.Type @evt.Id.CreatedAt</div>
+                <Modal Options="@_showPayloadOptions">
+                    fghfghfgh
+                </Modal>
+            </li>
         }
     </ul>
     <button @onclick="FetchEventsAsync" class="btn btn-primary" disabled="@(!_hasNextPage)">Load more</button>
@@ -20,8 +25,6 @@
         <CloseableAlert Message="an error has occurred while pulling events."
                         Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
     }
-
-
 
 </div>
 
@@ -73,4 +76,14 @@
         _nextEvents.Clear();
         _position = 0;
     }
+
+    private Modal.ModalOptions _showPayloadOptions = new Modal.ModalOptions(
+            "Show Event payload",
+            "Show payload",
+            new Modal.ModalButton[] { 
+                Modal.ModalButton.Primary("Ok") 
+            },
+            ShowClose: true
+        );
+   
 }
