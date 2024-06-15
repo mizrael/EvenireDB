@@ -8,9 +8,7 @@
         {
             <li class="list-group-item">
                 <div>@(evt.Id.Timestamp)-@evt.Id.Sequence @evt.Type @evt.Id.CreatedAt</div>
-                <Modal Options="@_showPayloadOptions">
-                    fghfghfgh
-                </Modal>
+                <div><button type='button' @onclick='() => _payloadModal?.Open()'>show payload</button></div>
             </li>
         }
     </ul>
@@ -26,9 +24,13 @@
                         Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
     }
 
+    <Modal Options="@_showPayloadOptions" @ref='_payloadModal'>
+        fghfghfgh
+    </Modal>
 </div>
 
 @code {
+    private Modal _payloadModal;
     private List<Event> _events = new();
     private List<Event> _nextEvents = new();
     private uint _position = 0;
@@ -83,7 +85,8 @@
             new Modal.ModalButton[] { 
                 Modal.ModalButton.Primary("Ok") 
             },
-            ShowClose: true
+            ShowClose: true,
+            ShowOpen: false
         );
    
 }

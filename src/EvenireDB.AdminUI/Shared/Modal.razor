@@ -1,10 +1,12 @@
-﻿<div class="modal fade" id="@_id" tabindex="-1" role="dialog" aria-labelledby="@(_id)-label" aria-hidden="true">
+﻿<div class="modal @_cssClass" id="@_id" tabindex="-1" 
+    style="display:@_display; overflow-y: auto;"
+    role="dialog" aria-labelledby="@(_id)-label">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="@(_id)-label">@Options?.Title</h5>
                 @if(Options?.ShowClose ?? true) { 
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick='Close'>
                     <span aria-hidden="true">&times;</span>
                 </button>
                 }
@@ -15,7 +17,7 @@
             <div class="modal-footer">
                 @if (Options?.ShowClose ?? true)
                 {
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" @onclick='Close'>Close</button>
                 }
                 
                 @if(Options?.Buttons is not null)
@@ -30,9 +32,18 @@
     </div>
 </div>
 
-<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#@_id">
-    @Options?.OpenButtonText
-</button>
+@if(Options?.ShowOpen ?? true)
+{
+    <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#@_id">
+        @Options?.OpenButtonText
+    </button>
+}
+
+@if (_showBackdrop)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
 
 @code {
     [Parameter]
@@ -42,17 +53,35 @@
     public ModalOptions Options { get; set; }
 
     private string _id;
+    private string _display = "none;";
+    private string _cssClass = "";
+    private bool _showBackdrop = false;
 
     protected override void OnInitialized()
     {
         _id = Guid.NewGuid().ToString("N");
     }
 
+    public void Open()
+    {
+        _display = "block;";
+        _cssClass = "show";
+        _showBackdrop = true;
+    }
+
+    public void Close()
+    {
+        _display = "none";
+        _cssClass = "";
+        _showBackdrop = false;
+    }
+
     public record ModalOptions(
         string Title,
         string OpenButtonText,
         ModalButton[] Buttons,
-        bool ShowClose = true);
+        bool ShowClose = true,
+        bool ShowOpen = true);
 
     public record ModalButton(string Text, Action? Callback = null, string CssClass = "btn")
     {
