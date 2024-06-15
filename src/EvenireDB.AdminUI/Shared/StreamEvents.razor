@@ -2,16 +2,31 @@
 @inject IEventsClient eventsClient
 
 <div class="stream-events">
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Type </th>
+                <th scope="col">Created on</th>
+                <th scope="col">Payload size</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var evt in _events)
+            {
+                <tr>
+                    <th scope="row">
+                        @(evt.Id.Timestamp)-@evt.Id.Sequence
+                    </th>
+                    <td>@evt.Type</td>
+                    <td>@evt.Id.CreatedAt</td>
+                    <td>@evt.Data.Length bytes</td>
+                    <td><button type='button' @onclick='() => OpenPayloadModal(evt)'>view payload</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
 
-    <ul class="list-group list-group-flush mb-2">
-        @foreach (var evt in _events)
-        {
-            <li class="list-group-item">
-                <div>@(evt.Id.Timestamp)-@evt.Id.Sequence @evt.Type @evt.Id.CreatedAt</div>
-                <div><button type='button' @onclick='() => _payloadModal?.Open()'>show payload</button></div>
-            </li>
-        }
-    </ul>
     <button @onclick="FetchEventsAsync" class="btn btn-primary" disabled="@(!_hasNextPage)">Load more</button>
 
     @if (_status == OperationStatus.Processing)
@@ -20,12 +35,12 @@
     }
     else if (_status == OperationStatus.Failure)
     {
-        <CloseableAlert Message="an error has occurred while pulling events."
-                        Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+        <CloseableAlert Message="an error has occurred while pulling events." Type="CloseableAlert.AlertTypes.Danger">
+        </CloseableAlert>
     }
 
     <Modal Options="@_showPayloadOptions" @ref='_payloadModal'>
-        fghfghfgh
+        <div>@DecodePayload(_selectedEvent)</div>
     </Modal>
 </div>
 
@@ -38,6 +53,8 @@
     private bool _hasNextPage => _nextEvents.Any();
 
     private OperationStatus _status = OperationStatus.None;
+
+    private Event? _selectedEvent;
 
     [Parameter]
     public Guid? StreamId { get; set; } = null;
@@ -55,9 +72,10 @@
 
         if (_position == 0)
         {
-            await foreach (var item in eventsClient.ReadAsync(StreamId.Value, position: _position, direction: EvenireDB.Common.Direction.Forward))
+            await foreach (var item in eventsClient.ReadAsync(StreamId.Value, position: _position, direction:
+            EvenireDB.Common.Direction.Forward))
                 _events.Add(item);
-            
+
             _position += (uint)_events.Count;
         }
         else
@@ -68,7 +86,8 @@
         }
 
         _nextEvents.Clear();
-        await foreach (var item in eventsClient.ReadAsync(StreamId.Value, position: _position, direction: EvenireDB.Common.Direction.Forward))
+        await foreach (var item in eventsClient.ReadAsync(StreamId.Value, position: _position, direction:
+        EvenireDB.Common.Direction.Forward))
             _nextEvents.Add(item);
     }
 
@@ -79,14 +98,27 @@
         _position = 0;
     }
 
+    private void OpenPayloadModal(Event evt)
+    {
+        _selectedEvent = evt;
+        _payloadModal?.Open();
+    }
+
+    private string DecodePayload(Event evt)
+    {
+        if (evt?.Data is null)
+            return "";
+        return System.Text.Encoding.UTF8.GetString(evt.Data.Span);
+    }
+
     private Modal.ModalOptions _showPayloadOptions = new Modal.ModalOptions(
-            "Show Event payload",
-            "Show payload",
-            new Modal.ModalButton[] { 
-                Modal.ModalButton.Primary("Ok") 
-            },
-            ShowClose: true,
-            ShowOpen: false
-        );
-   
+    "Show Event payload",
+    "Show payload",
+    new Modal.ModalButton[] {
+Modal.ModalButton.Primary("Ok")
+    },
+    ShowClose: true,
+    ShowOpen: false
+    );
+
 }
