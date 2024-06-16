@@ -29,35 +29,15 @@ else if (_streams != null)
         <tbody>
             @foreach (var stream in _streams)
             {
-                <tr>
-                    <th scope="row">@stream.StreamId</th>
-                    <td>@stream.EventsCount</td>
-                    <td>@stream.IsCached</td>
-                    <td>@stream.CreatedAt</td>
-                    <td>@stream.LastAccessedAt</td>
-                    <td>
-                        <a href='/streams/@stream.StreamId' title='view details' class="mr-2">
-                            <span class="oi oi-bolt" aria-hidden="true"></span>
-                        </a>
-                        <a title="delete" href="#" @onclick="() => OpenDeleteStream(stream)"
-                           @onclick:preventDefault="true" @onclick:stopPropagation="true">
-                            <span class="oi oi-trash" aria-hidden="true"></span>
-                        </a>
-                    </td>
-                </tr>
+                <StreamRow Stream="stream" OnStreamDeleted="() => RefreshData()"></StreamRow>                
             }
         </tbody>
     </table>
-
-    <Modal @ref='_deleteStreamModal'>
-        Are you sure you want to delete the stream?
-    </Modal>
 }
 
 @code {
     private IEnumerable<StreamInfo>? _streams;
     private OperationStatus _status = OperationStatus.None;
-    private Modal _deleteStreamModal;
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,42 +58,5 @@ else if (_streams != null)
         {
             _status = OperationStatus.Failure;
         }
-    }
-
-    private void OpenDeleteStream(StreamInfo stream)
-    {
-        if (_deleteStreamModal is null || stream is null)
-            return;
-
-        _deleteStreamModal.Options = new Modal.ModalOptions(
-            $"Delete Stream '{stream.StreamId}'?",
-            null,
-            new Modal.ModalButton[] {
-                Modal.ModalButton.Danger("Proceed", async () =>
-                {
-                    bool deleted = false;
-                    _status = OperationStatus.Processing;
-                    try
-                    {
-                        await streamsClient.DeleteStreamAsync(stream.StreamId);
-                        deleted = true;
-                    }
-                    catch (Exception)
-                    {
-
-                        _status = OperationStatus.None;
-                    }
-
-                    if(deleted){
-                        await RefreshData();
-                        StateHasChanged();
-                    }
-                })
-                },
-            ShowClose: true,
-            ShowOpen: false
-        );
-
-        _deleteStreamModal.Open();
     }
 }
