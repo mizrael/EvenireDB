@@ -11,9 +11,14 @@
                 </button>
                 }
             </div>
-            <div class="modal-body">
-                @ChildContent
-            </div>
+
+            @if (ChildContent is not null)
+            {
+                <div class="modal-body">
+                    @ChildContent
+                </div>
+            }
+
             <div class="modal-footer">
                 @if (Options?.ShowClose ?? true)
                 {
@@ -24,7 +29,7 @@
                 {
                     foreach (var button in Options.Buttons)
                     {
-                        <button type="button" class="@button.CssClass" @onclick="() => button.Callback?.Invoke()">@button.Text</button>
+                        <button type="button" class="@button.CssClass" @onclick="() => OnButtonClick(button)">@button.Text</button>
                     }
                 }
             </div>
@@ -32,7 +37,7 @@
     </div>
 </div>
 
-@if(Options?.ShowOpen ?? true)
+@if(Options?.ShowOpen ?? false && !string.IsNullOrWhiteSpace(Options?.OpenButtonText))
 {
     <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#@_id">
         @Options?.OpenButtonText
@@ -47,10 +52,10 @@
 
 @code {
     [Parameter]
-    public RenderFragment ChildContent {get;set;}
+    public RenderFragment? ChildContent {get;set;}
 
     [Parameter]
-    public ModalOptions Options { get; set; }
+    public ModalOptions? Options { get; set; }
 
     private string _id;
     private string _display = "none;";
@@ -60,6 +65,13 @@
     protected override void OnInitialized()
     {
         _id = Guid.NewGuid().ToString("N");
+    }
+
+    private void OnButtonClick(ModalButton button)
+    {
+        button.Callback?.Invoke();
+        if (button.CloseOnClick)        
+            Close();        
     }
 
     public void Open()
@@ -83,9 +95,12 @@
         bool ShowClose = true,
         bool ShowOpen = true);
 
-    public record ModalButton(string Text, Action? Callback = null, string CssClass = "btn")
+    public record ModalButton(string Text, Action? Callback = null, string CssClass = "btn", bool CloseOnClick = true)
     {
         public static ModalButton Primary(string text, Action? callback = null)
             => new ModalButton(text, callback, "btn btn-primary");
+        
+        public static ModalButton Danger(string text, Action? callback = null)
+        => new ModalButton(text, callback, "btn btn-danger");
     }
 }
