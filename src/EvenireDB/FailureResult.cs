@@ -18,6 +18,16 @@ namespace EvenireDB
                 ErrorCodes.BadRequest,
                 $"invalid stream id: {streamId}.");
 
+        public static FailureResult NullEvents(Guid streamId)
+        => new FailureResult(
+                ErrorCodes.BadRequest,
+                $"received null events collection for stream {streamId}.");
+
+        public static FailureResult InvalidStreamType(string streamType)
+        => new FailureResult(
+                ErrorCodes.BadRequest,
+                $"invalid stream type: {streamType}.");
+
         public static FailureResult DuplicateEvent(Event? @event)
         => new FailureResult(
                 ErrorCodes.DuplicateEvent,

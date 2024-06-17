@@ -24,6 +24,7 @@ namespace EvenireDB.Server.Tests
             var req = new ReadRequest()
             {
                 StreamId = Guid.NewGuid().ToString(),
+                StreamType = "lorem"
             };
             var response = client.Read(req);
             var loadedEvents = await response.ResponseStream.ReadAllAsync().ToListAsync();
@@ -31,7 +32,7 @@ namespace EvenireDB.Server.Tests
         }
 
         [Fact]
-        public async Task Append_should_return_bad_request_when_input_invalid()
+        public async Task Append_should_return_bad_request_when_events_invalid()
         {
             var streamId = Guid.NewGuid();
             var dtos = BuildEventDataDTOs(10, null);
@@ -41,7 +42,31 @@ namespace EvenireDB.Server.Tests
 
             var req = new AppendRequest()
             {
-                StreamId = streamId.ToString()
+                StreamId = streamId.ToString(),
+                StreamType = "lorem"
+            };
+            req.Events.AddRange(dtos);
+            var response = await client.AppendAsync(req);
+            response.Should().NotBeNull();
+            response.Error.Should().NotBeNull();
+            response.Error.Code.Should().Be(ErrorCodes.BadRequest);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData("   ")]
+        public async Task Append_should_return_bad_request_when_stream_type_invalid(string streamType)
+        {
+            var streamId = Guid.NewGuid();
+            var dtos = BuildEventDataDTOs(10, _defaultEventData);
+
+            var channel = _serverFixture.CreateGrpcChannel();
+            var client = new EventsGrpcService.EventsGrpcServiceClient(channel);
+
+            var req = new AppendRequest()
+            {
+                StreamId = streamId.ToString(),
+                StreamType = streamType
             };
             req.Events.AddRange(dtos);
             var response = await client.AppendAsync(req);
@@ -61,7 +86,8 @@ namespace EvenireDB.Server.Tests
 
             var req = new AppendRequest()
             {
-                StreamId = streamId.ToString()
+                StreamId = streamId.ToString(),
+                StreamType = "lorem"
             };
             req.Events.AddRange(dtos);
             var response = await client.AppendAsync(req);
@@ -81,7 +107,8 @@ namespace EvenireDB.Server.Tests
 
             var req = new AppendRequest()
             {
-                StreamId = streamId.ToString()
+                StreamId = streamId.ToString(),
+                StreamType = "lorem"
             };
             req.Events.AddRange(dtos);
             await client.AppendAsync(req);
@@ -89,6 +116,7 @@ namespace EvenireDB.Server.Tests
             var req2 = new AppendRequest()
             {
                 StreamId = streamId.ToString(),
+                StreamType = "lorem",
                 ExpectedVersion = 42
             };
             req2.Events.AddRange(dtos);
@@ -109,7 +137,8 @@ namespace EvenireDB.Server.Tests
 
             var req = new AppendRequest()
             {
-                StreamId = streamId.ToString()
+                StreamId = streamId.ToString(),
+                StreamType = "lorem"
             };
             req.Events.AddRange(dtos);
             var response = await client.AppendAsync(req);
@@ -133,7 +162,8 @@ namespace EvenireDB.Server.Tests
 
             var req = new AppendRequest()
             {
-                StreamId = streamId.ToString()
+                StreamId = streamId.ToString(),
+                StreamType = "lorem"
             };
             req.Events.AddRange(dtos);
             var response = await client.AppendAsync(req);
@@ -143,6 +173,7 @@ namespace EvenireDB.Server.Tests
             var readReq = new ReadRequest()
             {
                 StreamId = streamId.ToString(),
+                StreamType = "lorem"
             };
             var readResponse = client.Read(readReq);
             var loadedEvents = await readResponse.ResponseStream.ReadAllAsync().ToListAsync();

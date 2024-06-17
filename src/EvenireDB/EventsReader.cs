@@ -23,6 +23,8 @@ internal class EventsReader : IEventsReader
         Direction direction = Direction.Forward,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(streamType); 
+        
         if (startPosition < 0)
             throw new ArgumentOutOfRangeException(nameof(startPosition));
 

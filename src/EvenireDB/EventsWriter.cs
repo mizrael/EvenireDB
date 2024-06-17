@@ -29,7 +29,11 @@ public class EventsWriter : IEventsWriter
         if(streamId == Guid.Empty)
             return FailureResult.InvalidStream(streamId);
 
-        ArgumentNullException.ThrowIfNull(incomingEvents, nameof(incomingEvents));
+        if(string.IsNullOrWhiteSpace(streamType))
+            return FailureResult.InvalidStreamType(streamType);
+
+        if(incomingEvents is null)
+            return FailureResult.NullEvents(streamId);
 
         if (!incomingEvents.Any())
             return new SuccessResult();

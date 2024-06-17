@@ -22,6 +22,8 @@ public class EventsGrcpServiceImpl : EventsGrpcService.EventsGrpcServiceBase
         if (!Guid.TryParse(request.StreamId, out var streamId))
             throw new ArgumentOutOfRangeException(nameof(request.StreamId)); //TODO: is this ok?
 
+        ArgumentNullException.ThrowIfNullOrWhiteSpace(request.StreamType, nameof(request.StreamType));
+
         await foreach(var @event in _reader.ReadAsync(
             streamId,
             request.StreamType,

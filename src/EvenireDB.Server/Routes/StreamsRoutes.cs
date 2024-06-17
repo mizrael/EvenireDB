@@ -37,7 +37,7 @@ public static class StreamsRoutes
 
     private static IResult GetStreams(
         [FromServices] IStreamInfoProvider provider,
-        [FromQuery] string? streamType = null)
+        [FromQuery] string? streamType = null) //TODO: test types filter
     {
         var streams = provider.GetStreamsInfo(streamType);
         return Results.Ok(streams);

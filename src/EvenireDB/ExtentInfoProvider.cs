@@ -46,18 +46,20 @@ internal class ExtentInfoProvider : IExtentInfoProvider
     public IEnumerable<ExtentInfo> GetAllExtentsInfo(string? streamType = null)
     {
         var types = Directory.GetDirectories(_config.BasePath, streamType ?? string.Empty) ?? Array.Empty<string>();
-        foreach (var typeFound in types)
+        foreach (var typeFolder in types)
         {
+            string type = Path.GetFileNameWithoutExtension(typeFolder);
+
             // taking the first extent for each stream
             // just to be sure that the stream exists
             // so that we can parse the stream id from the file name
-            var headersFiles = Directory.GetFiles(_config.BasePath, "*_0_headers.dat");
+            var headersFiles = Directory.GetFiles(typeFolder, "*_0_headers.dat");
             foreach (var headerFile in headersFiles)
             {
                 var filename = Path.GetFileNameWithoutExtension(headerFile);
                 var key = filename.Substring(0, 32);
-
-                yield return GetExtentInfo(Guid.Parse(key), typeFound!);
+                
+                yield return GetExtentInfo(Guid.Parse(key), type)!;
             }
         }
     }
