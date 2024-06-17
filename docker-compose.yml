@@ -5,6 +5,13 @@ services:
     image: eveniredb:latest
     restart: always    
     ports:
-      - 80:80
+      - 32154:80
     volumes:
       - './volumes/eveniredb/data/:/data'
+  eveniredb-adminui:
+    image: eveniredb-adminui:latest
+    restart: always    
+    ports:
+      - 32160:8080
+    environment:
+      - Evenire:HttpSettings:Port=32154

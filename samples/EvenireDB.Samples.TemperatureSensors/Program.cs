@@ -7,11 +7,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = new Uri(builder.Configuration.GetConnectionString("evenire"));
 
-Settings settings = builder.Configuration.GetSection("Settings").Get<Settings>();
+var settings = builder.Configuration.GetSection("Settings").Get<Settings>();
+
+var clientConfig = builder.Configuration.GetSection("Evenire").Get<EvenireClientConfig>();
 
 builder.Services.AddHostedService<SensorsFakeProducer>()
                 .AddSingleton(settings)
-                .AddEvenireDB(new EvenireConfig(connectionString, settings.UseGrpc));
+                .AddEvenireDB(clientConfig);
 
 var app = builder.Build();
 
@@ -47,7 +49,7 @@ public record Sensor
     private Sensor(Guid id, Reading[]? readings)
     {
         this.Id = id;
-        this.Readings = readings ?? Array.Empty<Reading>();
+        this.Readings = readings ?? [];
 
         this.Average = this.Readings.Select(r => r.Temperature).Average();
     }

@@ -1,0 +1,62 @@
+﻿@page "/streams"
+@inject EvenireDB.Client.IStreamsClient streamsClient
+
+<PageTitle>Streams</PageTitle>
+
+<h1>Streams</h1>
+
+@if (_status == OperationStatus.Processing)
+{
+    <Loading></Loading>
+}
+else if (_status == OperationStatus.Failure)
+{
+    <CloseableAlert Message="An error has occurred while fetching data." Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+}
+else if (_streams != null)
+{
+    <table class="table table-striped table-hover">
+        <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Events #</th>
+                <th scope="col">Is Cached</th>
+                <th scope="col">Created on</th>
+                <th scope="col">Last updated on</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var stream in _streams)
+            {
+                <StreamRow Stream="stream" OnStreamDeleted="() => RefreshData()"></StreamRow>                
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<StreamInfo>? _streams;
+    private OperationStatus _status = OperationStatus.None;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshData();
+    }
+
+    private async Task RefreshData()
+    {
+        _streams = null;
+        _status = OperationStatus.Processing;
+
+        try
+        {
+            _streams = await streamsClient.GetStreamInfosAsync();
+            _status = OperationStatus.Success;
+        }
+        catch
+        {
+            _status = OperationStatus.Failure;
+        }
+    }
+}

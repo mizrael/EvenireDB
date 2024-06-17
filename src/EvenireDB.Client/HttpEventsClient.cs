@@ -27,8 +27,7 @@ internal class HttpEventsClient : IEventsClient
                                         .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        var results = (await response.Content.ReadFromJsonAsync<Event[]>(cancellationToken: cancellationToken))
-                        ?? Array.Empty<Event>();
+        var results = (await response.Content.ReadFromJsonAsync<Event[]>(cancellationToken: cancellationToken)) ?? [];
         foreach(var item in results)
             yield return item;
     }

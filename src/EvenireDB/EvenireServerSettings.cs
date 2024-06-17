@@ -34,7 +34,6 @@ public record EvenireServerSettings
     public long MaxAllowedAllocatedBytes { get; init; } = 1_000_000_000; // TODO: consider making this a function of max allowed streams count and max event data size
 
     public TimeSpan MemoryWatcherInterval { get; init; } = TimeSpan.FromMinutes(2);
+    public record HttpTransportSettings(int Port = 80);
+    public record GrpcTransportSettings(int Port = 5243);
 }
-
-public record HttpTransportSettings(int Port = 80);
-public record GrpcTransportSettings(int Port = 5243);

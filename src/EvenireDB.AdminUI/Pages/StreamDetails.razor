@@ -1,0 +1,130 @@
+﻿@page "/streams/{Id:guid}"
+@inject EvenireDB.Client.IStreamsClient streamsClient
+@inject EvenireDB.Client.IEventsClient eventsClient
+
+<PageTitle>Stream Details</PageTitle>
+
+<h1>Stream Details</h1>
+
+@if (_status == OperationStatus.Processing)
+{
+    <Loading></Loading>
+}
+else if (_status == OperationStatus.Success && _stream != null)
+{
+    <form>
+        <div class="form-group row">
+            <label for="streamId" class="col-sm-2 col-form-label">Id</label>
+            <div class="col-sm-10">
+                <input type="text" readonly class="form-control-plaintext" id="streamId" value="@_stream.StreamId">
+                @if (_stream.IsCached)
+                {
+                    <span class="badge badge-info">cached</span>
+                }
+                else
+                {
+                    <span class="badge badge-secondary">not cached</span>
+                }
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="eventsCount" class="col-sm-2 col-form-label">Events #</label>
+            <div class="col-sm-10">
+                <input type="text" class="form-control" id="eventsCount" placeholder="@_stream.EventsCount">
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="createdAt" class="col-sm-2 col-form-label">Created at</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="createdAt" placeholder="@_stream.CreatedAt">
+            </div>
+
+            <label for="lastAccessedAt" class="col-sm-2 col-form-label">Last accessed at</label>
+            <div class="col-sm-4">
+                <input type="text" class="form-control" id="lastAccessedAt" placeholder="@_stream.LastAccessedAt">
+            </div>
+        </div>
+    </form>
+
+    <div id="streamDetailsAccordion">
+
+        <div class="card">
+            <div class="card-header" id="stream-events">
+                <h5 class="mb-0">
+                    <button class="btn btn-link collapsed" data-toggle="collapse" aria-controls="stream-events-body"
+                            data-target="#stream-events-body" aria-expanded="true">
+                        Stream Events
+                    </button>
+                </h5>
+            </div>
+
+            <div id="stream-events-body" class="collapse" aria-labelledby="stream-events">
+                <div class="card-body">
+                    <StreamEvents StreamId="@_stream.StreamId" @ref="_streamEvents"></StreamEvents>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-2">
+            <div class="card-header" id="send-events-head">
+                <h5 class="mb-0">
+                    <button class="btn btn-link" data-toggle="collapse" data-target="#send-events-body"
+                            aria-expanded="true" aria-controls="collapseOne">
+                        Send Events
+                    </button>
+                </h5>
+            </div>
+
+            <div id="send-events-body" class="collapse show" aria-labelledby="send-events-head">
+                <div class="card-body">
+                    <SendEvents StreamId="@_stream.StreamId" OnEventSent="RefreshDataAsync"></SendEvents>
+                </div>
+            </div>
+        </div>
+
+    </div>
+}
+else if (_status == OperationStatus.Failure)
+{
+    <CloseableAlert Message="An error has occurred while fetching data." Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+}
+
+<div class="col-sm-12 mt-4 p-0">
+    <a href="/streams">Back to archive</a>
+</div>
+
+@code {
+    private StreamInfo? _stream;
+    private OperationStatus _status = OperationStatus.None;
+    private StreamEvents _streamEvents;
+
+    [Parameter]
+    public Guid Id { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await RefreshDataAsync();
+    }
+
+    private async Task RefreshDataAsync()
+    {
+        _status = OperationStatus.Processing;
+
+        _stream = null;
+        _streamEvents?.Reset();
+
+        try
+        {
+            _stream = await streamsClient.GetStreamInfoAsync(this.Id);
+
+            _status = OperationStatus.Success;
+        }
+        catch
+        {
+            _status = OperationStatus.Failure;
+        }
+
+        if(_streamEvents is not null)
+            await _streamEvents!.FetchEventsAsync();
+    }
+}

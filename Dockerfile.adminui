@@ -1,0 +1,9 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
+WORKDIR /src
+COPY ./ ./
+RUN cd ./src/EvenireDB.AdminUI && dotnet restore && dotnet publish -c Release -o /publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 as runtime
+COPY --from=build-env /publish .
+ENTRYPOINT ["dotnet", "EvenireDB.AdminUI.dll"]
+EXPOSE 80
