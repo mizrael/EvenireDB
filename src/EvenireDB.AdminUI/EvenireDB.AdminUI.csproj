@@ -10,13 +10,4 @@
     <ProjectReference Include="..\EvenireDB.Client\EvenireDB.Client.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Update="Pages\NewStream.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-    <Content Update="Shared\Modal.razor">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-    </Content>
-  </ItemGroup>
-
 </Project>
