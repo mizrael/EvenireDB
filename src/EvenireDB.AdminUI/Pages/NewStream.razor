@@ -1,0 +1,23 @@
+﻿@page "/streams/new"
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create Stream</PageTitle>
+
+<h1>Create Stream</h1>
+
+<SendEvents StreamId="@_streamId" OnEventSent="OnStreamCreated"></SendEvents>
+
+@code{
+    private Guid _streamId;
+
+    protected override void OnInitialized()
+    {
+        _streamId = Guid.NewGuid();
+        base.OnInitialized();
+    }
+
+    private void OnStreamCreated()
+    {
+        NavigationManager.NavigateTo($"/streams/{_streamId}");
+    }
+}
