@@ -1,0 +1,80 @@
+﻿@inject EvenireDB.Client.IStreamsClient streamsClient
+
+@if (Stream is not null)
+{
+    <tr>
+        <th scope="row">@Stream.StreamId</th>
+        <td>@Stream.EventsCount</td>
+        <td>@Stream.IsCached</td>
+        <td>@Stream.CreatedAt</td>
+        <td>@Stream.LastAccessedAt</td>
+        <td>
+            @if (_status != OperationStatus.Processing)
+            {
+                <a href='/streams/@Stream.StreamId' title='view details' class="mr-2">
+                    <span class="oi oi-bolt" aria-hidden="true"></span>
+                </a>
+                <a title="delete" href="#" @onclick="() => OpenDeleteStream()"
+                   @onclick:preventDefault="true" @onclick:stopPropagation="true">
+                    <span class="oi oi-trash" aria-hidden="true"></span>
+                </a>
+            }
+        </td>
+    </tr>
+}
+
+
+<Modal @ref='_deleteStreamModal'>
+    Are you sure you want to delete the stream?
+</Modal>
+
+@code {
+    private Modal _deleteStreamModal;
+    private OperationStatus _status = OperationStatus.None;
+
+    [Parameter]
+    public StreamInfo Stream { get; set; }
+
+    [Parameter]
+    public EventCallback OnStreamDeleted { get; set; }
+
+    private void OpenDeleteStream()
+    {
+        if (_deleteStreamModal is null || Stream is null)
+            return;
+
+        _deleteStreamModal.Options = new Modal.ModalOptions(
+            $"Delete Stream '{Stream.StreamId}'?",
+            null,
+            new Modal.ModalButton[] {
+                Modal.ModalButton.Danger("Proceed", async () =>
+                {
+                    _status = OperationStatus.Processing;
+
+                    StateHasChanged();
+
+                    try
+                    {
+                        await streamsClient.DeleteStreamAsync(Stream.StreamId);
+                        _status = OperationStatus.Success;
+                    }
+                    catch (Exception)
+                    {
+                        _status = OperationStatus.Failure;
+                    }
+
+                    if(_status == OperationStatus.Success)
+                    {
+                        await OnStreamDeleted.InvokeAsync();
+                    }
+
+                    StateHasChanged();
+                })
+                },
+            ShowClose: true,
+            ShowOpen: false
+        );
+
+        _deleteStreamModal.Open();
+    }
+}
