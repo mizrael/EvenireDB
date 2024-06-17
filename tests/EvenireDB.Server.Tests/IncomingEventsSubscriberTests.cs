@@ -9,7 +9,7 @@ namespace EvenireDB.Server.Tests
         [Fact]
         public async Task Service_should_handle_exceptions_gracefully()
         {
-            var channel = Channel.CreateBounded<IncomingEventsGroup>(10);
+            var channel = Channel.CreateBounded<IncomingEventsBatch>(10);
             var repo = Substitute.For<IEventsProvider>();
             repo.WhenForAnyArgs(r => r.AppendAsync(Arg.Any<Guid>(), null, default))
                 .Throw<Exception>();
@@ -21,7 +21,7 @@ namespace EvenireDB.Server.Tests
             await sut.StartAsync(default);
 
             var groups = Enumerable.Range(0, 10)
-                .Select(i => new IncomingEventsGroup(Guid.NewGuid(), null))
+                .Select(i => new IncomingEventsBatch(Guid.NewGuid(), null, null))
                 .ToArray();
             foreach (var group in groups)
                 await channel.Writer.WriteAsync(group);

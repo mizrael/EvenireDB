@@ -12,22 +12,23 @@ namespace EvenireDB.Tests
         public async Task AppendAsync_should_fail_when_stream_version_mismatch()
         {
             var streamId = Guid.NewGuid();
+            var streamType = "lorem";
 
             var inputEvents = Enumerable.Range(0, 10)
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                 .ToArray();
 
             var cache = Substitute.For<IStreamsCache>();
-            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
+            cache.GetEventsAsync(streamId, streamType, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
 
-            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
-            channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(true);
+            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
+            channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(true);
 
             var idGenerator = Substitute.For<IEventIdGenerator>();
             var logger = Substitute.For<ILogger<EventsWriter>>();
             var sut = new EventsWriter(cache, channelWriter, idGenerator, logger);
 
-            var result = await sut.AppendAsync(streamId, inputEvents, expectedVersion: inputEvents.Count() - 1);
+            var result = await sut.AppendAsync(streamId, streamType, inputEvents, expectedVersion: inputEvents.Count() - 1);
             result.Should().BeOfType<FailureResult>();
 
             var failure = (FailureResult)result;
@@ -38,23 +39,24 @@ namespace EvenireDB.Tests
         public async Task AppendAsync_should_fail_when_channel_rejects_message()
         {
             var streamId = Guid.NewGuid();
+            var streamType = "lorem";
 
             var inputEvents = Enumerable.Range(0, 10)
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                 .ToArray();
 
             var cache = Substitute.For<IStreamsCache>();
-            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1,1)));
+            cache.GetEventsAsync(streamId, streamType, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1,1)));
            
-            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
-            channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(false);
+            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
+            channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(false);
 
             var idGenerator = Substitute.For<IEventIdGenerator>();
             var logger = Substitute.For<ILogger<EventsWriter>>();
             var sut = new EventsWriter(cache, channelWriter, idGenerator, logger);
             
-            await sut.AppendAsync(streamId, inputEvents);
-            var result = await sut.AppendAsync(streamId, inputEvents);
+            await sut.AppendAsync(streamId, streamType, inputEvents);
+            var result = await sut.AppendAsync(streamId, streamType, inputEvents);
             result.Should().BeOfType<FailureResult>();
 
             var failure = (FailureResult)result;
@@ -65,22 +67,23 @@ namespace EvenireDB.Tests
         public async Task AppendAsync_should_succeed_when_events_valid()
         {
             var streamId = Guid.NewGuid();
+            var streamType = "lorem";
 
             var expectedEvents = Enumerable.Range(0, 242)
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
                 .ToArray();            
             
             var cache = Substitute.For<IStreamsCache>();
-            cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
+            cache.GetEventsAsync(streamId, streamType, Arg.Any<CancellationToken>()).Returns(new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1)));
 
-            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsGroup>>();
-            channelWriter.TryWrite(Arg.Any<IncomingEventsGroup>()).Returns(true);
+            var channelWriter = NSubstitute.Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
+            channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(true);
 
             var idGenerator = Substitute.For<IEventIdGenerator>();
             var logger = Substitute.For<ILogger<EventsWriter>>();
             var sut = new EventsWriter(cache, channelWriter, idGenerator, logger);
 
-            var result = await sut.AppendAsync(streamId, expectedEvents);
+            var result = await sut.AppendAsync(streamId, streamType, expectedEvents);
             result.Should().BeOfType<SuccessResult>();
         }
     }

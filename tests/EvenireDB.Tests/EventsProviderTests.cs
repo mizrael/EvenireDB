@@ -11,9 +11,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         _fixture = fixture;
     }
 
-    private EventsProvider CreateSut(Guid streamId, out IExtentInfoProvider extentInfoProvider)
+    private EventsProvider CreateSut(Guid streamId, string streamType, out IExtentInfoProvider extentInfoProvider)
     {
-        var config = _fixture.CreateExtentsConfig(streamId);
+        var config = _fixture.CreateExtentsConfig(streamId, streamType);
         extentInfoProvider = new ExtentInfoProvider(config);
         var dataRepo = new DataRepository();
         var headersRepo = new HeadersRepository();
@@ -28,12 +28,13 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var events = _fixture.BuildEvents(eventsCount, new byte[] { 0x42 });
 
         var streamId = Guid.NewGuid();
-        
-        var sut = CreateSut(streamId, out var extentInfoProvider);
+        var streamType = "lorem";
 
-        await sut.AppendAsync(streamId, events);
+        var sut = CreateSut(streamId, streamType, out var extentInfoProvider);
 
-        var extentInfo = extentInfoProvider.GetExtentInfo(streamId);
+        await sut.AppendAsync(streamId, streamType, events);
+
+        var extentInfo = extentInfoProvider.GetExtentInfo(streamId, streamType);
         var bytes = File.ReadAllBytes(extentInfo.DataPath);
         Assert.Equal(expectedFileSize, bytes.Length);
     }
@@ -47,13 +48,14 @@ public class EventsProviderTests : IClassFixture<DataFixture>
             .ToArray();
 
         var streamId = Guid.NewGuid();
-        
-        var sut = CreateSut(streamId, out var extentInfoProvider);
+        var streamType = "lorem";
+
+        var sut = CreateSut(streamId, streamType, out var extentInfoProvider);
 
         foreach (var events in batches)
-            await sut.AppendAsync(streamId, events);
+            await sut.AppendAsync(streamId, streamType, events);
 
-        var extentInfo = extentInfoProvider.GetExtentInfo(streamId);
+        var extentInfo = extentInfoProvider.GetExtentInfo(streamId, streamType);
         var bytes = File.ReadAllBytes(extentInfo.DataPath);
         Assert.Equal(expectedFileSize, bytes.Length);
     }
@@ -66,12 +68,13 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var expectedEvents = _fixture.BuildEvents(eventsCount);
 
         var streamId = Guid.NewGuid();
+        var streamType = "lorem";
 
-        var sut = CreateSut(streamId, out var _);
+        var sut = CreateSut(streamId, streamType, out var _);
 
-        await sut.AppendAsync(streamId, expectedEvents);
+        await sut.AppendAsync(streamId, streamType, expectedEvents);
 
-        var events = await sut.ReadAsync(streamId).ToArrayAsync();
+        var events = await sut.ReadAsync(streamId, streamType).ToArrayAsync();
         events.Should().NotBeNullOrEmpty()
                 .And.HaveCount(eventsCount);
 
@@ -92,15 +95,16 @@ public class EventsProviderTests : IClassFixture<DataFixture>
             .ToArray();
 
         var streamId = Guid.NewGuid();
+        var streamType = "lorem";
 
-        var sut = CreateSut(streamId, out var _);
+        var sut = CreateSut(streamId, streamType, out var _);
 
         foreach (var events in batches)
-            await sut.AppendAsync(streamId, events);
+            await sut.AppendAsync(streamId, streamType, events);
 
         var expectedEvents = batches.SelectMany(e => e).ToArray();
 
-        var loadedEvents = await sut.ReadAsync(streamId).ToListAsync();
+        var loadedEvents = await sut.ReadAsync(streamId, streamType).ToListAsync();
         loadedEvents.Should().NotBeNullOrEmpty()
                      .And.HaveCount(batchesCount * eventsPerBatch);
     }
@@ -111,12 +115,13 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var expectedEvents = _fixture.BuildEvents(42);
 
         var streamId = Guid.NewGuid();
+        var streamType = "lorem";
 
-        var sut = CreateSut(streamId, out var _);
+        var sut = CreateSut(streamId, streamType, out var _);
 
-        await sut.AppendAsync(streamId, expectedEvents);
+        await sut.AppendAsync(streamId, streamType, expectedEvents);
 
-        var events = await sut.ReadAsync(streamId, 4, 10).ToArrayAsync();
+        var events = await sut.ReadAsync(streamId, streamType, 4, 10).ToArrayAsync();
         events.Should().NotBeNullOrEmpty()
                 .And.HaveCount(10);
 
@@ -126,19 +131,19 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         }
     }
 
-
     [Fact]
     public async Task ReadAsync_should_return_no_data_when_paging_invalid()
     {
         var expectedEvents = _fixture.BuildEvents(42);
 
         var streamId = Guid.NewGuid();
+        var streamType = "lorem";
 
-        var sut = CreateSut(streamId, out var _);
+        var sut = CreateSut(streamId, streamType, out var _);
 
-        await sut.AppendAsync(streamId, expectedEvents);
+        await sut.AppendAsync(streamId, streamType, expectedEvents);
 
-        var events = await sut.ReadAsync(streamId, 100, 10).ToArrayAsync();
+        var events = await sut.ReadAsync(streamId, streamType, 100, 10).ToArrayAsync();
         events.Should().NotBeNull()
                 .And.BeEmpty();
     }

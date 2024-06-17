@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using EvenireDB.Exceptions;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
 namespace EvenireDB.Persistence;
@@ -19,11 +20,12 @@ internal class EventsProvider : IEventsProvider
 
     public async IAsyncEnumerable<Event> ReadAsync(
         Guid streamId,
+        string type,
         int? skip = null,
         int? take = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId);
+        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId, type);
         if (extentInfo is null || !File.Exists(extentInfo.DataPath) || !File.Exists(extentInfo.HeadersPath))
             yield break;
 
@@ -36,9 +38,13 @@ internal class EventsProvider : IEventsProvider
 
     public async ValueTask AppendAsync(
         Guid streamId,
-        IEnumerable<Event> events, CancellationToken cancellationToken = default)
+        string type,
+        IEnumerable<Event> events, 
+        CancellationToken cancellationToken = default)
     {
-        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId, true);
+        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId, type, true);
+        if (extentInfo is null)
+            throw new StreamException(streamId, $"Unable to build extent for stream '{streamId}'.");
 
         var semaphore = _streamLocks.GetOrAdd(streamId, _ => new SemaphoreSlim(1, 1));
         await semaphore.WaitAsync(cancellationToken);

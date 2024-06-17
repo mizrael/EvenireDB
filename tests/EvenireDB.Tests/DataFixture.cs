@@ -5,10 +5,15 @@ public class DataFixture : IAsyncLifetime
     private const string BaseDataPath = "./data/";
     private readonly List<ExtentInfoProviderConfig> _configs = new();
 
-    internal ExtentInfoProviderConfig CreateExtentsConfig(Guid aggregateId)
+    internal ExtentInfoProviderConfig CreateExtentsConfig(Guid streamId, string streamType)
     {
-        var path = Path.Combine(BaseDataPath, aggregateId.ToString());
+        var typesPath = Path.Combine(BaseDataPath, streamType);
+        if (!Directory.Exists(typesPath))
+            Directory.CreateDirectory(typesPath);
+
+        var path = Path.Combine(typesPath, streamId.ToString());
         Directory.CreateDirectory(path);
+
         var config = new ExtentInfoProviderConfig(path);
         _configs.Add(config);
         return config;

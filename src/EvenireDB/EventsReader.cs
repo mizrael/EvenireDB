@@ -1,68 +1,66 @@
 ﻿using EvenireDB.Common;
-using EvenireDB.Persistence;
-using Microsoft.Extensions.Logging;
 using System.Runtime.CompilerServices;
 
-namespace EvenireDB
+namespace EvenireDB;
+
+internal class EventsReader : IEventsReader
 {
-    internal class EventsReader : IEventsReader
+    private readonly IStreamsCache _cache;
+    private readonly EventsReaderConfig _config;
+    
+    public EventsReader(
+        EventsReaderConfig config,            
+        IStreamsCache cache)
     {
-        private readonly IStreamsCache _cache;
-        private readonly EventsReaderConfig _config;
-        
-        public EventsReader(
-            EventsReaderConfig config,            
-            IStreamsCache cache)
+        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _config = config ?? throw new ArgumentNullException(nameof(config));
+    }
+
+    public async IAsyncEnumerable<Event> ReadAsync(
+        Guid streamId,
+        string streamType,
+        StreamPosition startPosition,
+        Direction direction = Direction.Forward,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        if (startPosition < 0)
+            throw new ArgumentOutOfRangeException(nameof(startPosition));
+
+        CachedEvents entry = await _cache.GetEventsAsync(streamId, streamType, cancellationToken).ConfigureAwait(false);
+
+        if (entry?.Events == null || entry.Events.Count == 0)
+            yield break;
+
+        uint totalCount = (uint)entry.Events.Count;
+        uint pos = startPosition;
+
+        if (direction == Direction.Forward)
         {
-            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
-            _config = config ?? throw new ArgumentNullException(nameof(config));
-        }
-
-        public async IAsyncEnumerable<Event> ReadAsync(
-            Guid streamId,
-            StreamPosition startPosition,
-            Direction direction = Direction.Forward,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
-        {
-            if (startPosition < 0)
-                throw new ArgumentOutOfRangeException(nameof(startPosition));
-
-            CachedEvents entry = await _cache.GetEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
-
-            if (entry?.Events == null || entry.Events.Count == 0)
+            if (totalCount < startPosition)
                 yield break;
 
-            uint totalCount = (uint)entry.Events.Count;
-            uint pos = startPosition;
+            uint j = 0, i = pos,
+                finalCount = Math.Min(_config.MaxPageSize, totalCount - i);
 
-            if (direction == Direction.Forward)
+            while (j++ != finalCount)
             {
-                if (totalCount < startPosition)
-                    yield break;
-
-                uint j = 0, i = pos,
-                    finalCount = Math.Min(_config.MaxPageSize, totalCount - i);
-
-                while (j++ != finalCount)
-                {
-                    yield return entry.Events[(int)i++];
-                }
+                yield return entry.Events[(int)i++];
             }
-            else
+        }
+        else
+        {
+            if (startPosition == StreamPosition.End)
+                pos = totalCount - 1;
+
+            if (pos >= totalCount)
+                yield break;
+
+            uint j = 0, i = pos,
+                  finalCount = Math.Min(_config.MaxPageSize, i + 1);
+
+            while (j++ != finalCount)
             {
-                if (startPosition == StreamPosition.End)
-                    pos = totalCount - 1;
-
-                if (pos >= totalCount)
-                    yield break;
-
-                uint j = 0, i = pos,
-                      finalCount = Math.Min(_config.MaxPageSize, i + 1);
-
-                while (j++ != finalCount)
-                {
-                    yield return entry.Events[(int)i--];
-                }
+                yield return entry.Events[(int)i--];
             }
         }
     }

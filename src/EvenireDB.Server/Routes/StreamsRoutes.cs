@@ -11,21 +11,22 @@ public static class StreamsRoutes
         var v1 = api.MapGroup("/api/v{version:apiVersion}/streams")
                     .HasApiVersion(1.0);
         v1.MapGet("", GetStreams).WithName(nameof(GetStreams));
-        v1.MapGet("/{streamId:guid}", GetStreamInfo).WithName(nameof(GetStreamInfo));
-        v1.MapDelete("/{streamId:guid}", DeleteSteamAsync).WithName(nameof(DeleteSteamAsync));
-        v1.MapGet("/{streamId:guid}/events", GetEventsAsync).WithName(nameof(GetEventsAsync));
-        v1.MapPost("/{streamId:guid}/events", AppendEventsAsync).WithName(nameof(AppendEventsAsync));
+        v1.MapGet("/{streamType}/{streamId:guid}", GetStreamInfo).WithName(nameof(GetStreamInfo));
+        v1.MapDelete("/{streamType}/{streamId:guid}", DeleteSteamAsync).WithName(nameof(DeleteSteamAsync));
+        v1.MapGet("/{streamType}/{streamId:guid}/events", GetEventsAsync).WithName(nameof(GetEventsAsync));
+        v1.MapPost("/{streamType}/{streamId:guid}/events", AppendEventsAsync).WithName(nameof(AppendEventsAsync));
 
         return app;
     }
 
     private static async ValueTask<IResult> DeleteSteamAsync(
         [FromServices] IStreamInfoProvider provider,
+        string streamType,
         Guid streamId)
     {
         try
         {
-            await provider.DeleteStreamAsync(streamId);
+            await provider.DeleteStreamAsync(streamId, streamType);
             return Results.NoContent();
         }
         catch (ArgumentException)
@@ -35,17 +36,19 @@ public static class StreamsRoutes
     }
 
     private static IResult GetStreams(
-        [FromServices] IStreamInfoProvider provider)
+        [FromServices] IStreamInfoProvider provider,
+        [FromQuery] string? streamType = null)
     {
-        var streams = provider.GetStreamsInfo();
+        var streams = provider.GetStreamsInfo(streamType);
         return Results.Ok(streams);
     }
 
     private static IResult GetStreamInfo(
         [FromServices] IStreamInfoProvider provider,
+        string streamType,
         Guid streamId)
     {
-        var result = provider.GetStreamInfo(streamId);
+        var result = provider.GetStreamInfo(streamId, streamType);
         return (result is null) ?
             Results.NotFound() :
             Results.Ok(result);
@@ -53,17 +56,19 @@ public static class StreamsRoutes
 
     private static async IAsyncEnumerable<EventDTO> GetEventsAsync(
         [FromServices] IEventsReader reader,
+        string streamType, 
         Guid streamId,
         [FromQuery(Name = "pos")] uint startPosition = 0,
         [FromQuery(Name = "dir")] Direction direction = Direction.Forward)
     {
-        await foreach (var @event in reader.ReadAsync(streamId, direction: direction, startPosition: startPosition).ConfigureAwait(false))
+        await foreach (var @event in reader.ReadAsync(streamId, streamType, direction: direction, startPosition: startPosition).ConfigureAwait(false))
             yield return EventDTO.FromModel(@event);
     }
 
     private static async ValueTask<IResult> AppendEventsAsync(
         [FromServices] EventMapper mapper,
         [FromServices] IEventsWriter writer,
+        string streamType,
         Guid streamId,
         [FromQuery(Name = "version")] int? expectedVersion,
         [FromBody] EventDataDTO[]? dtos)
@@ -82,7 +87,7 @@ public static class StreamsRoutes
             return Results.BadRequest(new ApiError(ErrorCodes.BadRequest, ex.Message));
         }
 
-        var result = await writer.AppendAsync(streamId, events, expectedVersion)
+        var result = await writer.AppendAsync(streamId, streamType, events, expectedVersion)
                                  .ConfigureAwait(false);
         return result switch
         {

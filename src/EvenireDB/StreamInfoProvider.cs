@@ -21,9 +21,9 @@ internal class StreamInfoProvider : IStreamInfoProvider
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public StreamInfo? GetStreamInfo(Guid streamId)
+    public StreamInfo? GetStreamInfo(Guid streamId, string streamType)
     {
-        var extent = _extentInfoProvider.GetExtentInfo(streamId);
+        var extent = _extentInfoProvider.GetExtentInfo(streamId, streamType);
         if (extent is null)
             return null;
 
@@ -34,19 +34,20 @@ internal class StreamInfoProvider : IStreamInfoProvider
         var headersCount = fileInfo.Length / _headerSize;
         return new StreamInfo(
             streamId,
+            streamType,
             headersCount,
             _cache.ContainsKey(streamId),
             fileInfo.CreationTimeUtc,
             fileInfo.LastWriteTimeUtc);
     }
 
-    public IEnumerable<StreamInfo> GetStreamsInfo()
+    public IEnumerable<StreamInfo> GetStreamsInfo(string? streamType = null)
     {
-        var allExtents = _extentInfoProvider.GetExtentsInfo();
+        var allExtents = _extentInfoProvider.GetAllExtentsInfo(streamType);
         List<StreamInfo> results = new();
         foreach (var extent in allExtents)
         {
-            var info = GetStreamInfo(extent.StreamId);
+            var info = GetStreamInfo(extent.StreamId, extent.StreamType);
             if (info is not null)
                 results.Add(info!);
         }
@@ -54,9 +55,9 @@ internal class StreamInfoProvider : IStreamInfoProvider
         return results;
     }
 
-    public async ValueTask DeleteStreamAsync(Guid streamId, CancellationToken cancellationToken = default)
+    public async ValueTask DeleteStreamAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default)
     {
-        var extent = _extentInfoProvider.GetExtentInfo(streamId);
+        var extent = _extentInfoProvider.GetExtentInfo(streamId, streamType);
         if (extent is null)
             throw new ArgumentException($"Stream '{streamId}' does not exist.");
 
@@ -69,6 +70,7 @@ internal class StreamInfoProvider : IStreamInfoProvider
 
             try
             {
+                // TODO: move these to the extents provider
                 if (File.Exists(extent.HeadersPath))
                     File.Delete(extent.HeadersPath);
 

@@ -7,11 +7,14 @@ namespace EvenireDB.Server
 {
     public class IncomingEventsPersistenceWorker : BackgroundService
     {
-        private readonly ChannelReader<IncomingEventsGroup> _reader;
+        private readonly ChannelReader<IncomingEventsBatch> _reader;
         private readonly IEventsProvider _repo;
         private readonly ILogger<IncomingEventsPersistenceWorker> _logger;
 
-        public IncomingEventsPersistenceWorker(ChannelReader<IncomingEventsGroup> reader, IEventsProvider repo, ILogger<IncomingEventsPersistenceWorker> logger)
+        public IncomingEventsPersistenceWorker(
+            ChannelReader<IncomingEventsBatch> reader, 
+            IEventsProvider repo, 
+            ILogger<IncomingEventsPersistenceWorker> logger)
         {
             _reader = reader ?? throw new ArgumentNullException(nameof(reader));
             _repo = repo ?? throw new ArgumentNullException(nameof(repo));
@@ -30,16 +33,16 @@ namespace EvenireDB.Server
         {
             while (!cancellationToken.IsCancellationRequested || await _reader.WaitToReadAsync(cancellationToken))
             {
-                while (_reader.TryRead(out IncomingEventsGroup? group) && group is not null)
+                while (_reader.TryRead(out IncomingEventsBatch? batch) && batch is not null)
                 {
                     try
                     {
-                        await _repo.AppendAsync(group.AggregateId, group.Events, cancellationToken)
+                        await _repo.AppendAsync(batch.StreamId, batch.StreamType, batch.Events, cancellationToken)
                                    .ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        _logger.EventsGroupPersistenceError(group.AggregateId, ex.Message);
+                        _logger.EventsGroupPersistenceError(batch.StreamId, ex.Message);
                     }
                 }
             }

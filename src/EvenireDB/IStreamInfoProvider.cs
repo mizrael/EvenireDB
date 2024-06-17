@@ -2,7 +2,7 @@ namespace EvenireDB;
 
 public interface IStreamInfoProvider
 {
-    IEnumerable<StreamInfo> GetStreamsInfo();
-    StreamInfo? GetStreamInfo(Guid streamId);
-    ValueTask DeleteStreamAsync(Guid streamId, CancellationToken cancellationToken = default);
+    IEnumerable<StreamInfo> GetStreamsInfo(string? streamType = null);
+    StreamInfo? GetStreamInfo(Guid streamId, string streamType);
+    ValueTask DeleteStreamAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default);
 }

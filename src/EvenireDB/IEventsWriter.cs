@@ -4,6 +4,7 @@ namespace EvenireDB
     {
         ValueTask<IOperationResult> AppendAsync(
             Guid streamId, 
+            string streamType,
             IEnumerable<EventData> events, 
             int? expectedVersion = null,
             CancellationToken cancellationToken = default);

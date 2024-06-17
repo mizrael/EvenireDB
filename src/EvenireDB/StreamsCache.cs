@@ -20,18 +20,18 @@ internal class StreamsCache : IStreamsCache
         _repo = repo;
     }
 
-    private async ValueTask<CachedEvents> Factory(Guid streamId, CancellationToken cancellationToken)
+    private async ValueTask<CachedEvents> Factory(Guid streamId, string streamType, CancellationToken cancellationToken)
     {
         _logger.ReadingStreamFromRepository(streamId);
 
         var persistedEvents = new List<Event>();
-        await foreach (var @event in _repo.ReadAsync(streamId, cancellationToken: cancellationToken))
+        await foreach (var @event in _repo.ReadAsync(streamId, streamType, cancellationToken: cancellationToken))
             persistedEvents.Add(@event);
         return new CachedEvents(persistedEvents, new SemaphoreSlim(1));
     }
 
-    public ValueTask<CachedEvents> GetEventsAsync(Guid streamId, CancellationToken cancellationToken)
-    => _cache.GetOrAddAsync(streamId, this.Factory, cancellationToken);
+    public ValueTask<CachedEvents> GetEventsAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default)
+    => _cache.GetOrAddAsync(streamId, (_,_) => this.Factory(streamId, streamType, cancellationToken), cancellationToken);
 
     public void Update(Guid streamId, CachedEvents entry)
     => _cache.AddOrUpdate(streamId, entry);

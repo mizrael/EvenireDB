@@ -6,6 +6,7 @@ public class StreamInfoProviderTests
     public async Task DeleteStreamAsync_should_throw_when_stream_does_not_exist()
     {
         var streamId = Guid.NewGuid();
+        var streamType = "lorem";
 
         var extentsProvider = Substitute.For<IExtentInfoProvider>();
         var cache = Substitute.For<IStreamsCache>();
@@ -13,9 +14,9 @@ public class StreamInfoProviderTests
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
 
         await Assert.ThrowsAsync<ArgumentException>(async () =>
-            await sut.DeleteStreamAsync(streamId));
+            await sut.DeleteStreamAsync(streamId, streamType));
 
-        var exists = sut.GetStreamInfo(streamId) is not null;
+        var exists = sut.GetStreamInfo(streamId, streamType) is not null;
         exists.Should().BeFalse();
     }
 
@@ -23,12 +24,13 @@ public class StreamInfoProviderTests
     public void GetStreamInfo_should_return_null_when_stream_does_not_exist()
     {
         var streamId = Guid.NewGuid();
+        var streamType = "lorem";
 
         var extentsProvider = Substitute.For<IExtentInfoProvider>();
         var cache = Substitute.For<IStreamsCache>();
         var logger = Substitute.For<ILogger<StreamInfoProvider>>();
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
 
-        sut.GetStreamInfo(streamId).Should().BeNull();
+        sut.GetStreamInfo(streamId, streamType).Should().BeNull();
     }
 }

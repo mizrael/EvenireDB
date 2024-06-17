@@ -16,7 +16,7 @@ public static class IServiceCollectionExtensions
 
     public static IServiceCollection AddEvenire(this IServiceCollection services)
     {
-        var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelOptions
+        var channel = Channel.CreateUnbounded<IncomingEventsBatch>(new UnboundedChannelOptions
         {
             SingleWriter = false,
             SingleReader = false,
