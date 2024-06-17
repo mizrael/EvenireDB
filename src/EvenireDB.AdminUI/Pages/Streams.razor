@@ -3,37 +3,53 @@
 
 <PageTitle>Streams</PageTitle>
 
-<h1>Streams</h1>
+<div class="row mb-2">
+    <div class="col-10">
+        <h1>Streams</h1>
+    </div>
 
-@if (_status == OperationStatus.Processing)
-{
-    <Loading></Loading>
-}
-else if (_status == OperationStatus.Failure)
-{
-    <CloseableAlert Message="An error has occurred while fetching data." Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
-}
-else if (_streams != null)
-{
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th scope="col">Id</th>
-                <th scope="col">Events #</th>
-                <th scope="col">Is Cached</th>
-                <th scope="col">Created on</th>
-                <th scope="col">Last updated on</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var stream in _streams)
-            {
-                <StreamRow Stream="stream" OnStreamDeleted="() => RefreshData()"></StreamRow>                
-            }
-        </tbody>
-    </table>
-}
+    <div class="col-2">
+        <a class="btn btn-primary float-right" href="/streams/new">
+            <span class="oi oi-plus" aria-hidden="true">Add Stream</span>
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col">
+
+        @if (_status == OperationStatus.Processing)
+        {
+            <Loading></Loading>
+        }
+        else if (_status == OperationStatus.Failure)
+        {
+            <CloseableAlert Message="An error has occurred while fetching data." Type="CloseableAlert.AlertTypes.Danger"></CloseableAlert>
+        }
+        else if (_streams != null)
+        {
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">Events #</th>
+                        <th scope="col">Is Cached</th>
+                        <th scope="col">Created on</th>
+                        <th scope="col">Last updated on</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var stream in _streams)
+                    {
+                        <StreamRow Stream="stream" OnStreamDeleted="() => RefreshData()"></StreamRow>
+
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
 
 @code {
     private IEnumerable<StreamInfo>? _streams;
