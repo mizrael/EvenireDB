@@ -13,9 +13,9 @@ internal class HttpStreamsClient : IStreamsClient
         _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
     }
 
-    public async ValueTask DeleteStreamAsync(Guid streamId, CancellationToken cancellationToken = default)
+    public async ValueTask DeleteStreamAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.DeleteAsync($"/api/v1/streams/{streamId}", cancellationToken)
+        var response = await _httpClient.DeleteAsync($"/api/v1/streams/{streamType}/{streamId}", cancellationToken)
                                         .ConfigureAwait(false);
         if (response.IsSuccessStatusCode)
             return;
@@ -27,9 +27,9 @@ internal class HttpStreamsClient : IStreamsClient
         };    
     }
 
-    public async ValueTask<IEnumerable<StreamInfo>> GetStreamInfosAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<IEnumerable<StreamInfo>> GetStreamInfosAsync(string? streamsType, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync("/api/v1/streams", cancellationToken)
+        var response = await _httpClient.GetAsync($"/api/v1/streams?streamsType={streamsType ?? string.Empty}", cancellationToken)
                                         .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
@@ -37,9 +37,9 @@ internal class HttpStreamsClient : IStreamsClient
         return results;
     }
 
-    public async ValueTask<StreamInfo> GetStreamInfoAsync(Guid streamId, CancellationToken cancellationToken = default)
+    public async ValueTask<StreamInfo> GetStreamInfoAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.GetAsync($"/api/v1/streams/{streamId}", cancellationToken)
+        var response = await _httpClient.GetAsync($"/api/v1/streams/{streamType}/{streamId}", cancellationToken)
                                         .ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)            
             throw response.StatusCode switch

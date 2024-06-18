@@ -1,33 +1,38 @@
 ﻿using EvenireDB.Common;
 using System.Runtime.CompilerServices;
 
-namespace EvenireDB.Client
+namespace EvenireDB.Client;
+
+public static class IEventsClientExtensions
 {
-    public static class IEventsClientExtensions
+    public static IAsyncEnumerable<Event> ReadAsync(
+        this IEventsClient client, 
+        Guid streamId,
+        string streamType,
+        Direction direction = Direction.Forward, 
+        CancellationToken cancellationToken = default)
+        => client.ReadAsync(streamId, streamType, StreamPosition.Start, direction, cancellationToken);
+
+    public static async IAsyncEnumerable<Event> ReadAllAsync(
+        this IEventsClient client,
+        Guid streamId,
+        string streamType,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        public static IAsyncEnumerable<Event> ReadAsync(this IEventsClient client, Guid streamId, Direction direction = Direction.Forward, CancellationToken cancellationToken = default)
-            => client.ReadAsync(streamId, StreamPosition.Start, direction, cancellationToken);
+        uint position = 0;
 
-        public static async IAsyncEnumerable<Event> ReadAllAsync(
-            this IEventsClient client,
-            Guid streamId,
-            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        while (true)
         {
-            uint position = 0;
-
-            while (true)
+            bool hasItems = false;
+            await foreach (var item in client.ReadAsync(streamId, streamType, position: position, direction: Direction.Forward, cancellationToken: cancellationToken).ConfigureAwait(false))
             {
-                bool hasItems = false;
-                await foreach (var item in client.ReadAsync(streamId, position: position, direction: Direction.Forward, cancellationToken: cancellationToken).ConfigureAwait(false))
-                {
-                    position++;
-                    hasItems = true;
-                    yield return item;
-                }
-
-                if (!hasItems)
-                    break;
+                position++;
+                hasItems = true;
+                yield return item;
             }
+
+            if (!hasItems)
+                break;
         }
     }
 }

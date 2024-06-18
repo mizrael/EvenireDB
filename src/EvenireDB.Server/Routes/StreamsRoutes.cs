@@ -3,6 +3,7 @@ using EvenireDB.Server.DTO;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EvenireDB.Server.Routes;
+
 public static class StreamsRoutes
 {
     public static WebApplication MapEventsRoutes(this WebApplication app)
@@ -37,9 +38,9 @@ public static class StreamsRoutes
 
     private static IResult GetStreams(
         [FromServices] IStreamInfoProvider provider,
-        [FromQuery] string? streamType = null) //TODO: test types filter
+        [FromQuery] string? streamsType = null) //TODO: test types filter
     {
-        var streams = provider.GetStreamsInfo(streamType);
+        var streams = provider.GetStreamsInfo(streamsType);
         return Results.Ok(streams);
     }
 

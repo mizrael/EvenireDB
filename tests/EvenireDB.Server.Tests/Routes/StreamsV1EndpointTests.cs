@@ -106,7 +106,7 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
         await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
 
-        var response = await client.GetAsync("/api/v1/streams?streamType=invalid");
+        var response = await client.GetAsync("/api/v1/streams?streamsType=invalid");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
         var streams = await response.Content.ReadFromJsonAsync<StreamInfo[]>();

@@ -32,7 +32,9 @@ var eventsCount = new Option<int>(
 var streamIdOption = new Option<Guid>(
               name: "--stream",
               description: "The stream to use.");
-
+var streamTypeOption = new Option<string>(
+              name: "--type",
+              description: "The stream type to use.");
 
 var rootCommand = new RootCommand
 {
@@ -41,9 +43,10 @@ var rootCommand = new RootCommand
     grpcPort,
     httpPort,
     eventsCount,
-    streamIdOption
+    streamIdOption,
+    streamTypeOption
 };
-rootCommand.SetHandler(async (streamId, uri, useGrpc, grpcPort, httpPort, eventsCount) => {
+rootCommand.SetHandler(async (streamId, streamType, uri, useGrpc, grpcPort, httpPort, eventsCount) => {
     var clientConfig = new EvenireClientConfig()
     {
         ServerUri = uri,
@@ -59,13 +62,13 @@ rootCommand.SetHandler(async (streamId, uri, useGrpc, grpcPort, httpPort, events
     var client = provider.GetRequiredService<IEventsClient>();
 
     Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.WriteLine($"Sending {eventsCount} events to stream '{streamId}' on server '{uri}'...");
+    Console.WriteLine($"Sending {eventsCount} events to stream '{streamType}/{streamId}' on server '{uri}'...");
 
     var events = Enumerable.Range(0, eventsCount).Select(i => new EventData($"event-{i}", Encoding.UTF8.GetBytes($"event-{i}"))).ToArray();
 
     try
     {
-        await client.AppendAsync(streamId, events);
+        await client.AppendAsync(streamId, streamType, events);
     }
     catch (ClientException cliEx)
     {
@@ -77,6 +80,6 @@ rootCommand.SetHandler(async (streamId, uri, useGrpc, grpcPort, httpPort, events
     Console.WriteLine("Done.");
 
     Console.ResetColor();
-}, streamIdOption, serverOption, useGrpc, grpcPort, httpPort, eventsCount);
+}, streamIdOption, streamTypeOption, serverOption, useGrpc, grpcPort, httpPort, eventsCount);
 
 await rootCommand.InvokeAsync(args);

@@ -40,9 +40,9 @@ internal class StreamInfoProvider : IStreamInfoProvider
             fileInfo.LastWriteTimeUtc);
     }
 
-    public IEnumerable<StreamInfo> GetStreamsInfo(string? streamType = null)
+    public IEnumerable<StreamInfo> GetStreamsInfo(string? streamsType = null)
     {
-        var allExtents = _extentInfoProvider.GetAllExtentsInfo(streamType);        
+        var allExtents = _extentInfoProvider.GetAllExtentsInfo(streamsType);        
         foreach (var extent in allExtents)
         {
             var info = GetStreamInfo(extent.StreamId, extent.StreamType);
