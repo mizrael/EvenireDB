@@ -7,6 +7,7 @@ namespace EvenireDB.Client.Tests;
 public class HttpEventsClientTests : IClassFixture<ServerFixture>
 {
     private readonly ServerFixture _serverFixture;
+    private const string _defaultStreamsType = "lorem";
 
     public HttpEventsClientTests(ServerFixture serverFixture)
     {
@@ -20,7 +21,7 @@ public class HttpEventsClientTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
         var sut = new HttpEventsClient(client);
-        var events = await sut.ReadAsync(Guid.NewGuid()).ToListAsync();
+        var events = await sut.ReadAsync(Guid.NewGuid(), _defaultStreamsType).ToListAsync();
         events.Should().NotBeNull().And.BeEmpty();
     }
 
@@ -34,11 +35,11 @@ public class HttpEventsClientTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
         var sut = new HttpEventsClient(client);
-        await sut.AppendAsync(streamId, inputEvents);
+        await sut.AppendAsync(streamId, _defaultStreamsType, inputEvents);
 
         var expectedEvents = inputEvents.Reverse().Take(100).ToArray();
 
-        var receivedEvents = await sut.ReadAsync(streamId, position: StreamPosition.End, direction: Direction.Backward).ToArrayAsync();
+        var receivedEvents = await sut.ReadAsync(streamId, _defaultStreamsType, position: StreamPosition.End, direction: Direction.Backward).ToArrayAsync();
         TestUtils.IsEquivalent(receivedEvents, expectedEvents);
     }
 
@@ -52,8 +53,8 @@ public class HttpEventsClientTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
         var sut = new HttpEventsClient(client);
-        await sut.AppendAsync(streamId, expectedEvents);
-        var receivedEvents = await sut.ReadAsync(streamId).ToArrayAsync();
+        await sut.AppendAsync(streamId, _defaultStreamsType, expectedEvents);
+        var receivedEvents = await sut.ReadAsync(streamId, _defaultStreamsType).ToArrayAsync();
         
         TestUtils.IsEquivalent(receivedEvents, expectedEvents);
     }
@@ -68,7 +69,7 @@ public class HttpEventsClientTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
         var sut = new HttpEventsClient(client);
-        await sut.AppendAsync(streamId, expectedEvents);
-        await Assert.ThrowsAsync<DuplicatedEventException>(async () => await sut.AppendAsync(streamId, expectedEvents));
+        await sut.AppendAsync(streamId, _defaultStreamsType, expectedEvents);
+        await Assert.ThrowsAsync<DuplicatedEventException>(async () => await sut.AppendAsync(streamId, _defaultStreamsType, expectedEvents));
     }
 }

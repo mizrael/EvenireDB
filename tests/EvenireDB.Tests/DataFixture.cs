@@ -15,17 +15,17 @@ public class DataFixture : IAsyncLifetime
 
     public Task DisposeAsync()
     {
-        try
+        lock (this)
         {
-            lock (this)
+            try
             {
                 if (_baseDataPath.Exists)
                     _baseDataPath.Delete(true);
             }
-        }
-        catch
-        {
-            // best effort
+            catch
+            {
+                // best effort
+            }
         }
 
         return Task.CompletedTask;

@@ -1,4 +1,6 @@
+using EvenireDB.Common;
 using EvenireDB.Utils;
+using System.IO;
 
 namespace EvenireDB;
 
@@ -16,15 +18,12 @@ internal class ExtentsProvider : IExtentsProvider
             Directory.CreateDirectory(config.BasePath);
     }
         
-    public ExtentInfo? GetExtentInfo(Guid streamId, string streamType, bool createIfMissing = false)
-    {
-        if (string.IsNullOrWhiteSpace(streamType))        
-            throw new ArgumentException($"'{nameof(streamType)}' cannot be null or whitespace.", nameof(streamType));        
-        
-        var key = streamId.ToString("N");
+    public ExtentInfo? GetExtentInfo(StreamId streamId, bool createIfMissing = false)
+    {   
+        var key = streamId.Key.ToString("N");
         int extentNumber = 0; // TODO: calculate
 
-        var typedExtentsPath = Path.Combine(_config.BasePath, streamType);
+        var typedExtentsPath = Path.Combine(_config.BasePath, streamId.Type);
 
         lock (this)
         {
@@ -39,13 +38,12 @@ internal class ExtentsProvider : IExtentsProvider
         return new ExtentInfo
         (
             StreamId: streamId,
-            StreamType: streamType,
             DataPath: Path.Combine(_config.BasePath, $"{key}_{extentNumber}_data.dat"),
             HeadersPath: headersPath
         );
     }
 
-    public IEnumerable<ExtentInfo> GetAllExtentsInfo(string? streamType = null)
+    public IEnumerable<ExtentInfo> GetAllExtentsInfo(StreamType? streamType = null)
     {
         var types = Directory.GetDirectories(_config.BasePath, streamType ?? string.Empty) ?? Array.Empty<string>();
         foreach (var typeFolder in types)
@@ -60,16 +58,16 @@ internal class ExtentsProvider : IExtentsProvider
             {
                 var filename = Path.GetFileNameWithoutExtension(headerFile);
                 var key = filename.Substring(0, 32);
-                
-                yield return GetExtentInfo(Guid.Parse(key), type)!;
+                var streamId = new StreamId(Guid.Parse(key), type);
+                yield return GetExtentInfo(streamId)!;
             }
         }
     }
 
-    public async ValueTask DeleteExtentsAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default)
+    public async ValueTask DeleteExtentsAsync(StreamId streamId, CancellationToken cancellationToken = default)
     {
         // TODO: this should eventually retrieve all the extents for the stream
-        var extent = GetExtentInfo(streamId, streamType);
+        var extent = GetExtentInfo(streamId);
         if (extent is null)
             return;
 

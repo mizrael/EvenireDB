@@ -1,9 +1,11 @@
-﻿namespace EvenireDB;
+﻿using EvenireDB.Common;
+
+namespace EvenireDB;
 
 public interface IStreamsCache
 {
-    void Update(Guid streamId, CachedEvents entry);
-    ValueTask<CachedEvents> GetEventsAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default);
-    bool ContainsKey(Guid streamId);
-    void Remove(Guid streamId);
+    void Update(StreamId streamId, CachedEvents entry);
+    ValueTask<CachedEvents> GetEventsAsync(StreamId streamId, CancellationToken cancellationToken = default);
+    bool Contains(StreamId streamId);
+    void Remove(StreamId streamId);
 }

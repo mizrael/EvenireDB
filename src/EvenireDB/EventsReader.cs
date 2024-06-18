@@ -17,18 +17,15 @@ internal class EventsReader : IEventsReader
     }
 
     public async IAsyncEnumerable<Event> ReadAsync(
-        Guid streamId,
-        string streamType,
+        StreamId streamId,        
         StreamPosition startPosition,
         Direction direction = Direction.Forward,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNullOrWhiteSpace(streamType); 
-        
+    {        
         if (startPosition < 0)
             throw new ArgumentOutOfRangeException(nameof(startPosition));
 
-        CachedEvents entry = await _cache.GetEventsAsync(streamId, streamType, cancellationToken).ConfigureAwait(false);
+        CachedEvents entry = await _cache.GetEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
         if (entry?.Events == null || entry.Events.Count == 0)
             yield break;

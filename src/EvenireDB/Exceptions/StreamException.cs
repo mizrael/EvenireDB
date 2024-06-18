@@ -1,11 +1,13 @@
+using EvenireDB.Common;
+
 namespace EvenireDB.Exceptions;
 
 public class StreamException : Exception
 {
-    public StreamException(Guid streamId, string message) : base(message)
+    public StreamException(StreamId streamId, string message) : base(message)
     {
         StreamId = streamId;
     }
 
-    public Guid StreamId { get; }
+    public StreamId StreamId { get; }
 }

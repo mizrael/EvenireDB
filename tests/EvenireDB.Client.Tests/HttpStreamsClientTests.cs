@@ -1,11 +1,12 @@
 ﻿using EvenireDB.Client.Exceptions;
 using EvenireDB.Server.Tests;
-using System.IO;
 
 namespace EvenireDB.Client.Tests;
 
 public class HttpStreamsClientTests : IClassFixture<ServerFixture>
 {
+    private const string _defaultStreamsType = "lorem";
+
     [Fact]
     public async Task GetStreamInfosAsync_should_return_nothing_when_no_streams_available()
     {
@@ -13,7 +14,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
         var sut = new HttpStreamsClient(client);
-        var results = await sut.GetStreamInfosAsync();
+        var results = await sut.GetStreamInfosAsync(_defaultStreamsType);
         results.Should().NotBeNull().And.BeEmpty();
     }
 
@@ -25,7 +26,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         using var client = application.CreateClient();
         
         var sut = new HttpStreamsClient(client);
-        var results = await sut.GetStreamInfosAsync();
+        var results = await sut.GetStreamInfosAsync(_defaultStreamsType);
         results.Should().NotBeNull();
     }
 
@@ -37,7 +38,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         using var client = application.CreateClient();
 
         var sut = new HttpStreamsClient(client);
-        await Assert.ThrowsAsync< StreamNotFoundException >(async () => await sut.GetStreamInfoAsync(Guid.NewGuid()));
+        await Assert.ThrowsAsync< StreamNotFoundException >(async () => await sut.GetStreamInfoAsync(Guid.NewGuid(), _defaultStreamsType));
     }
 
     [Fact]
@@ -50,10 +51,10 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         using var client = application.CreateClient();
 
         var eventsClient = new HttpEventsClient(client);
-        await eventsClient.AppendAsync(streamId, TestUtils.BuildEvents(42));
+        await eventsClient.AppendAsync(streamId, _defaultStreamsType, TestUtils.BuildEvents(42));
 
         var sut = new HttpStreamsClient(client);
-        var result = await sut.GetStreamInfoAsync(streamId);
+        var result = await sut.GetStreamInfoAsync(streamId, _defaultStreamsType);
         result.Should().NotBeNull();
         result.StreamId.Should().Be(streamId);
         result.EventsCount.Should().Be(42);
@@ -69,13 +70,13 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         using var client = application.CreateClient();
 
         var eventsClient = new HttpEventsClient(client);
-        await eventsClient.AppendAsync(streamId, TestUtils.BuildEvents(42));
+        await eventsClient.AppendAsync(streamId, _defaultStreamsType, TestUtils.BuildEvents(42));
 
         var sut = new HttpStreamsClient(client);
 
-        await sut.DeleteStreamAsync(streamId);
+        await sut.DeleteStreamAsync(streamId, _defaultStreamsType);
 
-        await Assert.ThrowsAsync<StreamNotFoundException>(async () => await sut.GetStreamInfoAsync(streamId));
+        await Assert.ThrowsAsync<StreamNotFoundException>(async () => await sut.GetStreamInfoAsync(streamId, _defaultStreamsType));
     }
 
     [Fact]
@@ -89,6 +90,6 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
 
         var sut = new HttpStreamsClient(client);
 
-        await Assert.ThrowsAsync<StreamNotFoundException>(async () => await sut.DeleteStreamAsync(streamId));
+        await Assert.ThrowsAsync<StreamNotFoundException>(async () => await sut.DeleteStreamAsync(streamId, _defaultStreamsType));
     }
 }

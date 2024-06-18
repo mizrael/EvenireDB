@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EvenireDB.Common;
+using Microsoft.Extensions.Logging;
 
 namespace EvenireDB;
 
@@ -20,13 +21,13 @@ public static partial class LogMessages
         EventId = (int)EventIds.ReadingStreamFromRepository,
         Level = LogLevel.Warning,
         Message = "Reading stream '{StreamId}' from repository")]
-    public static partial void ReadingStreamFromRepository(this ILogger logger, Guid streamId);
+    public static partial void ReadingStreamFromRepository(this ILogger logger, StreamId streamId);
 
     [LoggerMessage(
         EventId = (int)EventIds.AppendingEventsToStream,
         Level = LogLevel.Debug,
         Message = "Appending {EventsCount} events to stream '{StreamId}'...")]
-    public static partial void AppendingEventsToStream(this ILogger logger, int eventsCount, Guid streamId);
+    public static partial void AppendingEventsToStream(this ILogger logger, int eventsCount, StreamId streamId);
 
     [LoggerMessage(
         EventId = (int)EventIds.HighMemoryUsageDetected,
@@ -44,23 +45,23 @@ public static partial class LogMessages
         EventId = (int)EventIds.EventsGroupPersistenceError,
         Level = LogLevel.Error,
         Message = "an error has occurred while persisting events group for stream {StreamId}: {Error}")]
-    public static partial void EventsGroupPersistenceError(this ILogger logger, Guid streamId, string error);
+    public static partial void EventsGroupPersistenceError(this ILogger logger, StreamId streamId, string error);
 
     [LoggerMessage(
         EventId = (int)EventIds.StreamDeletionAttempt,
         Level = LogLevel.Information,
         Message = "Trying to delete stream '{StreamId}' ...")]
-    public static partial void StreamDeletionStarted(this ILogger logger, Guid streamId);
+    public static partial void StreamDeletionStarted(this ILogger logger, StreamId streamId);
 
     [LoggerMessage(
         EventId = (int)EventIds.StreamDeleted,
         Level = LogLevel.Information,
         Message = "Stream '{StreamId}' deleted.")]
-    public static partial void StreamDeleted(this ILogger logger, Guid streamId);
+    public static partial void StreamDeleted(this ILogger logger, StreamId streamId);
 
     [LoggerMessage(
         EventId = (int)EventIds.StreamDeletionFailed,
         Level = LogLevel.Critical,
         Message = "Stream '{StreamId}' deletion failed: {Error}")]
-    public static partial void StreamDeletionFailed(this ILogger logger, Guid streamId, string error);
+    public static partial void StreamDeletionFailed(this ILogger logger, StreamId streamId, string error);
 }

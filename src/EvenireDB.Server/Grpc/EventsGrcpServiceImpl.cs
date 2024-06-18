@@ -1,6 +1,7 @@
 ﻿using EvenireDB.Common;
 using Grpc.Core;
 using GrpcEvents;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace EvenireDB.Server.Grpc;
 
@@ -19,14 +20,15 @@ public class EventsGrcpServiceImpl : EventsGrpcService.EventsGrpcServiceBase
 
     public override async Task Read(ReadRequest request, IServerStreamWriter<GrpcEvents.Event> responseStream, ServerCallContext context)
     {
-        if (!Guid.TryParse(request.StreamId, out var streamId))
+        if (!Guid.TryParse(request.StreamId, out var key))
             throw new ArgumentOutOfRangeException(nameof(request.StreamId)); //TODO: is this ok?
 
         ArgumentNullException.ThrowIfNullOrWhiteSpace(request.StreamType, nameof(request.StreamType));
 
+        var streamId = new StreamId(key, request.StreamType);
+
         await foreach(var @event in _reader.ReadAsync(
             streamId,
-            request.StreamType,
             direction: (Direction)request.Direction,
             startPosition: request.StartPosition).ConfigureAwait(false))
         {
@@ -51,7 +53,8 @@ public class EventsGrcpServiceImpl : EventsGrpcService.EventsGrpcServiceBase
 
         try
         {
-            var streamId = Guid.Parse(request.StreamId);
+            var key = Guid.Parse(request.StreamId);
+            var streamId = new StreamId(key, request.StreamType);
 
             foreach (var incoming in request.Events)
             {
@@ -60,7 +63,7 @@ public class EventsGrcpServiceImpl : EventsGrpcService.EventsGrpcServiceBase
                 events.Add(@event);
             }
             
-            var result = await _writer.AppendAsync(streamId, request.StreamType, events, request.ExpectedVersion)
+            var result = await _writer.AppendAsync(streamId, events, request.ExpectedVersion)
                                       .ConfigureAwait(false);                
 
             if (result is FailureResult failure)

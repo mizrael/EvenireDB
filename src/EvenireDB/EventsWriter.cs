@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using EvenireDB.Common;
+using Microsoft.Extensions.Logging;
 using System.Threading.Channels;
 
 namespace EvenireDB;
@@ -20,25 +21,18 @@ public class EventsWriter : IEventsWriter
     }
     
     public async ValueTask<IOperationResult> AppendAsync(
-        Guid streamId, 
-        string streamType,
+        StreamId streamId, 
         IEnumerable<EventData> incomingEvents, 
         int? expectedVersion = null,
         CancellationToken cancellationToken = default)
     {
-        if(streamId == Guid.Empty)
-            return FailureResult.InvalidStream(streamId);
-
-        if(string.IsNullOrWhiteSpace(streamType))
-            return FailureResult.InvalidStreamType(streamType);
-
         if(incomingEvents is null)
             return FailureResult.NullEvents(streamId);
 
         if (!incomingEvents.Any())
             return new SuccessResult();
 
-        CachedEvents entry = await _cache.GetEventsAsync(streamId, streamType, cancellationToken).ConfigureAwait(false);
+        CachedEvents entry = await _cache.GetEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
         if (expectedVersion.HasValue && entry.Events.Count != expectedVersion)
             return FailureResult.VersionMismatch(streamId, expectedVersion.Value, entry.Events.Count);    
@@ -67,7 +61,7 @@ public class EventsWriter : IEventsWriter
                 previousEventId = eventId;
             }
 
-            var group = new IncomingEventsBatch(streamId, streamType, events);
+            var group = new IncomingEventsBatch(streamId, events);
             if (!_writer.TryWrite(group))
                 return FailureResult.CannotInitiateWrite(streamId);
 

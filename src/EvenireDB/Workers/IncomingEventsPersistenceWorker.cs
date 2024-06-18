@@ -37,7 +37,7 @@ namespace EvenireDB.Server
                 {
                     try
                     {
-                        await _repo.AppendAsync(batch.StreamId, batch.StreamType, batch.Events, cancellationToken)
+                        await _repo.AppendAsync(batch.StreamId, batch.Events, cancellationToken)
                                    .ConfigureAwait(false);
                     }
                     catch (Exception ex)

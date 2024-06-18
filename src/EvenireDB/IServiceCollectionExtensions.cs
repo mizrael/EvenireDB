@@ -1,4 +1,5 @@
-﻿using EvenireDB.Persistence;
+﻿using EvenireDB.Common;
+using EvenireDB.Persistence;
 using EvenireDB.Server;
 using EvenireDB.Utils;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,10 +25,10 @@ public static class IServiceCollectionExtensions
         });
 
         services
-        .AddSingleton<ICache<Guid, CachedEvents>>(ctx =>
+        .AddSingleton<ICache<StreamId, CachedEvents>>(ctx =>
         {
             var settings = ctx.GetServerSettings();
-            return new LRUCache<Guid, CachedEvents>(settings.MaxInMemoryStreamsCount);
+            return new LRUCache<StreamId, CachedEvents>(settings.MaxInMemoryStreamsCount);
         })
         .AddSingleton<IStreamsCache, StreamsCache>()
         .AddSingleton(ctx =>

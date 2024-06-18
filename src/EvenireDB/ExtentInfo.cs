@@ -1,3 +1,5 @@
+using EvenireDB.Common;
+
 namespace EvenireDB;
 
-public record ExtentInfo(Guid StreamId, string StreamType, string DataPath, string HeadersPath);
+public record ExtentInfo(StreamId StreamId, string DataPath, string HeadersPath);

@@ -3,7 +3,8 @@
 @if (Stream is not null)
 {
     <tr>
-        <th scope="row">@Stream.StreamId</th>
+        <td scope="row">@Stream.StreamId</td>
+        <td>@Stream.StreamType</td>
         <td>@Stream.EventsCount</td>
         <td>@Stream.IsCached</td>
         <td>@Stream.CreatedAt</td>
@@ -55,7 +56,7 @@
 
                     try
                     {
-                        await streamsClient.DeleteStreamAsync(Stream.StreamId);
+                        await streamsClient.DeleteStreamAsync(Stream.StreamId, Stream.StreamType);
                         _status = OperationStatus.Success;
                     }
                     catch (Exception)

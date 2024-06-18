@@ -1,4 +1,5 @@
-﻿using EvenireDB.Exceptions;
+﻿using EvenireDB.Common;
+using EvenireDB.Exceptions;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
@@ -9,7 +10,7 @@ internal class EventsProvider : IEventsProvider
     private readonly IExtentsProvider _extentInfoProvider;
     private readonly IHeadersRepository _headersRepo;
     private readonly IDataRepository _dataRepo;
-    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _streamLocks = new();
+    private readonly ConcurrentDictionary<StreamId, SemaphoreSlim> _streamLocks = new(); //TODO: this should be moved to a locks provider
 
     public EventsProvider(IHeadersRepository headersRepo, IDataRepository dataRepo, IExtentsProvider extentInfoProvider)
     {
@@ -19,13 +20,12 @@ internal class EventsProvider : IEventsProvider
     }
 
     public async IAsyncEnumerable<Event> ReadAsync(
-        Guid streamId,
-        string type,
+        StreamId streamId,
         int? skip = null,
         int? take = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId, type);
+        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId);
         if (extentInfo is null || !File.Exists(extentInfo.DataPath) || !File.Exists(extentInfo.HeadersPath))
             yield break;
 
@@ -37,12 +37,11 @@ internal class EventsProvider : IEventsProvider
     }
 
     public async ValueTask AppendAsync(
-        Guid streamId,
-        string type,
+        StreamId streamId,
         IEnumerable<Event> events, 
         CancellationToken cancellationToken = default)
     {
-        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId, type, true);
+        var extentInfo = _extentInfoProvider.GetExtentInfo(streamId, true);
         if (extentInfo is null)
             throw new StreamException(streamId, $"Unable to build extent for stream '{streamId}'.");
 

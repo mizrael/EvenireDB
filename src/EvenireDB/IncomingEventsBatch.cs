@@ -1,3 +1,5 @@
-﻿namespace EvenireDB;
+﻿using EvenireDB.Common;
 
-public record IncomingEventsBatch(Guid StreamId, string StreamType, IEnumerable<Event> Events);
+namespace EvenireDB;
+
+public record IncomingEventsBatch(StreamId StreamId, IEnumerable<Event> Events);

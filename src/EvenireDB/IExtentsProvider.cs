@@ -1,3 +1,5 @@
+using EvenireDB.Common;
+
 namespace EvenireDB;
 
 public interface IExtentsProvider
@@ -9,9 +11,9 @@ public interface IExtentsProvider
     /// <param name="streamType">the stream type.</param>
     /// <param name="createIfMissing">when true, will return the first extent for the stream.</param>
     /// <returns></returns>
-    ExtentInfo? GetExtentInfo(Guid streamId, string streamType, bool createIfMissing = false);
+    ExtentInfo? GetExtentInfo(StreamId streamId, bool createIfMissing = false);
 
-    IEnumerable<ExtentInfo> GetAllExtentsInfo(string? streamType = null);
+    IEnumerable<ExtentInfo> GetAllExtentsInfo(StreamType? streamType = null);
 
-    ValueTask DeleteExtentsAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default);
+    ValueTask DeleteExtentsAsync(StreamId streamId, CancellationToken cancellationToken = default);
 }
