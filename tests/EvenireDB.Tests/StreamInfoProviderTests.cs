@@ -8,7 +8,7 @@ public class StreamInfoProviderTests
         var streamId = Guid.NewGuid();
         var streamType = "lorem";
 
-        var extentsProvider = Substitute.For<IExtentInfoProvider>();
+        var extentsProvider = Substitute.For<IExtentsProvider>();
         var cache = Substitute.For<IStreamsCache>();
         var logger = Substitute.For<ILogger<StreamInfoProvider>>();
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
@@ -21,12 +21,24 @@ public class StreamInfoProviderTests
     }
 
     [Fact]
+    public async Task GetStreamsInfo_should_return_empty_when_no_streams_available()
+    {
+        var extentsProvider = Substitute.For<IExtentsProvider>();
+        var cache = Substitute.For<IStreamsCache>();
+        var logger = Substitute.For<ILogger<StreamInfoProvider>>();
+        var sut = new StreamInfoProvider(extentsProvider, cache, logger);
+
+        var results = sut.GetStreamsInfo();
+        results.Should().BeEmpty();
+    }
+
+    [Fact]
     public void GetStreamInfo_should_return_null_when_stream_does_not_exist()
     {
         var streamId = Guid.NewGuid();
         var streamType = "lorem";
 
-        var extentsProvider = Substitute.For<IExtentInfoProvider>();
+        var extentsProvider = Substitute.For<IExtentsProvider>();
         var cache = Substitute.For<IStreamsCache>();
         var logger = Substitute.For<ILogger<StreamInfoProvider>>();
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);

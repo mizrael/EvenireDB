@@ -11,10 +11,10 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         _fixture = fixture;
     }
 
-    private EventsProvider CreateSut(Guid streamId, string streamType, out IExtentInfoProvider extentInfoProvider)
+    private EventsProvider CreateSut(out IExtentsProvider extentInfoProvider)
     {
-        var config = _fixture.CreateExtentsConfig(streamId, streamType);
-        extentInfoProvider = new ExtentInfoProvider(config);
+        var config = _fixture.CreateExtentsConfig();
+        extentInfoProvider = new ExtentsProvider(config);
         var dataRepo = new DataRepository();
         var headersRepo = new HeadersRepository();
         return new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
@@ -30,7 +30,7 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var streamId = Guid.NewGuid();
         var streamType = "lorem";
 
-        var sut = CreateSut(streamId, streamType, out var extentInfoProvider);
+        var sut = CreateSut(out var extentInfoProvider);
 
         await sut.AppendAsync(streamId, streamType, events);
 
@@ -50,7 +50,7 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var streamId = Guid.NewGuid();
         var streamType = "lorem";
 
-        var sut = CreateSut(streamId, streamType, out var extentInfoProvider);
+        var sut = CreateSut(out var extentInfoProvider);
 
         foreach (var events in batches)
             await sut.AppendAsync(streamId, streamType, events);
@@ -70,7 +70,7 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var streamId = Guid.NewGuid();
         var streamType = "lorem";
 
-        var sut = CreateSut(streamId, streamType, out var _);
+        var sut = CreateSut(out var _);
 
         await sut.AppendAsync(streamId, streamType, expectedEvents);
 
@@ -97,7 +97,7 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var streamId = Guid.NewGuid();
         var streamType = "lorem";
 
-        var sut = CreateSut(streamId, streamType, out var _);
+        var sut = CreateSut(out var _);
 
         foreach (var events in batches)
             await sut.AppendAsync(streamId, streamType, events);
@@ -117,7 +117,7 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var streamId = Guid.NewGuid();
         var streamType = "lorem";
 
-        var sut = CreateSut(streamId, streamType, out var _);
+        var sut = CreateSut(out var _);
 
         await sut.AppendAsync(streamId, streamType, expectedEvents);
 
@@ -139,7 +139,7 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var streamId = Guid.NewGuid();
         var streamType = "lorem";
 
-        var sut = CreateSut(streamId, streamType, out var _);
+        var sut = CreateSut(out var _);
 
         await sut.AppendAsync(streamId, streamType, expectedEvents);
 

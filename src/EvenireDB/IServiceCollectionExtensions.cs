@@ -63,9 +63,9 @@ public static class IServiceCollectionExtensions
                     dataPath = Path.Combine(AppContext.BaseDirectory, dataPath);
             }
 
-            return new ExtentInfoProviderConfig(dataPath);
+            return new ExtentsProviderConfig(dataPath);
         })
-        .AddSingleton<IExtentInfoProvider, ExtentInfoProvider>()
+        .AddSingleton<IExtentsProvider, ExtentsProvider>()
         .AddSingleton<IStreamInfoProvider, StreamInfoProvider>()
         .AddSingleton<IDataRepository, DataRepository>()
         .AddSingleton<IHeadersRepository, HeadersRepository>()

@@ -1,13 +1,15 @@
+using EvenireDB.Utils;
+
 namespace EvenireDB;
 
-internal record ExtentInfoProviderConfig(string BasePath);
+internal record ExtentsProviderConfig(string BasePath);
 
 // TODO: tests
-internal class ExtentInfoProvider : IExtentInfoProvider
+internal class ExtentsProvider : IExtentsProvider
 {
-    private readonly ExtentInfoProviderConfig _config;
+    private readonly ExtentsProviderConfig _config;
 
-    public ExtentInfoProvider(ExtentInfoProviderConfig config)
+    public ExtentsProvider(ExtentsProviderConfig config)
     {
         _config = config ?? throw new ArgumentNullException(nameof(config));
         if (!Directory.Exists(_config.BasePath))
@@ -63,4 +65,22 @@ internal class ExtentInfoProvider : IExtentInfoProvider
             }
         }
     }
+
+    public async ValueTask DeleteExtentsAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default)
+    {
+        // TODO: this should eventually retrieve all the extents for the stream
+        var extent = GetExtentInfo(streamId, streamType);
+        if (extent is null)
+            return;
+
+        var result = await FileUtils.TryDeleteFileAsync(extent.HeadersPath, cancellationToken: cancellationToken);
+        if (!result)
+            throw new InvalidOperationException($"Failed to delete stream '{streamId}'.");
+        
+        result = await FileUtils.TryDeleteFileAsync(extent.DataPath, cancellationToken: cancellationToken);
+        if (!result)
+            throw new InvalidOperationException($"Failed to delete stream '{streamId}'.");
+    }
 }
+
+

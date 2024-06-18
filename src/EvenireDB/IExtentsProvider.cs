@@ -1,6 +1,6 @@
 namespace EvenireDB;
 
-public interface IExtentInfoProvider
+public interface IExtentsProvider
 {
     /// <summary>
     /// returns the extent details for the specified stream.
@@ -12,4 +12,6 @@ public interface IExtentInfoProvider
     ExtentInfo? GetExtentInfo(Guid streamId, string streamType, bool createIfMissing = false);
 
     IEnumerable<ExtentInfo> GetAllExtentsInfo(string? streamType = null);
+
+    ValueTask DeleteExtentsAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default);
 }

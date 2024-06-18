@@ -2,34 +2,38 @@
 
 public class DataFixture : IAsyncLifetime
 {
-    private const string BaseDataPath = "./data/";
-    private readonly List<ExtentInfoProviderConfig> _configs = new();
+    private DirectoryInfo _baseDataPath;
 
-    internal ExtentInfoProviderConfig CreateExtentsConfig(Guid streamId, string streamType)
-    {
-        var typesPath = Path.Combine(BaseDataPath, streamType);
-        if (!Directory.Exists(typesPath))
-            Directory.CreateDirectory(typesPath);
-
-        var path = Path.Combine(typesPath, streamId.ToString());
+    internal ExtentsProviderConfig CreateExtentsConfig()
+    {        
+        var path = Path.Combine(_baseDataPath.FullName, Guid.NewGuid().ToString());
         Directory.CreateDirectory(path);
 
-        var config = new ExtentInfoProviderConfig(path);
-        _configs.Add(config);
+        var config = new ExtentsProviderConfig(path);        
         return config;
     }
 
     public Task DisposeAsync()
     {
-        foreach (var config in _configs)
-            Directory.Delete(config.BasePath, true);
+        try
+        {
+            lock (this)
+            {
+                if (_baseDataPath.Exists)
+                    _baseDataPath.Delete(true);
+            }
+        }
+        catch
+        {
+            // best effort
+        }
+
         return Task.CompletedTask;
     }
 
     public Task InitializeAsync()
     {
-        if (!Directory.Exists(BaseDataPath))
-            Directory.CreateDirectory(BaseDataPath);
+        _baseDataPath = Directory.CreateTempSubdirectory("eveniredb-tests");        
         return Task.CompletedTask;
     }
 

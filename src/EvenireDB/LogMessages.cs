@@ -49,8 +49,8 @@ public static partial class LogMessages
     [LoggerMessage(
         EventId = (int)EventIds.StreamDeletionAttempt,
         Level = LogLevel.Information,
-        Message = "Trying to delete stream '{StreamId}', attempt #{Attempt} ...")]
-    public static partial void StreamDeletionAttempt(this ILogger logger, Guid streamId, int attempt);
+        Message = "Trying to delete stream '{StreamId}' ...")]
+    public static partial void StreamDeletionStarted(this ILogger logger, Guid streamId);
 
     [LoggerMessage(
         EventId = (int)EventIds.StreamDeleted,

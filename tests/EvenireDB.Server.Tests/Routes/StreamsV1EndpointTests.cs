@@ -23,7 +23,7 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
     }
 
     [Fact]
-    public async Task GetStreams_should_return_ok_when_stream_id_valid()
+    public async Task GetStreamInfo_should_return_ok_when_stream_id_valid()
     {
         await using var application = _serverFixture.CreateServer();
 
@@ -41,6 +41,22 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         stream.Should().NotBeNull();
         stream.StreamId.Should().Be(streamId);
         stream.EventsCount.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task GetStreamInfo_should_return_not_found_when_stream_id_valid_but_type_invalid()
+    {
+        await using var application = _serverFixture.CreateServer();
+
+        using var client = application.CreateClient();
+
+        var streamId = Guid.NewGuid();
+
+        var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
+        await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
+
+        var response = await client.GetAsync($"/api/v1/streams/invalid_type/{streamId}");
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -76,6 +92,26 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
                     .And.NotBeEmpty()
                     .And.HaveCount(1)
                     .And.Contain(s => s.StreamId == streamId);
+    }
+
+    [Fact]
+    public async Task GetStreams_should_empty_when_type_invalid()
+    {
+        await using var application = _serverFixture.CreateServer();
+
+        using var client = application.CreateClient();
+
+        var streamId = Guid.NewGuid();
+
+        var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
+        await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
+
+        var response = await client.GetAsync("/api/v1/streams?streamType=invalid");
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+
+        var streams = await response.Content.ReadFromJsonAsync<StreamInfo[]>();
+        streams.Should().NotBeNull()
+                    .And.BeEmpty();
     }
 
     [Fact]

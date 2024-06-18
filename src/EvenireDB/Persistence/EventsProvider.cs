@@ -6,12 +6,12 @@ namespace EvenireDB.Persistence;
 
 internal class EventsProvider : IEventsProvider
 {
-    private readonly IExtentInfoProvider _extentInfoProvider;
+    private readonly IExtentsProvider _extentInfoProvider;
     private readonly IHeadersRepository _headersRepo;
     private readonly IDataRepository _dataRepo;
     private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _streamLocks = new();
 
-    public EventsProvider(IHeadersRepository headersRepo, IDataRepository dataRepo, IExtentInfoProvider extentInfoProvider)
+    public EventsProvider(IHeadersRepository headersRepo, IDataRepository dataRepo, IExtentsProvider extentInfoProvider)
     {
         _headersRepo = headersRepo;
         _dataRepo = dataRepo;
