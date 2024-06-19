@@ -7,16 +7,14 @@ public static class IEventsClientExtensions
 {
     public static IAsyncEnumerable<Event> ReadAsync(
         this IEventsClient client, 
-        Guid streamId,
-        string streamType,
+        StreamId streamId,
         Direction direction = Direction.Forward, 
         CancellationToken cancellationToken = default)
-        => client.ReadAsync(streamId, streamType, StreamPosition.Start, direction, cancellationToken);
+        => client.ReadAsync(streamId, StreamPosition.Start, direction, cancellationToken);
 
     public static async IAsyncEnumerable<Event> ReadAllAsync(
         this IEventsClient client,
-        Guid streamId,
-        string streamType,
+        StreamId streamId,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         uint position = 0;
@@ -24,7 +22,7 @@ public static class IEventsClientExtensions
         while (true)
         {
             bool hasItems = false;
-            await foreach (var item in client.ReadAsync(streamId, streamType, position: position, direction: Direction.Forward, cancellationToken: cancellationToken).ConfigureAwait(false))
+            await foreach (var item in client.ReadAsync(streamId, position: position, direction: Direction.Forward, cancellationToken: cancellationToken).ConfigureAwait(false))
             {
                 position++;
                 hasItems = true;

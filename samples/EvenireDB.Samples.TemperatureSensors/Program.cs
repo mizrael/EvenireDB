@@ -33,7 +33,8 @@ app.MapGet("/sensors", ([FromServices] Settings config) =>
 app.MapGet("/sensors/{sensorId}", async ([FromServices] IEventsClient client, Guid sensorId) =>
 {
     var events = new List<Event>();
-    await foreach(var item in client.ReadAsync(sensorId, nameof(Sensor), StreamPosition.End, Direction.Backward).ConfigureAwait(false))
+    var streamId = new StreamId(sensorId, nameof(Sensor));
+    await foreach(var item in client.ReadAsync(streamId, StreamPosition.End, Direction.Backward).ConfigureAwait(false))
         events.Add(item);
 
     if (events.Count() == 0)

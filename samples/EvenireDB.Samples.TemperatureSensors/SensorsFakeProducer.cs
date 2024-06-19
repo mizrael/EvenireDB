@@ -1,4 +1,5 @@
 ﻿using EvenireDB.Client;
+using EvenireDB.Common;
 
 namespace EvenireDB.Samples.TemperatureSensors;
 
@@ -21,7 +22,10 @@ public class SensorsFakeProducer : BackgroundService
             foreach (var sensorId in _sensorConfig.SensorIds)
             {
                 var reading = new ReadingReceived(Random.Shared.NextDouble() * 100, DateTimeOffset.UtcNow);
-                await _eventsClient.AppendAsync(sensorId, nameof(Sensor), new[]
+
+                var streamId = new StreamId(sensorId, nameof(Sensor));
+
+                await _eventsClient.AppendAsync(streamId, new[]
                 {
                     EventData.Create(reading),
                 }, stoppingToken);

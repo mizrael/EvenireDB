@@ -3,8 +3,8 @@
 @if (Stream is not null)
 {
     <tr>
-        <td scope="row">@Stream.StreamId</td>
-        <td>@Stream.StreamType</td>
+        <td scope="row">@Stream.Id.Key</td>
+        <td>@Stream.Id.Type</td>
         <td>@Stream.EventsCount</td>
         <td>@Stream.IsCached</td>
         <td>@Stream.CreatedAt</td>
@@ -12,7 +12,7 @@
         <td>
             @if (_status != OperationStatus.Processing)
             {
-                <a href='/streams/@Stream.StreamId' title='view details' class="mr-2">
+                <a href='/streams/@Stream.Id.Type/@Stream.Id.Key' title='view details' class="mr-2">
                     <span class="oi oi-bolt" aria-hidden="true"></span>
                 </a>
                 <a title="delete" href="#" @onclick="() => OpenDeleteStream()"
@@ -45,7 +45,7 @@
             return;
 
         _deleteStreamModal.Options = new Modal.ModalOptions(
-            $"Delete Stream '{Stream.StreamId}'?",
+            $"Delete Stream '{Stream.Id.Type}/{Stream.Id.Key}'?",
             null,
             new Modal.ModalButton[] {
                 Modal.ModalButton.Danger("Proceed", async () =>
@@ -56,7 +56,7 @@
 
                     try
                     {
-                        await streamsClient.DeleteStreamAsync(Stream.StreamId, Stream.StreamType);
+                        await streamsClient.DeleteStreamAsync(Stream.Id);
                         _status = OperationStatus.Success;
                     }
                     catch (Exception)

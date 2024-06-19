@@ -4,7 +4,7 @@ namespace EvenireDB.Client;
 
 public interface IStreamsClient
 {
-    ValueTask<IEnumerable<StreamInfo>> GetStreamInfosAsync(string? streamsType = null, CancellationToken cancellationToken = default);
-    ValueTask<StreamInfo> GetStreamInfoAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default);
-    ValueTask DeleteStreamAsync(Guid streamId, string streamType, CancellationToken cancellationToken = default);
+    ValueTask<IEnumerable<StreamInfo>> GetStreamInfosAsync(StreamType? streamsType = null, CancellationToken cancellationToken = default);
+    ValueTask<StreamInfo> GetStreamInfoAsync(StreamId streamId, CancellationToken cancellationToken = default);
+    ValueTask DeleteStreamAsync(StreamId streamId, CancellationToken cancellationToken = default);
 }

@@ -1,4 +1,5 @@
-﻿using EvenireDB.Server.Tests;
+﻿using EvenireDB.Common;
+using EvenireDB.Server.Tests;
 
 namespace EvenireDB.Client.Tests;
 
@@ -22,13 +23,13 @@ public class IEventsClientExtensionsTests : IClassFixture<ServerFixture>
     [Fact]
     public async Task ReadAllAsync_should_read_entire_stream()
     {
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
         var expectedEvents = TestUtils.BuildEvents(242);
 
         var sut = CreateSut();
-        await sut.AppendAsync(streamId, _defaultStreamsType, expectedEvents);
+        await sut.AppendAsync(streamId, expectedEvents);
 
-        var receivedEvents = await sut.ReadAllAsync(streamId, _defaultStreamsType).ToArrayAsync();
+        var receivedEvents = await sut.ReadAllAsync(streamId).ToArrayAsync();
         TestUtils.IsEquivalent(receivedEvents, expectedEvents);
     }
 }

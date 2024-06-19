@@ -1,5 +1,6 @@
 ﻿using EvenireDB.Client;
 using EvenireDB.Client.Exceptions;
+using EvenireDB.Common;
 using Microsoft.Extensions.DependencyInjection;
 using System.CommandLine;
 using System.Text;
@@ -46,7 +47,7 @@ var rootCommand = new RootCommand
     streamIdOption,
     streamTypeOption
 };
-rootCommand.SetHandler(async (streamId, streamType, uri, useGrpc, grpcPort, httpPort, eventsCount) => {
+rootCommand.SetHandler(async (streamKey, streamType, uri, useGrpc, grpcPort, httpPort, eventsCount) => {
     var clientConfig = new EvenireClientConfig()
     {
         ServerUri = uri,
@@ -61,14 +62,16 @@ rootCommand.SetHandler(async (streamId, streamType, uri, useGrpc, grpcPort, http
     var provider = services.BuildServiceProvider();
     var client = provider.GetRequiredService<IEventsClient>();
 
+    var streamId = new StreamId(streamKey, streamType);
+
     Console.ForegroundColor = ConsoleColor.Yellow;
-    Console.WriteLine($"Sending {eventsCount} events to stream '{streamType}/{streamId}' on server '{uri}'...");
+    Console.WriteLine($"Sending {eventsCount} events to stream '{streamId}' on server '{uri}'...");
 
     var events = Enumerable.Range(0, eventsCount).Select(i => new EventData($"event-{i}", Encoding.UTF8.GetBytes($"event-{i}"))).ToArray();
 
     try
     {
-        await client.AppendAsync(streamId, streamType, events);
+        await client.AppendAsync(streamId, events);
     }
     catch (ClientException cliEx)
     {

@@ -5,19 +5,37 @@
 
 <h1>Create Stream</h1>
 
-<SendEvents StreamId="@_streamId" OnEventSent="OnStreamCreated"></SendEvents>
+<form>
+    <div class="form-group row">
+        <label for="streamType" class="col-sm-2 col-form-label">Stream Type</label>
+        <div class="col-sm-10">
+            <input type="text" required class="form-control" placeholder="Stream Type" id="streamType" @bind-value="_streamType">
+        </div>
+    </div>
+</form>
+
+@if (!string.IsNullOrWhiteSpace(_streamType))
+{
+    <SendEvents StreamId="@_streamId" OnEventSent="OnStreamCreated"></SendEvents>
+}else{
+    <Alert Type="AlertTypes.Warning">Set the Stream Type to continue</Alert>
+}
 
 @code{
-    private Guid _streamId;
+    private Guid _streamKey;
+    private string _streamType;
+
+    private StreamId _streamId => new StreamId(_streamKey, _streamType);
 
     protected override void OnInitialized()
     {
-        _streamId = Guid.NewGuid();
+        _streamKey = Guid.NewGuid();
         base.OnInitialized();
     }
 
     private void OnStreamCreated()
     {
-        NavigationManager.NavigateTo($"/streams/{_streamId}");
+        var url = RoutingUtils.StreamDetails(_streamId);
+        NavigationManager.NavigateTo(url);
     }
 }

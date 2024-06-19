@@ -16,14 +16,13 @@ internal class GrpcEventsClient : IEventsClient
     }
 
     public async ValueTask AppendAsync(
-        Guid streamId, 
-        string streamType, 
+        StreamId streamId, 
         IEnumerable<EventData> events, CancellationToken cancellationToken = default)
     {
         var request = new AppendRequest()
         {
-            StreamId = streamId.ToString(),
-            StreamType = streamType
+            StreamId = streamId.Key.ToString(),
+            StreamType = streamId.Type
         };
 
         foreach (var @event in events)
@@ -57,8 +56,7 @@ internal class GrpcEventsClient : IEventsClient
     }
 
     public async IAsyncEnumerable<Event> ReadAsync(
-        Guid streamId,
-        string streamType,
+        StreamId streamId,
         StreamPosition position, 
         Direction direction = Direction.Forward, 
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -67,8 +65,8 @@ internal class GrpcEventsClient : IEventsClient
         {
             Direction = (uint)direction,
             StartPosition = position,
-            StreamId = streamId.ToString(),
-            StreamType = streamType
+            StreamId = streamId.Key.ToString(),
+            StreamType = streamId.Type
         };
         using var response = _client.Read(request, cancellationToken: cancellationToken);
         await foreach(var item in response.ResponseStream.ReadAllAsync().ConfigureAwait(false))

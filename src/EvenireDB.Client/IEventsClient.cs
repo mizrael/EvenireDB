@@ -5,7 +5,7 @@ namespace EvenireDB.Client;
 public interface IEventsClient
 {
     //TODO: add response
-    ValueTask AppendAsync(Guid streamId, string streamType, IEnumerable<EventData> events, CancellationToken cancellationToken = default);
+    ValueTask AppendAsync(StreamId streamId, IEnumerable<EventData> events, CancellationToken cancellationToken = default);
 
-    IAsyncEnumerable<Event> ReadAsync(Guid streamId, string streamType, StreamPosition position, Direction direction = Direction.Forward, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<Event> ReadAsync(StreamId streamId, StreamPosition position, Direction direction = Direction.Forward, CancellationToken cancellationToken = default);
 }

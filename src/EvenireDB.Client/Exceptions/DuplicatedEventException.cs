@@ -4,10 +4,10 @@ namespace EvenireDB.Client.Exceptions;
 
 public class DuplicatedEventException : ClientException
 {
-    public DuplicatedEventException(Guid streamId, string message) : base(ErrorCodes.DuplicateEvent, message)
+    public DuplicatedEventException(StreamId streamId, string message) : base(ErrorCodes.DuplicateEvent, message)
     {
         StreamId = streamId;
     }
 
-    public Guid StreamId { get; }
+    public StreamId StreamId { get; }
 }
