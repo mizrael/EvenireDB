@@ -2,12 +2,6 @@
 
 public readonly record struct StreamId
 {
-    public StreamId(Guid key, string type)
-    {
-        Key = key;
-        Type = type;
-    }
-
-    public Guid Key { get; }
-    public StreamType Type { get; }
+    public required readonly Guid Key { get; init; }
+    public required readonly StreamType Type { get; init; }
 }

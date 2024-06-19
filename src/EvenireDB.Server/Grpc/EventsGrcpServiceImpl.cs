@@ -24,8 +24,8 @@ public class EventsGrcpServiceImpl : EventsGrpcService.EventsGrpcServiceBase
             throw new ArgumentOutOfRangeException(nameof(request.StreamId)); //TODO: is this ok?
 
         ArgumentNullException.ThrowIfNullOrWhiteSpace(request.StreamType, nameof(request.StreamType));
-
-        var streamId = new StreamId(key, request.StreamType);
+                
+        var streamId = new StreamId { Key = key, Type = request.StreamType };
 
         await foreach(var @event in _reader.ReadAsync(
             streamId,
@@ -54,7 +54,7 @@ public class EventsGrcpServiceImpl : EventsGrpcService.EventsGrpcServiceBase
         try
         {
             var key = Guid.Parse(request.StreamId);
-            var streamId = new StreamId(key, request.StreamType);
+            var streamId = new StreamId { Key = key, Type = request.StreamType };
 
             foreach (var incoming in request.Events)
             {

@@ -56,7 +56,8 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         var sut = new HttpStreamsClient(client);
         var result = await sut.GetStreamInfoAsync(streamId, _defaultStreamsType);
         result.Should().NotBeNull();
-        result.StreamId.Should().Be(streamId);
+        result.Id.Key.Should().Be(streamId);
+        result.Id.Type.ToString().Should().Be(_defaultStreamsType);
         result.EventsCount.Should().Be(42);
     }
 

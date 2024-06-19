@@ -45,7 +45,8 @@ internal class ExtentsProvider : IExtentsProvider
 
     public IEnumerable<ExtentInfo> GetAllExtentsInfo(StreamType? streamType = null)
     {
-        var types = Directory.GetDirectories(_config.BasePath, streamType ?? string.Empty) ?? Array.Empty<string>();
+        var pattern = streamType?.ToString() ?? string.Empty;
+        var types = Directory.GetDirectories(_config.BasePath, pattern) ?? Array.Empty<string>();
         foreach (var typeFolder in types)
         {
             string type = Path.GetFileNameWithoutExtension(typeFolder);
@@ -58,7 +59,8 @@ internal class ExtentsProvider : IExtentsProvider
             {
                 var filename = Path.GetFileNameWithoutExtension(headerFile);
                 var key = filename.Substring(0, 32);
-                var streamId = new StreamId(Guid.Parse(key), type);
+                var streamId = new StreamId { Key = Guid.Parse(key), Type = type };
+                  
                 yield return GetExtentInfo(streamId)!;
             }
         }

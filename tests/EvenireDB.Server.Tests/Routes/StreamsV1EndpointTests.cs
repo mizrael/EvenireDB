@@ -1,4 +1,5 @@
-﻿using System.Net.Http.Json;
+﻿using EvenireDB.Common;
+using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes;
 
@@ -39,7 +40,8 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
 
         var stream = await response.Content.ReadFromJsonAsync<StreamInfo>();
         stream.Should().NotBeNull();
-        stream.StreamId.Should().Be(streamId);
+        stream.Id.Key.Should().Be(streamId);
+        stream.Id.Type.ToString().Should().Be(_defaultStreamsType);
         stream.EventsCount.Should().Be(10);
     }
 
@@ -91,7 +93,7 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         streams.Should().NotBeNull()
                     .And.NotBeEmpty()
                     .And.HaveCount(1)
-                    .And.Contain(s => s.StreamId == streamId);
+                    .And.Contain(s => s.Id.Key == streamId && s.Id.Type == _defaultStreamsType);
     }
 
     [Fact]

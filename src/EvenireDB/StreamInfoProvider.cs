@@ -52,11 +52,11 @@ internal class StreamInfoProvider : IStreamInfoProvider
     }
 
     //TODO: I don't like this here
-    public async ValueTask DeleteStreamAsync(StreamId streamId, CancellationToken cancellationToken = default)
+    public async ValueTask<bool> DeleteStreamAsync(StreamId streamId, CancellationToken cancellationToken = default)
     {
         var extent = _extentInfoProvider.GetExtentInfo(streamId, createIfMissing: false);
-        if(extent is null)
-            throw new ArgumentException($"Stream '{streamId}' does not exist.", nameof(streamId));
+        if (extent is null)
+            return false;
 
         _logger.StreamDeletionStarted(streamId);
 
@@ -68,9 +68,12 @@ internal class StreamInfoProvider : IStreamInfoProvider
         }
         catch (Exception ex)
         {
-            _logger.StreamDeletionFailed(streamId, ex.Message);            
+            _logger.StreamDeletionFailed(streamId, ex.Message);
+            return false;
         }
 
         _logger.StreamDeleted(streamId);
+
+        return true;
     }
 }

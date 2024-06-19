@@ -1,22 +1,23 @@
+using EvenireDB.Common;
+
 namespace EvenireDB.Tests;
 
 public class StreamInfoProviderTests
 {
     [Fact]
-    public async Task DeleteStreamAsync_should_throw_when_stream_does_not_exist()
+    public async Task DeleteStreamAsync_should_return_false_when_stream_does_not_exist()
     {
-        var streamId = Guid.NewGuid();
-        var streamType = "lorem";
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
         var extentsProvider = Substitute.For<IExtentsProvider>();
         var cache = Substitute.For<IStreamsCache>();
         var logger = Substitute.For<ILogger<StreamInfoProvider>>();
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
 
-        await Assert.ThrowsAsync<ArgumentException>(async () =>
-            await sut.DeleteStreamAsync(streamId, streamType));
+        var result = await sut.DeleteStreamAsync(streamId);
+        result.Should().BeFalse();
 
-        var exists = sut.GetStreamInfo(streamId, streamType) is not null;
+        var exists = sut.GetStreamInfo(streamId) is not null;
         exists.Should().BeFalse();
     }
 
@@ -35,14 +36,13 @@ public class StreamInfoProviderTests
     [Fact]
     public void GetStreamInfo_should_return_null_when_stream_does_not_exist()
     {
-        var streamId = Guid.NewGuid();
-        var streamType = "lorem";
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
         var extentsProvider = Substitute.For<IExtentsProvider>();
         var cache = Substitute.For<IStreamsCache>();
         var logger = Substitute.For<ILogger<StreamInfoProvider>>();
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
 
-        sut.GetStreamInfo(streamId, streamType).Should().BeNull();
+        sut.GetStreamInfo(streamId).Should().BeNull();
     }
 }
