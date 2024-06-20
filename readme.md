@@ -15,7 +15,9 @@ Honestly, I don't know how far this project will go, but I'm having a lot of fun
 
 ## How does it work?
 
-The basic idea behind Evenire is quite simple: events can be appended to stream and later on, retrieved by providing the stream ID.
+The basic idea behind Evenire is quite simple: events can be appended to streams and later on, retrieved by providing the stream ID.
+
+Streams are identified by a tuple composed by a `Guid` and a string representing a stream type (more details [here](./src/EvenireDB.Common/StreamId.cs)).
 
 Every stream is kept in memory using a local cache, for fast retrieval. A background process takes care of serializing events to a file, one per stream.
 
@@ -23,7 +25,9 @@ Reading can happen from the very beginning of a stream moving forward or from a 
 
 Another option is to read the events from the _end_ of the stream instead, moving backwards in time. This is interesting for example if you are recording data from sensors and you want to retrieve the latest state.
 
-# Setup
+Autentication was **left out intentionally** as it would go outside the scope of the project (for now).
+
+## Setup
 
 As of now, there are two possible options for spinning up an Evenire server:
 - deploying the [Server project](https://github.com/mizrael/EvenireDB/tree/main/src/EvenireDB.Server) somewhere
@@ -33,26 +37,42 @@ These are both viable options, however, I would recommend opting for the Docker 
 
 Once you have the image ready, you can run it in a Container by running `docker compose up`.
 
-# Client configuration
+## Client configuration
 
 Once your server is up, you can start using it to store your events. If you are writing a .NET application, you can leverage [the Client library](https://github.com/mizrael/EvenireDB/tree/main/src/EvenireDB.Client) I provided.
 
-Configuration is pretty easy, just add this to your `Program.cs` or `Startup.cs` file:
+Client configuration is pretty easy. The first step is to update your `appsettings.json` file and add a new section:
+```json
+{
+  "Evenire": {
+    "ServerUri": "[your server url here]",
+    "HttpSettings": {
+      "Port": 80 <---- make sure this is correct for you
+    },
+    "GrpcSettings": {
+      "Port": 5243 <---- make sure this is correct for you
+    }
+  }
+}
+```
+
+Once you have that, the last step is to register EvenireDB on your DI container. Something like this:
 
 ```csharp
 var builder = WebApplication.CreateBuilder(args);
 
-var connectionString = new Uri(builder.Configuration.GetConnectionString("evenire"));
+var clientConfig = builder.Configuration.GetSection("Evenire").Get<EvenireClientConfig>();
 
-builder.Services.AddEvenireDB(new EvenireConfig(connectionString, useGrpc: true));
+builder.Services.AddEvenireDB(clientConfig);
 ```
 
-## Writing events
+### Writing events
 
-Once you have added the Client to your IoC Container, just inject `IEventsClient` into your classes and start making calls to it:
+Once you have added the Client to your DI Container, just inject `IEventsClient` into your classes and start making calls to it:
 
 ```csharp
-var streamId = Guid.NewGuid();
+var streamKey = /* this is a GUID */;
+var streamId = new StreamId(streamKey, "MyStreamType");
 
 await _eventsClient.AppendAsync(streamId, new[]
 {
@@ -61,12 +81,13 @@ await _eventsClient.AppendAsync(streamId, new[]
 });
 ```
 
-## Reading events
+### Reading events
 
 Reading too can be done trough an `IEventsClient` instance:
 
 ```csharp
-var streamId = Guid.NewGuid();
+var streamKey = /* this is a GUID */;
+var streamId = new StreamId(streamKey, "MyStreamType");
 
 // write some events for streamId...
 
@@ -77,10 +98,21 @@ await foreach(var @event in client.ReadAsync(streamId, StreamPosition.Start, Dir
 
 `ReadAsync` can be configured to fetch the events from `StreamPosition.Start`, `StreamPosition.End` or a specific point in the stream. You can also specify the direction you want to move (forward or backward).
 
-# Samples
+## Admin UI
+Evenire also has a rudimentary administration UI, written with Blazor. It allows a few basic operations:
+- see the list of all the available streams
+- create a new stream
+- append events to an existing stream
+- delete a stream
+
+![streams archive](./docs/assets/streams_archive.jpg)
+
+![stream details](./docs/assets/stream_details.jpg)
+
+## Samples
 - [TemperatureSensors](https://github.com/mizrael/EvenireDB/tree/main/samples/EvenireDB.Samples.TemperatureSensors) shows how to use a Background worker to produce events and uses Minimal APIs to retrieve the latest events for a specific stream.
 
-# TODO
+## TODO
 - snapshots
 - backup and replicas
 - cluster management
