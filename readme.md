@@ -1,6 +1,6 @@
 # EvenireDB
 
-[![Tests](https://github.com/mizrael/EvenireDB/actions/workflows/tests.yml/badge.svg)](https://github.com/mizrael/EvenireDB/actions/workflows/tests.yml)
+[![Tests](https://github.com/mizrael/EvenireDB/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mizrael/EvenireDB/actions/workflows/dotnet.yml)
 
 > [Evenire](https://en.wiktionary.org/wiki/evenire), from Latin, present active infinitive of *ēveniō*, "to happen".
 
