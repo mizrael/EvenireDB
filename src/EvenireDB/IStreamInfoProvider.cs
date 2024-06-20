@@ -1,8 +1,11 @@
+using EvenireDB.Common;
+
 namespace EvenireDB;
 
 public interface IStreamInfoProvider
 {
-    IEnumerable<StreamInfo> GetStreamsInfo();
-    StreamInfo? GetStreamInfo(Guid streamId);
-    ValueTask DeleteStreamAsync(Guid streamId, CancellationToken cancellationToken = default);
+    IEnumerable<StreamInfo> GetStreamsInfo(StreamType? streamsType = null);
+    StreamInfo? GetStreamInfo(StreamId streamId);
+    
+    ValueTask<bool> DeleteStreamAsync(StreamId streamId, CancellationToken cancellationToken = default);
 }

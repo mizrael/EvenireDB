@@ -13,19 +13,22 @@ service EventsGrpcService {
 
 message ReadRequest {
   string streamId = 1;
-  uint32 startPosition = 2;
-  uint32 direction = 3;
+  string streamType = 2;
+  uint32 startPosition = 3;
+  uint32 direction = 4;
 }
 
 message AppendRequest {
 	string streamId = 1;
-	repeated EventData events = 2;
-	google.protobuf.Int32Value expectedVersion = 3;
+	string streamType = 2;
+	repeated EventData events = 3;
+	google.protobuf.Int32Value expectedVersion = 4;
 }
 
 message AppendResponse {	
 	string streamId = 1;
-	FailureResponse error = 2;
+	string streamType = 2;
+	FailureResponse error = 3;
 }
 
 message FailureResponse {

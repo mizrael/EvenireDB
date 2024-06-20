@@ -1,3 +1,4 @@
+using EvenireDB.Common;
 using EvenireDB.Persistence;
 
 namespace EvenireDB.Tests;
@@ -11,10 +12,10 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         _fixture = fixture;
     }
 
-    private EventsProvider CreateSut(Guid streamId, out IExtentInfoProvider extentInfoProvider)
+    private EventsProvider CreateSut(out IExtentsProvider extentInfoProvider)
     {
-        var config = _fixture.CreateExtentsConfig(streamId);
-        extentInfoProvider = new ExtentInfoProvider(config);
+        var config = _fixture.CreateExtentsConfig();
+        extentInfoProvider = new ExtentsProvider(config);
         var dataRepo = new DataRepository();
         var headersRepo = new HeadersRepository();
         return new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
@@ -27,9 +28,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
     {
         var events = _fixture.BuildEvents(eventsCount, new byte[] { 0x42 });
 
-        var streamId = Guid.NewGuid();
-        
-        var sut = CreateSut(streamId, out var extentInfoProvider);
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
+
+        var sut = CreateSut(out var extentInfoProvider);
 
         await sut.AppendAsync(streamId, events);
 
@@ -46,9 +47,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
             .Select(b => _fixture.BuildEvents(eventsPerBatch, new byte[] { 0x42 }))
             .ToArray();
 
-        var streamId = Guid.NewGuid();
-        
-        var sut = CreateSut(streamId, out var extentInfoProvider);
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
+
+        var sut = CreateSut(out var extentInfoProvider);
 
         foreach (var events in batches)
             await sut.AppendAsync(streamId, events);
@@ -65,9 +66,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
     {
         var expectedEvents = _fixture.BuildEvents(eventsCount);
 
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
-        var sut = CreateSut(streamId, out var _);
+        var sut = CreateSut(out var _);
 
         await sut.AppendAsync(streamId, expectedEvents);
 
@@ -91,9 +92,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
             .Select(b => _fixture.BuildEvents(eventsPerBatch, new byte[] { 0x42 }))
             .ToArray();
 
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
-        var sut = CreateSut(streamId, out var _);
+        var sut = CreateSut(out var _);
 
         foreach (var events in batches)
             await sut.AppendAsync(streamId, events);
@@ -110,9 +111,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
     {
         var expectedEvents = _fixture.BuildEvents(42);
 
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
-        var sut = CreateSut(streamId, out var _);
+        var sut = CreateSut(out var _);
 
         await sut.AppendAsync(streamId, expectedEvents);
 
@@ -126,15 +127,14 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         }
     }
 
-
     [Fact]
     public async Task ReadAsync_should_return_no_data_when_paging_invalid()
     {
         var expectedEvents = _fixture.BuildEvents(42);
 
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
-        var sut = CreateSut(streamId, out var _);
+        var sut = CreateSut(out var _);
 
         await sut.AppendAsync(streamId, expectedEvents);
 

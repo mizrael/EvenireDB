@@ -1,4 +1,5 @@
-﻿using EvenireDB.Persistence;
+﻿using EvenireDB.Common;
+using EvenireDB.Persistence;
 using EvenireDB.Server;
 using EvenireDB.Utils;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +17,7 @@ public static class IServiceCollectionExtensions
 
     public static IServiceCollection AddEvenire(this IServiceCollection services)
     {
-        var channel = Channel.CreateUnbounded<IncomingEventsGroup>(new UnboundedChannelOptions
+        var channel = Channel.CreateUnbounded<IncomingEventsBatch>(new UnboundedChannelOptions
         {
             SingleWriter = false,
             SingleReader = false,
@@ -24,10 +25,10 @@ public static class IServiceCollectionExtensions
         });
 
         services
-        .AddSingleton<ICache<Guid, CachedEvents>>(ctx =>
+        .AddSingleton<ICache<StreamId, CachedEvents>>(ctx =>
         {
             var settings = ctx.GetServerSettings();
-            return new LRUCache<Guid, CachedEvents>(settings.MaxInMemoryStreamsCount);
+            return new LRUCache<StreamId, CachedEvents>(settings.MaxInMemoryStreamsCount);
         })
         .AddSingleton<IStreamsCache, StreamsCache>()
         .AddSingleton(ctx =>
@@ -63,9 +64,9 @@ public static class IServiceCollectionExtensions
                     dataPath = Path.Combine(AppContext.BaseDirectory, dataPath);
             }
 
-            return new ExtentInfoProviderConfig(dataPath);
+            return new ExtentsProviderConfig(dataPath);
         })
-        .AddSingleton<IExtentInfoProvider, ExtentInfoProvider>()
+        .AddSingleton<IExtentsProvider, ExtentsProvider>()
         .AddSingleton<IStreamInfoProvider, StreamInfoProvider>()
         .AddSingleton<IDataRepository, DataRepository>()
         .AddSingleton<IHeadersRepository, HeadersRepository>()

@@ -1,16 +1,18 @@
-﻿using System.Collections.Concurrent;
+﻿using EvenireDB.Common;
+using EvenireDB.Exceptions;
+using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 
 namespace EvenireDB.Persistence;
 
 internal class EventsProvider : IEventsProvider
 {
-    private readonly IExtentInfoProvider _extentInfoProvider;
+    private readonly IExtentsProvider _extentInfoProvider;
     private readonly IHeadersRepository _headersRepo;
     private readonly IDataRepository _dataRepo;
-    private readonly ConcurrentDictionary<Guid, SemaphoreSlim> _streamLocks = new();
+    private readonly ConcurrentDictionary<StreamId, SemaphoreSlim> _streamLocks = new(); //TODO: this should be moved to a locks provider
 
-    public EventsProvider(IHeadersRepository headersRepo, IDataRepository dataRepo, IExtentInfoProvider extentInfoProvider)
+    public EventsProvider(IHeadersRepository headersRepo, IDataRepository dataRepo, IExtentsProvider extentInfoProvider)
     {
         _headersRepo = headersRepo;
         _dataRepo = dataRepo;
@@ -18,7 +20,7 @@ internal class EventsProvider : IEventsProvider
     }
 
     public async IAsyncEnumerable<Event> ReadAsync(
-        Guid streamId,
+        StreamId streamId,
         int? skip = null,
         int? take = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -35,10 +37,13 @@ internal class EventsProvider : IEventsProvider
     }
 
     public async ValueTask AppendAsync(
-        Guid streamId,
-        IEnumerable<Event> events, CancellationToken cancellationToken = default)
+        StreamId streamId,
+        IEnumerable<Event> events, 
+        CancellationToken cancellationToken = default)
     {
         var extentInfo = _extentInfoProvider.GetExtentInfo(streamId, true);
+        if (extentInfo is null)
+            throw new StreamException(streamId, $"Unable to build extent for stream '{streamId}'.");
 
         var semaphore = _streamLocks.GetOrAdd(streamId, _ => new SemaphoreSlim(1, 1));
         await semaphore.WaitAsync(cancellationToken);

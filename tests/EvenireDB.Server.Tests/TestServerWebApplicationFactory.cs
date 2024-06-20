@@ -9,7 +9,7 @@ public class TestServerWebApplicationFactory : WebApplicationFactory<Program>
 
     public TestServerWebApplicationFactory()
     {
-        _dataFolder = Directory.CreateTempSubdirectory("eveniredb-tests");
+        _dataFolder = Directory.CreateTempSubdirectory("eveniredb-server-tests");
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -28,17 +28,16 @@ public class TestServerWebApplicationFactory : WebApplicationFactory<Program>
 
     protected override void Dispose(bool disposing)
     {
-        try
+        lock (this)
         {
-            lock (this)
-            {
+            try {    
                 if (_dataFolder.Exists)
                     _dataFolder.Delete(true);
             }
-        }
-        catch
-        {
-            // best effort
-        }
+            catch
+            {
+                // best effort
+            }
+        }       
     }
 }

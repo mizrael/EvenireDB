@@ -11,8 +11,8 @@ namespace EvenireDB.Tests
         {    
             var cache = Substitute.For<IStreamsCache>();          
             var sut = new EventsReader(EventsReaderConfig.Default, cache);
-
-            var events = await sut.ReadAsync(Guid.NewGuid(), StreamPosition.Start)
+            var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
+            var events = await sut.ReadAsync(streamId, StreamPosition.Start)
                                   .ToListAsync();
             events.Should().NotBeNull().And.BeEmpty();
         }
@@ -20,7 +20,7 @@ namespace EvenireDB.Tests
         [Fact]
         public async Task ReadAsync_should_pull_data_from_repo_on_cache_miss()
         {
-            var streamId = Guid.NewGuid();
+            var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
             var sourceEvents = Enumerable.Range(0, 242)
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
@@ -42,7 +42,7 @@ namespace EvenireDB.Tests
         [Fact]
         public async Task ReadAsync_should_be_able_to_read_backwards()
         {
-            var streamId = Guid.NewGuid();
+            var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
             var sourceEvents = Enumerable.Range(0, 242)
                 .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
@@ -66,7 +66,7 @@ namespace EvenireDB.Tests
         [Fact]
         public async Task ReadAsync_should_be_able_to_read_backwards_from_position()
         {
-            var streamId = Guid.NewGuid();
+            var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
             var sourceEvents = Enumerable.Range(0, 242)
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
@@ -94,7 +94,7 @@ namespace EvenireDB.Tests
         [Fact]
         public async Task ReadAsync_should_be_able_to_read_last_page_backwards_from_position()
         {
-            var streamId = Guid.NewGuid();
+            var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
             var sourceEvents = Enumerable.Range(0, 242)
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
@@ -120,7 +120,7 @@ namespace EvenireDB.Tests
         [Fact]
         public async Task ReadAsync_should_be_able_to_read_forward()
         {
-            var streamId = Guid.NewGuid();
+            var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
             var sourceEvents = Enumerable.Range(0, 242)
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))
@@ -144,7 +144,7 @@ namespace EvenireDB.Tests
         [Fact]
         public async Task ReadAsync_should_be_able_to_read_forward_from_position()
         {
-            var streamId = Guid.NewGuid();
+            var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
             var sourceEvents = Enumerable.Range(0, 242)
                .Select(i => new Event(new EventId(i, 0), "lorem", _defaultData))

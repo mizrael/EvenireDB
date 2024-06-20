@@ -1,7 +1,8 @@
 using EvenireDB.Client;
 using EvenireDB.Common;
+using EvenireDB.Samples.TemperatureSensors;
 using Microsoft.AspNetCore.Mvc;
-using System.Text.Json;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,7 +33,8 @@ app.MapGet("/sensors", ([FromServices] Settings config) =>
 app.MapGet("/sensors/{sensorId}", async ([FromServices] IEventsClient client, Guid sensorId) =>
 {
     var events = new List<Event>();
-    await foreach(var item in client.ReadAsync(sensorId, StreamPosition.End, Direction.Backward).ConfigureAwait(false))
+    var streamId = new StreamId(sensorId, nameof(Sensor));
+    await foreach(var item in client.ReadAsync(streamId, StreamPosition.End, Direction.Backward).ConfigureAwait(false))
         events.Add(item);
 
     if (events.Count() == 0)
@@ -43,33 +45,3 @@ app.MapGet("/sensors/{sensorId}", async ([FromServices] IEventsClient client, Gu
 });
 
 app.Run();
-
-public record Sensor
-{
-    private Sensor(Guid id, Reading[]? readings)
-    {
-        this.Id = id;
-        this.Readings = readings ?? [];
-
-        this.Average = this.Readings.Select(r => r.Temperature).Average();
-    }
-
-    public Guid Id { get; }
-    
-    public Reading[] Readings { get; }
-
-    public double Average { get; }
-
-    public static Sensor Create(Guid id, IEnumerable<Event> events)
-    {
-        var readings = events.Where(evt => evt.Type == "ReadingReceived")
-                             .Select(evt => JsonSerializer.Deserialize<Reading>(evt.Data.Span))
-                             .ToArray();
-
-        return new Sensor(id, readings);
-    }
-}
-
-public record Reading(double Temperature, DateTimeOffset When);
-
-public record ReadingReceived(double Temperature, DateTimeOffset When);

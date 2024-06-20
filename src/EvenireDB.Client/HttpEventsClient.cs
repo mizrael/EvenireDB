@@ -17,12 +17,12 @@ internal class HttpEventsClient : IEventsClient
     }
 
     public async IAsyncEnumerable<Event> ReadAsync(
-        Guid streamId,
+        StreamId streamId,
         StreamPosition position,
         Direction direction = Direction.Forward,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var endpoint = $"/api/v1/streams/{streamId}/events?pos={position}&dir={(int)direction}";
+        var endpoint = $"/api/v1/streams/{streamId.Type}/{streamId.Key}/events?pos={position}&dir={(int)direction}";
         var response = await _httpClient.GetAsync(endpoint, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                                         .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
@@ -32,9 +32,12 @@ internal class HttpEventsClient : IEventsClient
             yield return item;
     }
 
-    public async ValueTask AppendAsync(Guid streamId, IEnumerable<EventData> events, CancellationToken cancellationToken = default)
+    public async ValueTask AppendAsync(
+        StreamId streamId,
+        IEnumerable<EventData> events, 
+        CancellationToken cancellationToken = default)
     {
-        var response = await _httpClient.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", events, cancellationToken)
+        var response = await _httpClient.PostAsJsonAsync($"/api/v1/streams/{streamId.Type}/{streamId.Key}/events", events, cancellationToken)
                                         .ConfigureAwait(false);
         if (response.IsSuccessStatusCode)
             return;

@@ -7,6 +7,7 @@ namespace EvenireDB.Client.Tests;
 public class HttpEventsClientTests : IClassFixture<ServerFixture>
 {
     private readonly ServerFixture _serverFixture;
+    private const string _defaultStreamsType = "lorem";
 
     public HttpEventsClientTests(ServerFixture serverFixture)
     {
@@ -20,14 +21,15 @@ public class HttpEventsClientTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
         var sut = new HttpEventsClient(client);
-        var events = await sut.ReadAsync(Guid.NewGuid()).ToListAsync();
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
+        var events = await sut.ReadAsync(streamId).ToListAsync();
         events.Should().NotBeNull().And.BeEmpty();
     }
 
     [Fact]
     public async Task ReadAsync_should_be_able_to_read_backwards()
     {
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
         var inputEvents = TestUtils.BuildEventsData(242);
 
         await using var application = _serverFixture.CreateServer();
@@ -45,7 +47,7 @@ public class HttpEventsClientTests : IClassFixture<ServerFixture>
     [Fact]
     public async Task AppendAsync_should_append_events()
     {
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
         var expectedEvents = TestUtils.BuildEvents(10);
 
         await using var application = _serverFixture.CreateServer();
@@ -61,7 +63,7 @@ public class HttpEventsClientTests : IClassFixture<ServerFixture>
     [Fact(Skip = "TBD")]
     public async Task AppendAsync_should_fail_when_events_already_appended()
     {
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
         var expectedEvents = TestUtils.BuildEvents(10);
 
         await using var application = _serverFixture.CreateServer();

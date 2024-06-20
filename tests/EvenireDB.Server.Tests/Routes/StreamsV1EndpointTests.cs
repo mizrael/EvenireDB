@@ -1,10 +1,12 @@
-﻿using System.Net.Http.Json;
+﻿using EvenireDB.Common;
+using System.Net.Http.Json;
 
 namespace EvenireDB.Server.Tests.Routes;
 
 public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
 {
     private readonly ServerFixture _serverFixture;
+    private const string _defaultStreamsType = "lorem";
 
     public StreamsV1EndpointTests(ServerFixture serverFixture)
     {
@@ -17,12 +19,12 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         await using var application = _serverFixture.CreateServer();
 
         using var client = application.CreateClient();
-        var response = await client.GetAsync($"/api/v1/streams/{Guid.NewGuid()}");
+        var response = await client.GetAsync($"/api/v1/streams/{_defaultStreamsType}/{Guid.NewGuid()}");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
 
     [Fact]
-    public async Task GetStreams_should_return_ok_when_stream_id_valid()
+    public async Task GetStreamInfo_should_return_ok_when_stream_id_valid()
     {
         await using var application = _serverFixture.CreateServer();
 
@@ -31,15 +33,32 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         var streamId = Guid.NewGuid();
 
         var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
-        await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
+        await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
 
-        var response = await client.GetAsync($"/api/v1/streams/{streamId}");
+        var response = await client.GetAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
 
         var stream = await response.Content.ReadFromJsonAsync<StreamInfo>();
         stream.Should().NotBeNull();
-        stream.StreamId.Should().Be(streamId);
+        stream.Id.Key.Should().Be(streamId);
+        stream.Id.Type.ToString().Should().Be(_defaultStreamsType);
         stream.EventsCount.Should().Be(10);
+    }
+
+    [Fact]
+    public async Task GetStreamInfo_should_return_not_found_when_stream_id_valid_but_type_invalid()
+    {
+        await using var application = _serverFixture.CreateServer();
+
+        using var client = application.CreateClient();
+
+        var streamId = Guid.NewGuid();
+
+        var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
+        await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
+
+        var response = await client.GetAsync($"/api/v1/streams/invalid_type/{streamId}");
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
 
     [Fact]
@@ -65,7 +84,7 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         var streamId = Guid.NewGuid();
 
         var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
-        await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
+        await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
 
         var response = await client.GetAsync("/api/v1/streams");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
@@ -74,7 +93,27 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         streams.Should().NotBeNull()
                     .And.NotBeEmpty()
                     .And.HaveCount(1)
-                    .And.Contain(s => s.StreamId == streamId);
+                    .And.Contain(s => s.Id.Key == streamId && s.Id.Type == _defaultStreamsType);
+    }
+
+    [Fact]
+    public async Task GetStreams_should_empty_when_type_invalid()
+    {
+        await using var application = _serverFixture.CreateServer();
+
+        using var client = application.CreateClient();
+
+        var streamId = Guid.NewGuid();
+
+        var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
+        await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
+
+        var response = await client.GetAsync("/api/v1/streams?streamsType=invalid");
+        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+
+        var streams = await response.Content.ReadFromJsonAsync<StreamInfo[]>();
+        streams.Should().NotBeNull()
+                    .And.BeEmpty();
     }
 
     [Fact]
@@ -87,12 +126,12 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
         var streamId = Guid.NewGuid();
 
         var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
-        await client.PostAsJsonAsync($"/api/v1/streams/{streamId}/events", dtos);
+        await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
 
-        var response = await client.DeleteAsync($"/api/v1/streams/{streamId}");
+        var response = await client.DeleteAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.NoContent);
 
-        var secondResp = await client.DeleteAsync($"/api/v1/streams/{streamId}");
+        var secondResp = await client.DeleteAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}");
         secondResp.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
 
@@ -105,7 +144,7 @@ public class StreamsV1EndpointTests : IClassFixture<ServerFixture>
 
         var streamId = Guid.NewGuid();
 
-        var response = await client.DeleteAsync($"/api/v1/streams/{streamId}");
+        var response = await client.DeleteAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}");
         response.StatusCode.Should().Be(System.Net.HttpStatusCode.NotFound);
     }
 }

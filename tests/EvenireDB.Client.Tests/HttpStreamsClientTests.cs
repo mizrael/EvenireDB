@@ -1,11 +1,13 @@
 ﻿using EvenireDB.Client.Exceptions;
+using EvenireDB.Common;
 using EvenireDB.Server.Tests;
-using System.IO;
 
 namespace EvenireDB.Client.Tests;
 
 public class HttpStreamsClientTests : IClassFixture<ServerFixture>
 {
+    private const string _defaultStreamsType = "lorem";
+
     [Fact]
     public async Task GetStreamInfosAsync_should_return_nothing_when_no_streams_available()
     {
@@ -13,7 +15,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
         var sut = new HttpStreamsClient(client);
-        var results = await sut.GetStreamInfosAsync();
+        var results = await sut.GetStreamInfosAsync(_defaultStreamsType);
         results.Should().NotBeNull().And.BeEmpty();
     }
 
@@ -25,7 +27,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         using var client = application.CreateClient();
         
         var sut = new HttpStreamsClient(client);
-        var results = await sut.GetStreamInfosAsync();
+        var results = await sut.GetStreamInfosAsync(_defaultStreamsType);
         results.Should().NotBeNull();
     }
 
@@ -35,15 +37,15 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
-
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
         var sut = new HttpStreamsClient(client);
-        await Assert.ThrowsAsync< StreamNotFoundException >(async () => await sut.GetStreamInfoAsync(Guid.NewGuid()));
+        await Assert.ThrowsAsync< StreamNotFoundException >(async () => await sut.GetStreamInfoAsync(streamId));
     }
 
     [Fact]
     public async Task GetStreamInfoAsync_should_return_stream_details_when_existing()
     {
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
 
         await using var application = new TestServerWebApplicationFactory();
 
@@ -55,14 +57,14 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
         var sut = new HttpStreamsClient(client);
         var result = await sut.GetStreamInfoAsync(streamId);
         result.Should().NotBeNull();
-        result.StreamId.Should().Be(streamId);
+        result.Id.Should().Be(streamId);
         result.EventsCount.Should().Be(42);
     }
 
     [Fact]
     public async Task DeleteStreamAsync_should_delete_stream_when_existing()
     {
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
 
         await using var application = new TestServerWebApplicationFactory();
 
@@ -81,7 +83,7 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     [Fact]
     public async Task DeleteStreamAsync_should_throw_when_stream_not_existing()
     {
-        var streamId = Guid.NewGuid();
+        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
 
         await using var application = new TestServerWebApplicationFactory();
 

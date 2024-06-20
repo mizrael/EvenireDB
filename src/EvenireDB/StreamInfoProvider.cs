@@ -1,18 +1,18 @@
-using System.Runtime.InteropServices;
-using EvenireDB.Exceptions;
+using EvenireDB.Common;
 using Microsoft.Extensions.Logging;
+using System.Runtime.InteropServices;
 
 namespace EvenireDB;
 
 internal class StreamInfoProvider : IStreamInfoProvider
 {
     private readonly int _headerSize = Marshal.SizeOf<RawHeader>();
-    private readonly IExtentInfoProvider _extentInfoProvider;
+    private readonly IExtentsProvider _extentInfoProvider;
     private readonly IStreamsCache _cache;
     private readonly ILogger<StreamInfoProvider> _logger;
 
     public StreamInfoProvider(
-        IExtentInfoProvider extentInfoProvider,
+        IExtentsProvider extentInfoProvider,
         IStreamsCache cache,
         ILogger<StreamInfoProvider> logger)
     {
@@ -21,7 +21,7 @@ internal class StreamInfoProvider : IStreamInfoProvider
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    public StreamInfo? GetStreamInfo(Guid streamId)
+    public StreamInfo? GetStreamInfo(StreamId streamId)
     {
         var extent = _extentInfoProvider.GetExtentInfo(streamId);
         if (extent is null)
@@ -35,61 +35,45 @@ internal class StreamInfoProvider : IStreamInfoProvider
         return new StreamInfo(
             streamId,
             headersCount,
-            _cache.ContainsKey(streamId),
+            _cache.Contains(streamId),
             fileInfo.CreationTimeUtc,
             fileInfo.LastWriteTimeUtc);
     }
 
-    public IEnumerable<StreamInfo> GetStreamsInfo()
+    public IEnumerable<StreamInfo> GetStreamsInfo(StreamType? streamsType = null)
     {
-        var allExtents = _extentInfoProvider.GetExtentsInfo();
-        List<StreamInfo> results = new();
+        var allExtents = _extentInfoProvider.GetAllExtentsInfo(streamsType);        
         foreach (var extent in allExtents)
         {
             var info = GetStreamInfo(extent.StreamId);
             if (info is not null)
-                results.Add(info!);
+                yield return info;
         }
-
-        return results;
     }
 
-    public async ValueTask DeleteStreamAsync(Guid streamId, CancellationToken cancellationToken = default)
+    //TODO: I don't like this here
+    public async ValueTask<bool> DeleteStreamAsync(StreamId streamId, CancellationToken cancellationToken = default)
     {
-        var extent = _extentInfoProvider.GetExtentInfo(streamId);
+        var extent = _extentInfoProvider.GetExtentInfo(streamId, createIfMissing: false);
         if (extent is null)
-            throw new ArgumentException($"Stream '{streamId}' does not exist.");
+            return false;
 
-        var deleted = false;
-        int attempt = 0;
+        _logger.StreamDeletionStarted(streamId);
 
-        while (!deleted && attempt < 10 && !cancellationToken.IsCancellationRequested)
+        try
         {
-            _logger.StreamDeletionAttempt(streamId, attempt);
+            await _extentInfoProvider.DeleteExtentsAsync(streamId, cancellationToken);
 
-            try
-            {
-                if (File.Exists(extent.HeadersPath))
-                    File.Delete(extent.HeadersPath);
-
-                if (File.Exists(extent.DataPath))
-                    File.Delete(extent.DataPath);
-
-                _cache.Remove(streamId);
-
-                deleted = true;
-            }
-            catch (Exception ex)
-            {
-                _logger.StreamDeletionFailed(streamId, ex.Message);
-                attempt++;
-                await Task.Delay(1000);
-            }
+            _cache.Remove(streamId);
+        }
+        catch (Exception ex)
+        {
+            _logger.StreamDeletionFailed(streamId, ex.Message);
+            return false;
         }
 
-        if (!deleted)
-            throw new StreamException(streamId, $"Failed to delete stream '{streamId}'.");
-
         _logger.StreamDeleted(streamId);
+
+        return true;
     }
 }

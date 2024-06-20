@@ -1,7 +1,7 @@
-namespace EvenireDB;
+namespace EvenireDB.Common;
 
 public record StreamInfo(
-    Guid StreamId,
+    StreamId Id,
     long EventsCount,
     bool IsCached,
     DateTimeOffset CreatedAt,

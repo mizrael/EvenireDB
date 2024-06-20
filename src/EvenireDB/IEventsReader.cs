@@ -5,7 +5,7 @@ namespace EvenireDB;
 public interface IEventsReader
 {
     IAsyncEnumerable<Event> ReadAsync(
-        Guid streamId,
+        StreamId streamId,
         StreamPosition startPosition,
         Direction direction = Direction.Forward,
         CancellationToken cancellationToken = default);

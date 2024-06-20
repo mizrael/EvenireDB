@@ -1,4 +1,5 @@
-﻿using EvenireDB.Persistence;
+﻿using EvenireDB.Common;
+using EvenireDB.Persistence;
 using EvenireDB.Utils;
 using Microsoft.Extensions.Logging;
 
@@ -6,13 +7,13 @@ namespace EvenireDB;
 
 internal class StreamsCache : IStreamsCache
 {
-    private readonly ICache<Guid, CachedEvents> _cache;
+    private readonly ICache<StreamId, CachedEvents> _cache;
     private readonly ILogger<StreamsCache> _logger;
     private readonly IEventsProvider _repo;
 
     public StreamsCache(
         ILogger<StreamsCache> logger,
-        ICache<Guid, CachedEvents> cache,
+        ICache<StreamId, CachedEvents> cache,
         IEventsProvider repo)
     {
         _logger = logger;
@@ -20,7 +21,7 @@ internal class StreamsCache : IStreamsCache
         _repo = repo;
     }
 
-    private async ValueTask<CachedEvents> Factory(Guid streamId, CancellationToken cancellationToken)
+    private async ValueTask<CachedEvents> Factory(StreamId streamId, CancellationToken cancellationToken)
     {
         _logger.ReadingStreamFromRepository(streamId);
 
@@ -30,15 +31,15 @@ internal class StreamsCache : IStreamsCache
         return new CachedEvents(persistedEvents, new SemaphoreSlim(1));
     }
 
-    public ValueTask<CachedEvents> GetEventsAsync(Guid streamId, CancellationToken cancellationToken)
-    => _cache.GetOrAddAsync(streamId, this.Factory, cancellationToken);
+    public ValueTask<CachedEvents> GetEventsAsync(StreamId streamId, CancellationToken cancellationToken = default)
+    => _cache.GetOrAddAsync(streamId, (_,_) => this.Factory(streamId, cancellationToken), cancellationToken);
 
-    public void Update(Guid streamId, CachedEvents entry)
+    public void Update(StreamId streamId, CachedEvents entry)
     => _cache.AddOrUpdate(streamId, entry);
 
-    public bool ContainsKey(Guid streamId)
+    public bool Contains(StreamId streamId)
     => _cache.ContainsKey(streamId);
 
-    public void Remove(Guid streamId)
+    public void Remove(StreamId streamId)
     => _cache.Remove(streamId);
 }

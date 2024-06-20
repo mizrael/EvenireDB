@@ -1,36 +1,53 @@
-﻿using EvenireDB.Persistence;
+﻿using EvenireDB.Common;
+using EvenireDB.Persistence;
 using Microsoft.Extensions.Logging;
 using System.Threading.Channels;
 
-namespace EvenireDB.Server.Tests
+namespace EvenireDB.Server.Tests;
+
+public class IncomingEventsSubscriberTests
 {
-    public class IncomingEventsSubscriberTests
+    [Fact]
+    public async Task Service_should_handle_exceptions_gracefully()
     {
-        [Fact]
-        public async Task Service_should_handle_exceptions_gracefully()
-        {
-            var channel = Channel.CreateBounded<IncomingEventsGroup>(10);
-            var repo = Substitute.For<IEventsProvider>();
-            repo.WhenForAnyArgs(r => r.AppendAsync(Arg.Any<Guid>(), null, default))
-                .Throw<Exception>();
+        var events = Array.Empty<Event>();
+        var streamId = new StreamId(Guid.NewGuid(), "lorem");
+        var expectedGroups = Enumerable.Range(0, 10)
+            .Select(i => new IncomingEventsBatch(streamId, events))
+            .ToArray();
 
-            var logger = Substitute.For<ILogger<IncomingEventsPersistenceWorker>>();
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        int batchIndex = 0;
 
-            var sut = new IncomingEventsPersistenceWorker(channel.Reader, repo, logger);
+        var reader = Substitute.ForPartsOf<ChannelReader<IncomingEventsBatch>>();
+        reader.WaitToReadAsync(Arg.Any<CancellationToken>())
+            .ReturnsForAnyArgs(ValueTask.FromResult(batchIndex < expectedGroups.Length));
+        reader.TryRead(out Arg.Any<IncomingEventsBatch>())
+            .Returns(x =>
+            {
+                if (batchIndex >= expectedGroups.Length)
+                {
+                    cts.Cancel();
+                    return false;
+                }
 
-            await sut.StartAsync(default);
+                x[0] = expectedGroups[batchIndex++];
+                return true;
+            });
 
-            var groups = Enumerable.Range(0, 10)
-                .Select(i => new IncomingEventsGroup(Guid.NewGuid(), null))
-                .ToArray();
-            foreach (var group in groups)
-                await channel.Writer.WriteAsync(group);
+        var repo = Substitute.For<IEventsProvider>();
+        repo.WhenForAnyArgs(r => r.AppendAsync(streamId, events, Arg.Any<CancellationToken>()))
+            .Throw<Exception>();
 
-            await Task.Delay(2000);
-            await sut.StopAsync(default);
+        var logger = Substitute.For<ILogger<IncomingEventsPersistenceWorker>>();
 
-            await repo.ReceivedWithAnyArgs(groups.Length)
-                      .AppendAsync(Arg.Any<Guid>(), null, default);
-        }
+        var sut = new IncomingEventsPersistenceWorker(reader, repo, logger);        
+        
+        await sut.StartAsync(cts.Token);
+
+        await Task.Delay(TimeSpan.FromSeconds(2));
+        
+        await repo.ReceivedWithAnyArgs(expectedGroups.Length)
+                  .AppendAsync(Arg.Any<StreamId>(), Arg.Any<IEnumerable<Event>>(), default);
     }
 }
