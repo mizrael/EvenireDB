@@ -1,60 +1,60 @@
-﻿using EvenireDB.Utils;
+﻿using EvenireDB.Common;
+using EvenireDB.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 
-namespace EvenireDB.Server
+namespace EvenireDB.Server;
+
+public record MemoryWatcherSettings(
+    TimeSpan Interval,
+    long MaxAllowedAllocatedBytes);
+
+public class MemoryWatcher : BackgroundService
 {
-    public record MemoryWatcherSettings(
-        TimeSpan Interval,
-        long MaxAllowedAllocatedBytes);
+    private readonly MemoryWatcherSettings _settings;
+    private readonly ILogger<MemoryWatcher> _logger;
+    private readonly IServiceProvider _sp;
+    private Process? process;
 
-    public class MemoryWatcher : BackgroundService
+    public MemoryWatcher(MemoryWatcherSettings settings, ILogger<MemoryWatcher> logger, IServiceProvider sp)
     {
-        private readonly MemoryWatcherSettings _settings;
-        private readonly ILogger<MemoryWatcher> _logger;
-        private readonly IServiceProvider _sp;
-        private Process? process;
+        _settings = settings;
+        _logger = logger;
+        _sp = sp;
+    }
 
-        public MemoryWatcher(MemoryWatcherSettings settings, ILogger<MemoryWatcher> logger, IServiceProvider sp)
-        {
-            _settings = settings;
-            _logger = logger;
-            _sp = sp;
-        }
+    public override void Dispose()
+    {
+        process?.Dispose();
+        base.Dispose();
+    }
 
-        public override void Dispose()
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
         {
-            process?.Dispose();
-            base.Dispose();
-        }
+            process ??= Process.GetCurrentProcess();
+            process.Refresh();
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        {
-            while (!stoppingToken.IsCancellationRequested)
+            _logger.MemoryUsageBelowTreshold(process.PrivateMemorySize64, _settings.MaxAllowedAllocatedBytes);
+
+            bool needDrop = process.PrivateMemorySize64 > _settings.MaxAllowedAllocatedBytes;
+            if (needDrop)
             {
-                process ??= Process.GetCurrentProcess();
-                process.Refresh();
+                _logger.HighMemoryUsageDetected(process.PrivateMemorySize64, _settings.MaxAllowedAllocatedBytes);
+                                    
+                using var scope = _sp.CreateScope();
+                var cache = scope.ServiceProvider.GetRequiredService<ICache<StreamId, CachedEvents>>();
 
-                _logger.MemoryUsageBelowTreshold(process.PrivateMemorySize64, _settings.MaxAllowedAllocatedBytes);
+                var dropCount = cache.Count / 3;
+                cache.DropOldest(dropCount);
 
-                bool needDrop = process.PrivateMemorySize64 > _settings.MaxAllowedAllocatedBytes;
-                if (needDrop)
-                {
-                    _logger.HighMemoryUsageDetected(process.PrivateMemorySize64, _settings.MaxAllowedAllocatedBytes);
-                                        
-                    using var scope = _sp.CreateScope();
-                    var cache = scope.ServiceProvider.GetRequiredService<ICache<Guid, CachedEvents>>();
-
-                    var dropCount = cache.Count / 3;
-                    cache.DropOldest(dropCount);
-
-                    GC.Collect();
-                }
-
-                await Task.Delay(_settings.Interval, stoppingToken);
+                GC.Collect();
             }
+
+            await Task.Delay(_settings.Interval, stoppingToken);
         }
     }
 }
