@@ -1,0 +1,11 @@
+﻿<div class="alert alert-@(Type.ToString().ToLower()) show" role="alert">
+    @ChildContent   
+</div>
+
+@code{
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public AlertTypes Type { get; set; } = AlertTypes.Success;
+}
