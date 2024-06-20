@@ -8,10 +8,11 @@ if(Test-Path -Path ./tests/TestResults){
 } 
 
 cd src
-    
-dotnet test -m:1 /p:CollectCoverage=true /p:CoverletOutput=../TestResults/ `
+
+dotnet test --no-build -m:1 -s ../tests/tests.runsettings `
+    /p:CollectCoverage=true `
+    /p:CoverletOutput=../TestResults/ `
     /p:MergeWith="../TestResults/coverage.json" `
-    /p:CoverletOutputFormat=json `
-    -s ../tests/tests.runsettings
+    --% /p:CoverletOutputFormat=\"opencover,json\"
 
 cd $oldPath
