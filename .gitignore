@@ -9,3 +9,5 @@ publish/
 volumes/
 .fake
 .csproj.user
+coverage*.xml
+TestResults/

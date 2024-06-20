@@ -28,4 +28,19 @@ jobs:
     - name: Test
       run: |
         cd ./src
-        dotnet test --no-build --verbosity normal
+        dotnet test --no-build -m:1 -s ../tests/tests.runsettings \
+          /p:CollectCoverage=true \
+          /p:CoverletOutput=../TestResults/ \
+          /p:MergeWith="../TestResults/coverage.json" \
+          /p:CoverletOutputFormat=\"opencover,json\"
+
+    - name: Create Test Coverage Badge
+      uses: simon-k/dotnet-code-coverage-badge@v1.0.0
+      id: create_coverage_badge
+      with:
+        label: Unit Test Coverage
+        color: brightgreen
+        path: ./tests/TestResults/coverage.opencover.xml
+        gist-filename: eveniredb-code-coverage.json
+        gist-id: ebd585c5ad0069d0e8486e43cade5793
+        gist-auth-token: ${{ secrets.GIST_AUTH_TOKEN }}
