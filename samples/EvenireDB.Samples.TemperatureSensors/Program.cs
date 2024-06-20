@@ -3,10 +3,7 @@ using EvenireDB.Common;
 using EvenireDB.Samples.TemperatureSensors;
 using Microsoft.AspNetCore.Mvc;
 
-
 var builder = WebApplication.CreateBuilder(args);
-
-var connectionString = new Uri(builder.Configuration.GetConnectionString("evenire"));
 
 var settings = builder.Configuration.GetSection("Settings").Get<Settings>();
 
