@@ -5,8 +5,9 @@
 
 > [Evenire](https://en.wiktionary.org/wiki/evenire), from Latin, present active infinitive of *ēveniō*, "to happen".
 
-This project is a Proof-of-Concept of a small DB engine specifically for Event Sourcing. 
-If you don't know what Event Sourcing is, I've been writing for a while about it on [my blog](https://www.davidguida.net). These articles can be a good starting point:
+This project is a Proof-of-Concept of a small stream-based DB engine. 
+
+One of the potential use cases is Event Sourcing. If you don't know what Event Sourcing is, I've been writing for a while about it on [my blog](https://www.davidguida.net). These articles can be a good starting point:
 - [Event Sourcing in .NET Core – part 1: a gentle introduction](https://www.davidguida.net/event-sourcing-in-net-core-part-1-a-gentle-introduction/)
 - [Event Sourcing: 5 things to consider when approaching it](https://www.davidguida.net/event-sourcing-things-to-consider)
 
@@ -17,15 +18,15 @@ Honestly, I don't know how far this project will go, but I'm having a lot of fun
 
 The basic idea behind Evenire is quite simple: events can be appended to streams and later on, retrieved by providing the stream ID.
 
-Streams are identified by a tuple composed by a `Guid` and a string representing a stream type (more details [here](./src/EvenireDB.Common/StreamId.cs)).
+Streams are identified by a tuple composed of a `Guid` (the stream key) and a string (the stream type). For the curious, the sources are [here](./src/EvenireDB.Common/StreamId.cs)).
 
 Every stream is kept in memory using a local cache, for fast retrieval. A background process takes care of serializing events to a file, one per stream.
 
 Reading can happen from the very beginning of a stream moving forward or from a specific point. This is the basic scenario, useful when you want to rehydrate the state of an [Aggregate](https://www.martinfowler.com/bliki/DDD_Aggregate.html).
 
-Another option is to read the events from the _end_ of the stream instead, moving backwards in time. This is interesting for example if you are recording data from sensors and you want to retrieve the latest state.
+Another option is to read the events from the _end_ of the stream instead, moving backward in time. This is interesting for example if you are recording data from sensors and you want to retrieve the latest state.
 
-Autentication was **left out intentionally** as it would go outside the scope of the project (for now).
+AuthN/Z was **left out intentionally** as it would go outside the scope of the project (for now).
 
 ## Setup
 
