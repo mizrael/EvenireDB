@@ -2,6 +2,7 @@
 
 [![Tests](https://github.com/mizrael/EvenireDB/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mizrael/EvenireDB/actions/workflows/dotnet.yml)
 ![coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/mizrael/ebd585c5ad0069d0e8486e43cade5793/raw/eveniredb-code-coverage.json)
+[![Nuget](https://img.shields.io/nuget/v/Blazorex?style=plastic)](https://www.nuget.org/packages/EvenireDB.Client/)
 
 > [Evenire](https://en.wiktionary.org/wiki/evenire), from Latin, present active infinitive of *ēveniō*, "to happen".
 
@@ -18,7 +19,7 @@ Honestly, I don't know how far this project will go, but I'm having a lot of fun
 
 The basic idea behind Evenire is quite simple: events can be appended to streams and later on, retrieved by providing the stream ID.
 
-Streams are identified by a tuple composed of a `Guid` (the stream key) and a string (the stream type). For the curious, the sources are [here](./src/EvenireDB.Common/StreamId.cs)).
+Streams are identified by a tuple composed of a `Guid` (the stream key) and a string (the stream type). For the curious, the sources are [here](https://github.com/mizrael/EvenireDB/tree/main/src/EvenireDB.Common/StreamId.cs)).
 
 Every stream is kept in memory using a local cache, for fast retrieval. A background process takes care of serializing events to a file, one per stream.
 
@@ -106,9 +107,9 @@ Evenire also has a rudimentary administration UI, written with Blazor. It allows
 - append events to an existing stream
 - delete a stream
 
-![streams archive](./docs/assets/streams_archive.jpg)
+![streams archive](https://raw.githubusercontent.com/mizrael/EvenireDB/main/docs/assets/streams_archive.jpg)
 
-![stream details](./docs/assets/stream_details.jpg)
+![stream details](https://raw.githubusercontent.com/mizrael/EvenireDB/main/docs/assets/stream_details.jpg)
 
 ## Samples
 - [TemperatureSensors](https://github.com/mizrael/EvenireDB/tree/main/samples/EvenireDB.Samples.TemperatureSensors) shows how to use a Background worker to produce events and uses Minimal APIs to retrieve the latest events for a specific stream.
