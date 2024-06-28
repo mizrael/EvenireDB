@@ -1,17 +1,49 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>		
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.25.3" />
-    <PackageReference Include="Grpc.AspNetCore" Version="2.60.0" />
-	  <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.2" />
-	  <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-  </ItemGroup>
+	<PropertyGroup>
+		<PackageVersion>0.0.1</PackageVersion>
+		<IsPackable>true</IsPackable>
+		<Authors>davidguida</Authors>
+		<Product>EvenireDB</Product>
+		<NeutralLanguage>en-US</NeutralLanguage>
+		<Title>EvenireDB client library</Title>
+		<PackageDescription>.NET client library for EvenireDB.</PackageDescription>
+		<Copyright>Copyright 2024</Copyright>
+		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+		<PackageTags>eveniredb event-sourcing dotnet dotnet-core events</PackageTags>
+		<PackageOutputPath>../../packages/</PackageOutputPath>
+		<RepositoryUrl>https://github.com/mizrael/EvenireDB/</RepositoryUrl>
+		<PackageProjectUrl>https://github.com/mizrael/EvenireDB/</PackageProjectUrl>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<PackageReadmeFile>readme.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="../../readme.md" Pack="true" PackagePath="\">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+		<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+	</PropertyGroup>
+	
+	  <ItemGroup>
+		<PackageReference Include="Google.Protobuf" Version="3.25.3" />
+		<PackageReference Include="Grpc.AspNetCore" Version="2.60.0" />
+		  <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.2" />
+		  <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
+	  </ItemGroup>
 
   <ItemGroup>
 	  <ProjectReference Include="..\EvenireDB.Common\EvenireDB.Common.csproj" />

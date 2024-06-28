@@ -11,3 +11,4 @@ volumes/
 .csproj.user
 coverage*.xml
 TestResults/
+packages/
