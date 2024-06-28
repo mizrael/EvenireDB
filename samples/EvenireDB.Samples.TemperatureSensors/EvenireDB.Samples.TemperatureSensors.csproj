@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+	<ProjectReference Include="..\..\src\EvenireDB.Common\EvenireDB.Common.csproj" />
     <ProjectReference Include="..\..\src\EvenireDB.Client\EvenireDB.Client.csproj" />
   </ItemGroup>
 
