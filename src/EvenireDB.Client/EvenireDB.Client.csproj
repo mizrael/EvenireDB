@@ -7,7 +7,7 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
-		<PackageVersion>0.0.1</PackageVersion>
+		<PackageVersion>0.0.2</PackageVersion>
 		<IsPackable>true</IsPackable>
 		<Authors>davidguida</Authors>
 		<Product>EvenireDB</Product>
