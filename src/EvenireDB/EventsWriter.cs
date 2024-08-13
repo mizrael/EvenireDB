@@ -48,7 +48,12 @@ public class EventsWriter : IEventsWriter
             _logger.AppendingEventsToStream(incomingEvents.Count(), streamId);
 
             var events = new List<Event>();
+
             EventId? previousEventId = null;
+            var lastEvent = entry.Events.LastOrDefault();
+            if(lastEvent != null)
+                previousEventId = lastEvent.Id;
+            
             for (int i = 0; i < incomingEvents.Count(); i++)
             {
                 var eventData = incomingEvents.ElementAt(i);
