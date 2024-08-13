@@ -40,7 +40,10 @@
     }
 
     <Modal Options="@_showPayloadOptions" @ref='_payloadModal'>
-        <div>@DecodePayload(_selectedEvent)</div>
+        <div>
+            <textarea readonly class="w-100 form-control">@DecodePayload(_selectedEvent)</textarea>
+        </div>
+
     </Modal>
 </div>
 
@@ -112,12 +115,12 @@
     }
 
     private Modal.ModalOptions _showPayloadOptions = new Modal.ModalOptions(
-    "Show Event payload",
+    "Event payload",
     "Show payload",
     new Modal.ModalButton[] {
 Modal.ModalButton.Primary("Ok")
     },
-    ShowClose: true,
+    ShowClose: false,
     ShowOpen: false
     );
 

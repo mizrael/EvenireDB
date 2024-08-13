@@ -34,11 +34,13 @@ internal class ExtentsProvider : IExtentsProvider
         var headersPath = Path.Combine(typedExtentsPath, $"{key}_{extentNumber}_headers.dat");
         if(!createIfMissing && !File.Exists(headersPath))
             return null;
-        
+
+        var dataPath = Path.Combine(typedExtentsPath, $"{key}_{extentNumber}_data.dat");
+
         return new ExtentInfo
         (
             StreamId: streamId,
-            DataPath: Path.Combine(_config.BasePath, $"{key}_{extentNumber}_data.dat"),
+            DataPath: dataPath,
             HeadersPath: headersPath
         );
     }

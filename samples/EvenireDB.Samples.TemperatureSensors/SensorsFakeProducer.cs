@@ -5,7 +5,7 @@ namespace EvenireDB.Samples.TemperatureSensors;
 
 public class SensorsFakeProducer : BackgroundService
 {
-    private readonly static TimeSpan _delay = TimeSpan.FromSeconds(30);
+    private readonly static TimeSpan _delay = TimeSpan.FromSeconds(10);
     private readonly IEventsClient _eventsClient;
     private readonly Settings _sensorConfig;
 

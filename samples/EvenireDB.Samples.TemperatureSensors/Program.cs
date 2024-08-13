@@ -5,9 +5,9 @@ using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var settings = builder.Configuration.GetSection("Settings").Get<Settings>();
+var settings = builder.Configuration.GetSection("Settings").Get<Settings>()!;
 
-var clientConfig = builder.Configuration.GetSection("Evenire").Get<EvenireClientConfig>();
+var clientConfig = builder.Configuration.GetSection("Evenire").Get<EvenireClientConfig>()!;
 
 builder.Services.AddHostedService<SensorsFakeProducer>()
                 .AddSingleton(settings)
