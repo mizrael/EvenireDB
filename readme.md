@@ -3,6 +3,7 @@
 [![Tests](https://github.com/mizrael/EvenireDB/actions/workflows/dotnet.yml/badge.svg)](https://github.com/mizrael/EvenireDB/actions/workflows/dotnet.yml)
 ![coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/mizrael/ebd585c5ad0069d0e8486e43cade5793/raw/eveniredb-code-coverage.json)
 [![client Nuget](https://img.shields.io/nuget/v/EvenireDB.Client?style=plastic)](https://www.nuget.org/packages/EvenireDB.Client/)
+[![Wiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/mizrael/EvenireDB)
 
 > [Evenire](https://en.wiktionary.org/wiki/evenire), from Latin, present active infinitive of *ēveniō*, "to happen".
 
