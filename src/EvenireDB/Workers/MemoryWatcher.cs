@@ -38,7 +38,7 @@ public class MemoryWatcher : BackgroundService
             process ??= Process.GetCurrentProcess();
             process.Refresh();
 
-            _logger.MemoryUsageBelowTreshold(process.PrivateMemorySize64, _settings.MaxAllowedAllocatedBytes);
+            _logger.MemoryUsage(process.PrivateMemorySize64, _settings.MaxAllowedAllocatedBytes);
 
             bool needDrop = process.PrivateMemorySize64 > _settings.MaxAllowedAllocatedBytes;
             if (needDrop)

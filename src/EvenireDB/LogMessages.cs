@@ -39,7 +39,7 @@ public static partial class LogMessages
         EventId = (int)EventIds.MemoryUsageBelowTreshold,
         Level = LogLevel.Debug,
         Message = "Memory usage is {MemoryUsage} / {MaxAllowedAllocatedBytes} bytes")]
-    public static partial void MemoryUsageBelowTreshold(this ILogger logger, long memoryUsage, long maxAllowedAllocatedBytes);
+    public static partial void MemoryUsage(this ILogger logger, long memoryUsage, long maxAllowedAllocatedBytes);
 
     [LoggerMessage(
         EventId = (int)EventIds.EventsGroupPersistenceError,

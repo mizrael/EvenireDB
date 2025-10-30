@@ -1,6 +1,5 @@
 ﻿using EvenireDB.Common;
 using EvenireDB.Server.DTO;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EvenireDB.Server.Routes;

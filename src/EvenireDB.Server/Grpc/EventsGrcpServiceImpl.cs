@@ -1,7 +1,6 @@
 ﻿using EvenireDB.Common;
 using Grpc.Core;
 using GrpcEvents;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace EvenireDB.Server.Grpc;
 
