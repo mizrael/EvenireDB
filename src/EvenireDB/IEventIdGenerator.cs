@@ -1,7 +1,6 @@
-﻿namespace EvenireDB
+﻿namespace EvenireDB;
+
+public interface IEventIdGenerator
 {
-    public interface IEventIdGenerator
-    {
-        EventId Generate(EventId? previous = null);
-    }
+    EventId Generate(EventId? previous = null);
 }

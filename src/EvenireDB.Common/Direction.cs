@@ -1,8 +1,7 @@
-namespace EvenireDB.Common
+namespace EvenireDB.Common;
+
+public enum Direction
 {
-    public enum Direction
-    {
-        Forward = 0,
-        Backward = 1,
-    }
+    Forward = 0,
+    Backward = 1,
 }

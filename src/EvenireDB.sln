@@ -36,6 +36,18 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Tools.EventsGener
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.AdminUI", "EvenireDB.AdminUI\EvenireDB.AdminUI.csproj", "{314152BF-D751-463B-86C4-E2D586279592}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".root", ".root", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		..\.gitignore = ..\.gitignore
+		..\Directory.Build.props = ..\Directory.Build.props
+		..\docker-compose.yml = ..\docker-compose.yml
+		..\Dockerfile.adminui = ..\Dockerfile.adminui
+		..\Dockerfile.server = ..\Dockerfile.server
+		..\LICENSE = ..\LICENSE
+		..\readme.md = ..\readme.md
+		..\Versions.props = ..\Versions.props
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

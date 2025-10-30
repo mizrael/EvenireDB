@@ -1,4 +1,3 @@
-﻿namespace EvenireDB
-{
-    public readonly struct SuccessResult : IOperationResult { }
-}
+﻿namespace EvenireDB;
+
+public readonly struct SuccessResult : IOperationResult { }

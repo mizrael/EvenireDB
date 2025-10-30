@@ -1,14 +1,13 @@
-﻿namespace EvenireDB
-{
-    public record EventData
-    {
-        public EventData(string type, ReadOnlyMemory<byte> data)
-        {
-            Type = type;
-            Data = data;
-        }       
+﻿namespace EvenireDB;
 
-        public string Type { get; }
-        public ReadOnlyMemory<byte> Data { get; }
-    }
+public record EventData
+{
+    public EventData(string type, ReadOnlyMemory<byte> data)
+    {
+        Type = type;
+        Data = data;
+    }       
+
+    public string Type { get; }
+    public ReadOnlyMemory<byte> Data { get; }
 }

@@ -1,7 +1,6 @@
-namespace EvenireDB
+namespace EvenireDB;
+
+public record EventsReaderConfig(uint MaxPageSize)
 {
-    public record EventsReaderConfig(uint MaxPageSize)
-    {
-        public readonly static EventsReaderConfig Default = new(100);
-    }
+    public readonly static EventsReaderConfig Default = new(100);
 }

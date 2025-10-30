@@ -1,4 +1,3 @@
-﻿namespace EvenireDB
-{
-    public interface IOperationResult { }
-}
+﻿namespace EvenireDB;
+
+public interface IOperationResult { }

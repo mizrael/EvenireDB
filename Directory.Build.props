@@ -1,5 +1,7 @@
 <Project>
-    <PropertyGroup>
+	<Import Project="Versions.props" />
+	
+	<PropertyGroup>
         <AccelerateBuildsInVisualStudio>true</AccelerateBuildsInVisualStudio>
     </PropertyGroup>
 

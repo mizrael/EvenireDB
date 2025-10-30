@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+	<PropertyGroup>
+		<TargetFrameworkVersion>net9.0</TargetFrameworkVersion>
+		<RepositoryUrl>https://github.com/mizrael/EvenireDB</RepositoryUrl>
+		<PackageProjectUrl>https://deepwiki.com/mizrael/EvenireDB</PackageProjectUrl>
+	</PropertyGroup>
+</Project>

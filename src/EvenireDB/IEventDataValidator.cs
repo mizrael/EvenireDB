@@ -1,7 +1,6 @@
-namespace EvenireDB
+namespace EvenireDB;
+
+public interface IEventDataValidator
 {
-    public interface IEventDataValidator
-    {
-        void Validate(string type, ReadOnlyMemory<byte> data);
-    }
+    void Validate(string type, ReadOnlyMemory<byte> data);
 }
