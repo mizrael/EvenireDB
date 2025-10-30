@@ -15,15 +15,14 @@
   </ItemGroup>
 
 	<ItemGroup>
-	  <ProjectReference Include="..\EvenireDB.Common\EvenireDB.Common.csproj" />
+		<InternalsVisibleTo Include="EvenireDB.Tests" />
+
+		<!-- Required for NSubstitute to create mocks for internal classes (eg. ILogger<StreamInfoProvider> )-->
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<InternalsVisibleTo Include="EvenireDB.Benchmark" />
-		<InternalsVisibleTo Include="EvenireDB.Tests" />
-
-		<!-- Required for NSubstitute -->
-		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	  <ProjectReference Include="..\EvenireDB.Common\EvenireDB.Common.csproj" />
 	</ItemGroup>
 
 </Project>

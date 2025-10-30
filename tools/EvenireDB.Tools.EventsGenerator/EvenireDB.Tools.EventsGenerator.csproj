@@ -9,8 +9,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\EvenireDB.Client\EvenireDB.Client.csproj" />
-    <ProjectReference Include="..\..\EvenireDB.Common\EvenireDB.Common.csproj" />
+    <ProjectReference Include="..\..\src\EvenireDB.Client\EvenireDB.Client.csproj" />
+    <ProjectReference Include="..\..\src\EvenireDB.Common\EvenireDB.Common.csproj" />
   </ItemGroup>
 
     <ItemGroup>

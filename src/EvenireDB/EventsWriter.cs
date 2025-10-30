@@ -45,7 +45,8 @@ public class EventsWriter : IEventsWriter
             //    HasDuplicateEvent(incomingEvents, entry, out var duplicate))
             //    return FailureResult.DuplicateEvent(duplicate);
 
-            _logger.AppendingEventsToStream(incomingEvents.Count(), streamId);
+            var newEventsCount = incomingEvents.Count();
+            _logger.AppendingEventsToStream(newEventsCount, streamId);
 
             var events = new List<Event>();
 
@@ -54,7 +55,7 @@ public class EventsWriter : IEventsWriter
             if(lastEvent != null)
                 previousEventId = lastEvent.Id;
             
-            for (int i = 0; i < incomingEvents.Count(); i++)
+            for (int i = 0; i != newEventsCount; i++)
             {
                 var eventData = incomingEvents.ElementAt(i);
 
