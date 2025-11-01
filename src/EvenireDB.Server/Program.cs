@@ -43,6 +43,8 @@ app.MapEventsRoutes();
    
 app.Lifetime.ApplicationStarted.Register(() =>
 {
+    //TODO: move to a proper logger
+
     var settings = app.Services.GetServerSettings();
 
     var version = Assembly.GetExecutingAssembly().GetName().Version;

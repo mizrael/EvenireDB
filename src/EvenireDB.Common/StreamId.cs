@@ -13,6 +13,9 @@ public readonly record struct StreamId
         Type = type;
     }
 
+    [SetsRequiredMembers]
+    public StreamId(StreamType type) : this(Guid.CreateVersion7(), type) { }
+
     public required readonly Guid Key { get; init; }
     public required readonly StreamType Type { get; init; }
 

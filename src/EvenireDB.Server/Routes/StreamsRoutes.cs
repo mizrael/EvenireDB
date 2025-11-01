@@ -64,6 +64,7 @@ public static class StreamsRoutes
         }       
     }
 
+    //TODO: add max page size
     private static async IAsyncEnumerable<EventDTO> GetEventsAsync(
         [FromServices] IEventsReader reader,
         string streamType, 

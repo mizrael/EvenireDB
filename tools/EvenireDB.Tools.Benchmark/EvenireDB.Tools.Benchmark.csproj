@@ -6,14 +6,23 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<IsPackable>false</IsPackable>
+
+		<!-- Disable entry point generation as this project has it's own entry point -->
+		<GenerateProgramFile>false</GenerateProgramFile>
 	</PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="BenchmarkDotNet" Version="0.14.0" />
-		<PackageReference Include="BenchmarkDotNet.Diagnostics.Windows" Version="0.14.0" Condition="'$(OS)' == 'Windows_NT'" />
-			</ItemGroup>	
-	<ItemGroup>
 
-	<ProjectReference Include="..\..\src\EvenireDB\EvenireDB.csproj" />
-</ItemGroup>	
+	<ItemGroup>
+		<PackageReference Include="BenchmarkDotNet.TestAdapter" Version="0.15.5" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.10" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
+		<PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.0.36525.3" />
+	</ItemGroup>
+
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\src\EvenireDB.Client\EvenireDB.Client.csproj" />
+	  <ProjectReference Include="..\..\src\EvenireDB.Server\EvenireDB.Server.csproj" />
+	</ItemGroup>
+
 </Project>

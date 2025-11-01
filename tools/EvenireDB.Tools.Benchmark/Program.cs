@@ -1,18 +1,33 @@
 ﻿using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Running;
-using System.Reflection;
+using BenchmarkDotNet.Exporters;
+using BenchmarkDotNet.Exporters.Json;
+using BenchmarkDotNet.Loggers;
 
-// Check if running in CI mode
-var isCi = args.Contains("--ci") || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("CI"));
+namespace EvenireDB.Benchmark;
 
-IConfig config = isCi
-    ? DefaultConfig.Instance
-        .WithOptions(ConfigOptions.DisableOptimizationsValidator)
-        .WithOptions(ConfigOptions.DisableLogFile)
-        .WithOptions(ConfigOptions.DontOverwriteResults)
-    : DefaultConfig.Instance;
+public class Program
+{
+    public static int Main(string[] args)
+    {
+        var config = DefaultConfig.Instance
+            .WithOptions(ConfigOptions.DisableOptimizationsValidator)
+            .AddExporter(JsonExporter.Brief)
+            .AddExporter(HtmlExporter.Default)
+            .AddLogger(ConsoleLogger.Default);
 
-var summary = BenchmarkRunner.Run(Assembly.GetExecutingAssembly(), config);
+        // Add CI-specific configuration
+        if (args.Contains("--ci"))
+        {
+            config = config
+                .WithOptions(ConfigOptions.DontOverwriteResults)
+                .WithArtifactsPath("./BenchmarkDotNet.Artifacts");
+        }
 
-// Return non-zero exit code if any benchmarks failed
-return summary.Any(s => s.HasCriticalValidationErrors) ? 1 : 0;
+        var summary = BenchmarkSwitcher
+            .FromAssembly(typeof(Program).Assembly)
+            .Run(args, config);
+
+        return summary.Any(s => s.HasCriticalValidationErrors) ? 1 : 0;
+    }
+}

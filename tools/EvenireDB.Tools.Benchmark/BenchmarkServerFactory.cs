@@ -1,15 +1,17 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using EvenireDB;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
-namespace EvenireDB.Server.Tests;
-
-public class TestServerWebApplicationFactory : WebApplicationFactory<Program>
+public class BenchmarkServerFactory : WebApplicationFactory<Program>
 {
     private readonly DirectoryInfo _dataFolder;
 
-    public TestServerWebApplicationFactory()
+    public BenchmarkServerFactory()
     {
-        _dataFolder = Directory.CreateTempSubdirectory("eveniredb-server-tests");
+        _dataFolder = Directory.CreateTempSubdirectory("eveniredb-benchmarks");
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -23,6 +25,11 @@ public class TestServerWebApplicationFactory : WebApplicationFactory<Program>
             });
         });
 
+        builder.ConfigureServices(services =>
+        {
+            services.AddSingleton<ILoggerFactory, NullLoggerFactory>();
+        });
+
         base.ConfigureWebHost(builder);
     }
 
@@ -30,7 +37,8 @@ public class TestServerWebApplicationFactory : WebApplicationFactory<Program>
     {
         lock (this)
         {
-            try {    
+            try
+            {
                 if (_dataFolder.Exists)
                     _dataFolder.Delete(true);
             }
@@ -38,6 +46,6 @@ public class TestServerWebApplicationFactory : WebApplicationFactory<Program>
             {
                 // best effort
             }
-        }       
+        }
     }
 }
