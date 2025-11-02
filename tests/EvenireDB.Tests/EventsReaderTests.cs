@@ -14,7 +14,8 @@ public class EventsReaderTests
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
         var events = await sut.ReadAsync(streamId, StreamPosition.Start)
                               .ToListAsync();
-        events.Should().NotBeNull().And.BeEmpty();
+        Assert.NotNull(events);
+        Assert.Empty(events);
     }
 
     [Fact]
@@ -34,9 +35,10 @@ public class EventsReaderTests
 
         var events = await sut.ReadAsync(streamId, StreamPosition.Start)
                                 .ToListAsync();
-        events.Should().NotBeNullOrEmpty()
-                       .And.HaveCount((int)EventsReaderConfig.Default.MaxPageSize)
-                       .And.BeEquivalentTo(sourceEvents.Take((int)EventsReaderConfig.Default.MaxPageSize));
+
+        Assert.NotNull(events);
+        Assert.Equal((int)EventsReaderConfig.Default.MaxPageSize, events.Count);
+        Assert.Equivalent(sourceEvents.Take((int)EventsReaderConfig.Default.MaxPageSize), events);
     }
 
     [Fact]
@@ -58,9 +60,9 @@ public class EventsReaderTests
 
         var loadedEvents = await sut.ReadAsync(streamId, startPosition: StreamPosition.End, direction: Direction.Backward)
                                     .ToListAsync();
-        loadedEvents.Should().NotBeNull()
-            .And.HaveCount((int)EventsReaderConfig.Default.MaxPageSize)
-            .And.BeEquivalentTo(expectedEvents);
+        Assert.NotNull(loadedEvents);
+        Assert.Equal((int)EventsReaderConfig.Default.MaxPageSize, loadedEvents.Count);
+        Assert.Equivalent(expectedEvents, loadedEvents);
     }
 
     [Fact]
@@ -86,9 +88,9 @@ public class EventsReaderTests
 
         var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Backward)
                                     .ToListAsync();
-        loadedEvents.Should().NotBeNull()
-            .And.HaveCount((int)EventsReaderConfig.Default.MaxPageSize)
-            .And.BeEquivalentTo(expectedEvents);
+        Assert.NotNull(loadedEvents);
+        Assert.Equal((int)EventsReaderConfig.Default.MaxPageSize, loadedEvents.Count);
+        Assert.Equivalent(expectedEvents, loadedEvents);
     }
 
     [Fact]
@@ -112,9 +114,9 @@ public class EventsReaderTests
 
         var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Backward)
                                     .ToListAsync();
-        loadedEvents.Should().NotBeNull()
-            .And.HaveCount(expectedEvents.Count())
-            .And.BeEquivalentTo(expectedEvents);
+        Assert.NotNull(loadedEvents);
+        Assert.Equal(expectedEvents.Count(), loadedEvents.Count);
+        Assert.Equivalent(expectedEvents, loadedEvents);
     }
 
     [Fact]
@@ -136,9 +138,9 @@ public class EventsReaderTests
 
         var loadedEvents = await sut.ReadAsync(streamId, startPosition: StreamPosition.Start, direction: Direction.Forward)
                                     .ToListAsync();
-        loadedEvents.Should().NotBeNull()
-            .And.HaveCount((int)EventsReaderConfig.Default.MaxPageSize)
-            .And.BeEquivalentTo(expectedEvents);
+        Assert.NotNull(loadedEvents);
+        Assert.Equal((int)EventsReaderConfig.Default.MaxPageSize, loadedEvents.Count);
+        Assert.Equivalent(expectedEvents, loadedEvents);
     }
 
     [Fact]
@@ -161,8 +163,8 @@ public class EventsReaderTests
 
         var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Forward)
                                     .ToListAsync();
-        loadedEvents.Should().NotBeNull()
-            .And.HaveCount((int)EventsReaderConfig.Default.MaxPageSize)
-            .And.BeEquivalentTo(expectedEvents);
+        Assert.NotNull(loadedEvents);
+        Assert.Equal((int)EventsReaderConfig.Default.MaxPageSize, loadedEvents.Count);
+        Assert.Equivalent(expectedEvents, loadedEvents);
     }
 }

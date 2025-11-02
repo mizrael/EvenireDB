@@ -15,14 +15,14 @@ public class StreamInfoProviderTests
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
 
         var result = await sut.DeleteStreamAsync(streamId);
-        result.Should().BeFalse();
+        Assert.False(result);
 
         var exists = sut.GetStreamInfo(streamId) is not null;
-        exists.Should().BeFalse();
+        Assert.False(exists);
     }
 
     [Fact]
-    public async Task GetStreamsInfo_should_return_empty_when_no_streams_available()
+    public void GetStreamsInfo_should_return_empty_when_no_streams_available()
     {
         var extentsProvider = Substitute.For<IExtentsProvider>();
         var cache = Substitute.For<IStreamsCache>();
@@ -30,7 +30,7 @@ public class StreamInfoProviderTests
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
 
         var results = sut.GetStreamsInfo();
-        results.Should().BeEmpty();
+        Assert.Empty(results);
     }
 
     [Fact]
@@ -43,6 +43,6 @@ public class StreamInfoProviderTests
         var logger = Substitute.For<ILogger<StreamInfoProvider>>();
         var sut = new StreamInfoProvider(extentsProvider, cache, logger);
 
-        sut.GetStreamInfo(streamId).Should().BeNull();
+        Assert.Null(sut.GetStreamInfo(streamId));
     }
 }

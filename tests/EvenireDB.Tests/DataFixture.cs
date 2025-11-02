@@ -2,10 +2,13 @@
 
 public class DataFixture : IAsyncLifetime
 {
-    private DirectoryInfo _baseDataPath;
+    private DirectoryInfo? _baseDataPath;
 
     internal ExtentsProviderConfig CreateExtentsConfig()
     {        
+        if(_baseDataPath is null)
+            throw new InvalidOperationException("Fixture not initialized");
+
         var path = Path.Combine(_baseDataPath.FullName, Guid.NewGuid().ToString());
         Directory.CreateDirectory(path);
 
@@ -19,7 +22,7 @@ public class DataFixture : IAsyncLifetime
         {
             try
             {
-                if (_baseDataPath.Exists)
+                if (_baseDataPath?.Exists == true)
                     _baseDataPath.Delete(true);
             }
             catch

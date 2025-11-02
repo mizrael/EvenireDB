@@ -27,10 +27,11 @@ public class EventsWriterTests
         var sut = new EventsWriter(cache, channelWriter, idGenerator, logger);
 
         var result = await sut.AppendAsync(streamId, inputEvents, expectedVersion: inputEvents.Count() - 1);
-        result.Should().BeOfType<FailureResult>();
+
+        Assert.IsType<FailureResult>(result);
 
         var failure = (FailureResult)result;
-        failure.Code.Should().Be(ErrorCodes.VersionMismatch);
+        Assert.Equal(ErrorCodes.VersionMismatch, failure.Code);
     }
 
     [Fact]
@@ -54,10 +55,10 @@ public class EventsWriterTests
         
         await sut.AppendAsync(streamId, inputEvents);
         var result = await sut.AppendAsync(streamId, inputEvents);
-        result.Should().BeOfType<FailureResult>();
+        Assert.IsType<FailureResult>(result);
 
         var failure = (FailureResult)result;
-        failure.Code.Should().Be(ErrorCodes.CannotInitiateWrite);
+        Assert.Equal(ErrorCodes.CannotInitiateWrite, failure.Code);
     }
 
     [Fact]
@@ -80,6 +81,6 @@ public class EventsWriterTests
         var sut = new EventsWriter(cache, channelWriter, idGenerator, logger);
 
         var result = await sut.AppendAsync(streamId, expectedEvents);
-        result.Should().BeOfType<SuccessResult>();
+        Assert.IsType<SuccessResult>(result);
     }
 }

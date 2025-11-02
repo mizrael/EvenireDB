@@ -6,29 +6,29 @@ public class LRUCacheTests
     public async Task GetOrAddAsync_should_add_when_not_existing()
     {
         var sut = new LRUCache<string, string>(1);
-        sut.Count.Should().Be(0);
+        Assert.Equal(0u, sut.Count);
 
         var value = await sut.GetOrAddAsync("key", (_, _) => new ValueTask<string>("value"));
-        value.Should().Be("value");
+        Assert.Equal("value", value);
 
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
     }
 
     [Fact]
     public async Task GetOrAddAsync_should_keep_capacity()
     {
         var sut = new LRUCache<string, string>(1);
-        sut.Count.Should().Be(0);
+        Assert.Equal(0u, sut.Count);
 
         var value = await sut.GetOrAddAsync("key", (_, _) => new ValueTask<string>("value"));
-        value.Should().Be("value");
+        Assert.Equal("value", value);
 
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
 
         value = await sut.GetOrAddAsync("key2", (_, _) => new ValueTask<string>("value2"));
-        value.Should().Be("value2");
+        Assert.Equal("value2", value);
 
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
     }
 
     [Theory]
@@ -55,8 +55,8 @@ public class LRUCacheTests
             }).ToArray();
         await Task.WhenAny(tasks);
 
-        flags.Count(f => f).Should().Be(1);
-        results.All(r => r == results[0]).Should().BeTrue();
+        Assert.Equal(1, flags.Count(f => f));
+        Assert.True(results.All(r => r == results[0]));
     }
 
     [Fact]
@@ -65,12 +65,12 @@ public class LRUCacheTests
         var sut = new LRUCache<string, int>(1);
 
         await sut.GetOrAddAsync("key1", (_, _) => ValueTask.FromResult(1));
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
 
         await sut.GetOrAddAsync("key2", (_, _) => ValueTask.FromResult(1));
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
 
-        sut.ContainsKey("key1").Should().BeFalse();
+        Assert.False(sut.ContainsKey("key1"));
     }
 
     [Fact]
@@ -80,10 +80,10 @@ public class LRUCacheTests
         await sut.GetOrAddAsync("key1", (_, _) => ValueTask.FromResult(1));
         await sut.GetOrAddAsync("key2", (_, _) => ValueTask.FromResult(2));
 
-        await sut.GetOrAddAsync("key1", null);
+        await sut.GetOrAddAsync("key1", null!);
 
         await sut.GetOrAddAsync("key3", (_, _) => ValueTask.FromResult(3));
-        sut.ContainsKey("key2").Should().BeFalse();
+        Assert.False(sut.ContainsKey("key2"));
     }
 
     [Fact]
@@ -94,7 +94,7 @@ public class LRUCacheTests
 
         sut.AddOrUpdate("key", 2);
         var result = await sut.GetOrAddAsync("key", (_, _) => ValueTask.FromResult(1));
-        result.Should().Be(2);
+        Assert.Equal(1u, sut.Count);
     }
 
     [Fact]
@@ -104,10 +104,10 @@ public class LRUCacheTests
         await sut.GetOrAddAsync("key", (_, _) => ValueTask.FromResult(1));
 
         sut.AddOrUpdate("key", 2);
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
 
         sut.AddOrUpdate("key", 2);
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
     }
 
     [Fact]
@@ -116,10 +116,10 @@ public class LRUCacheTests
         var sut = new LRUCache<string, int>(10);
 
         sut.AddOrUpdate("key1", 71);
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
 
         sut.AddOrUpdate("key2", 42);
-        sut.Count.Should().Be(2);
+        Assert.Equal(2u, sut.Count);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public class LRUCacheTests
 
         sut.AddOrUpdate("key3", 3);
 
-        sut.ContainsKey("key2").Should().BeFalse();
+        Assert.False(sut.ContainsKey("key2"));
     }
 
     [Fact]
@@ -146,11 +146,11 @@ public class LRUCacheTests
         for (int i = 0; i < capacity / 2; i++)
             await sut.GetOrAddAsync(i.ToString(), (_, _) => ValueTask.FromResult(i));
 
-        sut.Count.Should().Be(capacity / 2);
+        Assert.Equal(capacity / 2, sut.Count);
 
         sut.DropOldest(sut.Count + 1);
 
-        sut.Count.Should().Be(0);
+        Assert.Equal(0u, sut.Count);
     }
 
     [Fact]
@@ -164,7 +164,7 @@ public class LRUCacheTests
 
         sut.DropOldest(4);
 
-        sut.Count.Should().Be(6);
+        Assert.Equal(6u, sut.Count);
     }
 
     [Fact]
@@ -172,13 +172,13 @@ public class LRUCacheTests
     {
         var sut = new LRUCache<string, int>(10);
         sut.Remove("lorem");
-        sut.Count.Should().Be(0);
+        Assert.Equal(0u, sut.Count);
 
         sut.AddOrUpdate("lorem", 1);
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
 
         sut.Remove("ipsum");
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
     }
 
     [Fact]
@@ -187,10 +187,10 @@ public class LRUCacheTests
         var sut = new LRUCache<string, int>(10);
 
         sut.AddOrUpdate("lorem", 1);
-        sut.Count.Should().Be(1);
+        Assert.Equal(1u, sut.Count);
 
         sut.Remove("lorem");
-        sut.Count.Should().Be(0);
+        Assert.Equal(0u, sut.Count);
     }
 
     [Fact]
@@ -201,10 +201,10 @@ public class LRUCacheTests
         sut.AddOrUpdate("lorem", 1);
         sut.AddOrUpdate("ipsum", 1);
         sut.AddOrUpdate("dolor", 1);
-        sut.Count.Should().Be(3);
+        Assert.Equal(3u, sut.Count);
 
         sut.Remove("ipsum");
-        sut.Count.Should().Be(2);
-        sut.Keys.Should().NotContain("ipsum");
+        Assert.Equal(2u, sut.Count);
+        Assert.False(sut.ContainsKey("ipsum"));
     }
 }

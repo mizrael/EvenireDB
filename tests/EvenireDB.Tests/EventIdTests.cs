@@ -13,14 +13,14 @@ public class EventIdTests
     public void Parse_should_throw_when_text_is_invalid(string text)
     {
         Action act = () => EventId.Parse(text);
-        act.Should().Throw<Exception>();
+        Assert.ThrowsAny<Exception>(act);
     }
 
     [Fact]
     public void Parse_should_work()
     {
         var eventId = EventId.Parse("42-71");
-        eventId.Timestamp.Should().Be(42);
-        eventId.Sequence.Should().Be(71);
+        Assert.Equal(42, eventId.Timestamp);
+        Assert.Equal(71, eventId.Sequence);
     }
 }
