@@ -46,6 +46,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".root", ".root", "{02EA681E
 		..\docker-compose.yml = ..\docker-compose.yml
 		..\Dockerfile.adminui = ..\Dockerfile.adminui
 		..\Dockerfile.server = ..\Dockerfile.server
+		EvenireDb.Tests.slnf = EvenireDb.Tests.slnf
 		..\LICENSE = ..\LICENSE
 		..\readme.md = ..\readme.md
 		..\tests.runsettings = ..\tests.runsettings

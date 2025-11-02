@@ -1,0 +1,17 @@
+{
+  "solution": {
+    "path": "EvenireDB.sln",
+    "projects": [
+      "..\\samples\\EvenireDB.Samples.TemperatureSensors\\EvenireDB.Samples.TemperatureSensors.csproj",
+      "..\\tests\\EvenireDB.Client.Tests\\EvenireDB.Client.Tests.csproj",
+      "..\\tests\\EvenireDB.Server.Tests\\EvenireDB.Server.Tests.csproj",
+      "..\\tests\\EvenireDB.Tests\\EvenireDB.Tests.csproj",
+      "EvenireDB.AdminUI\\EvenireDB.AdminUI.csproj",
+      "EvenireDB.Client\\EvenireDB.Client.csproj",
+      "EvenireDB.Common\\EvenireDB.Common.csproj",
+      "EvenireDB.Grpc\\EvenireDB.Grpc.csproj",
+      "EvenireDB.Server\\EvenireDB.Server.csproj",
+      "EvenireDB\\EvenireDB.csproj"
+    ]
+  }
+}

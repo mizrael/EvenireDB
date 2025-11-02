@@ -28,7 +28,7 @@ jobs:
     - name: Test
       run: |
         cd ./src
-        dotnet test --no-build -m:1 -s ../tests.runsettings \
+        dotnet test .\EvenireDb.Tests.slnf --no-build -m:1 -s ../tests.runsettings \
           /p:CollectCoverage=true \
           /p:CoverletOutput=../TestResults/ \
           /p:MergeWith="../TestResults/coverage.json" \
