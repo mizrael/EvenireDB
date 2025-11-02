@@ -1,6 +1,22 @@
-﻿namespace EvenireDB.Client;
+﻿using System.Text.Json.Serialization;
 
-public record EventId(long Timestamp, int Sequence)
+namespace EvenireDB.Client;
+
+public readonly struct EventId
 {
-    public DateTimeOffset CreatedAt => new DateTimeOffset(Timestamp, TimeSpan.Zero);
+    [JsonConstructor]
+    public EventId(long timestamp, int sequence = 0)
+    {
+        Timestamp = timestamp;
+        Sequence = sequence;
+        CreatedAt = new DateTimeOffset(Timestamp, TimeSpan.Zero);
+    }
+
+    public EventId(long Timestamp) : this(Timestamp, 0)
+    {
+    }
+
+    public long Timestamp { get; }
+    public int Sequence { get; }
+    public DateTimeOffset CreatedAt { get; }
 }

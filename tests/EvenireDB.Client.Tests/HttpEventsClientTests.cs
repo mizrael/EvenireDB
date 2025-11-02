@@ -44,18 +44,23 @@ public class HttpEventsClientTests : IClassFixture<ServerFixture>
         TestUtils.IsEquivalent(receivedEvents, expectedEvents);
     }
 
-    [Fact]
-    public async Task AppendAsync_should_append_events()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    [InlineData(100)]
+    [InlineData(1000)]
+    public async Task AppendAsync_should_append_events(int eventsCount)
     {
-        var streamId = new StreamId(Guid.NewGuid(), _defaultStreamsType);
-        var expectedEvents = TestUtils.BuildEvents(10);
+        var streamId = new StreamId(_defaultStreamsType);
+        var expectedEvents = TestUtils.BuildEvents(eventsCount);
 
         await using var application = _serverFixture.CreateServer();
 
         using var client = application.CreateClient();
         var sut = new HttpEventsClient(client);
         await sut.AppendAsync(streamId, expectedEvents);
-        var receivedEvents = await sut.ReadAsync(streamId).ToArrayAsync();
+
+        var receivedEvents = await sut.ReadAllAsync(streamId).ToArrayAsync();
         
         TestUtils.IsEquivalent(receivedEvents, expectedEvents);
     }

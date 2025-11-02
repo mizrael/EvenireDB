@@ -1,5 +1,6 @@
 ﻿using EvenireDB.Client.Exceptions;
 using EvenireDB.Common;
+using System.Net.Http;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -43,27 +44,24 @@ internal class HttpEventsClient : IEventsClient
         IEnumerable<EventData> events,
         CancellationToken cancellationToken = default)
     {
-        //TODO: this doesn't work!
-        using var content = new PushStreamContent(async (stream, _, _) =>
-        {
-            await using var writer = new Utf8JsonWriter(stream);
-            writer.WriteStartArray();
+        ArgumentNullException.ThrowIfNull(events, nameof(events));
 
-            foreach (var eventData in events)
+        using var ms = new MemoryStream();
+        await JsonSerializer.SerializeAsync(ms, events, cancellationToken: cancellationToken)
+                             .ConfigureAwait(false);
+
+        ms.Position = 0;
+
+        var endpoint = $"/api/v1/streams/{streamId.Type}/{streamId.Key}/events";
+        using var request = new HttpRequestMessage(HttpMethod.Post, endpoint)
+        {
+            Content = new StreamContent(ms)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                JsonSerializer.Serialize(writer, eventData);
-                await writer.FlushAsync(cancellationToken);
+                Headers =
+                {
+                    ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json")
+                }
             }
-
-            writer.WriteEndArray();
-            await writer.FlushAsync(cancellationToken);
-        }, "application/json");
-
-        var request = new HttpRequestMessage(HttpMethod.Post,
-            $"/api/v1/streams/{streamId.Type}/{streamId.Key}/events")
-        {
-            Content = content
         };
 
         var response = await _httpClient.SendAsync(request, cancellationToken)
