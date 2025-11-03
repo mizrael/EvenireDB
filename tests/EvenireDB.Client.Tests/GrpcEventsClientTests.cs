@@ -27,7 +27,8 @@ public class GrpcEventsClientTests : IClassFixture<ServerFixture>
         var sut = CreateSut();
 
         var events = await sut.ReadAsync(new StreamId(Guid.NewGuid(), _defaultStreamsType)).ToListAsync();
-        events.Should().NotBeNull().And.BeEmpty();
+        Assert.NotNull(events);
+        Assert.Empty(events);
     }
 
     [Fact]
@@ -44,8 +45,9 @@ public class GrpcEventsClientTests : IClassFixture<ServerFixture>
         var expectedEvents = inputEvents.Reverse().Take(100).ToArray();
 
         var receivedEvents = await sut.ReadAsync(streamId, position: StreamPosition.End, direction: Direction.Backward).ToArrayAsync();
-        receivedEvents.Should().NotBeNullOrEmpty()
-                     .And.HaveCount(100);
+        Assert.NotNull(receivedEvents);
+        Assert.NotEmpty(receivedEvents);
+        Assert.Equal(100, receivedEvents.Length);
 
         TestUtils.IsEquivalent(receivedEvents, expectedEvents);
     }

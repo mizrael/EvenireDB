@@ -11,12 +11,13 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     [Fact]
     public async Task GetStreamInfosAsync_should_return_nothing_when_no_streams_available()
     {
-        await using var application = new TestServerWebApplicationFactory();
+     await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
-        var sut = new HttpStreamsClient(client);
-        var results = await sut.GetStreamInfosAsync(_defaultStreamsType);
-        results.Should().NotBeNull().And.BeEmpty();
+   var sut = new HttpStreamsClient(client);
+    var results = await sut.GetStreamInfosAsync(_defaultStreamsType);
+  Assert.NotNull(results);
+    Assert.Empty(results);
     }
 
     [Fact]
@@ -24,22 +25,22 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     {
         await using var application = new TestServerWebApplicationFactory();
 
-        using var client = application.CreateClient();
-        
+  using var client = application.CreateClient();
+     
         var sut = new HttpStreamsClient(client);
-        var results = await sut.GetStreamInfosAsync(_defaultStreamsType);
-        results.Should().NotBeNull();
+     var results = await sut.GetStreamInfosAsync(_defaultStreamsType);
+  Assert.NotNull(results);
     }
 
-    [Fact]
+  [Fact]
     public async Task GetStreamInfoAsync_should_throw_when_stream_id_invalid()
     {
         await using var application = new TestServerWebApplicationFactory();
 
-        using var client = application.CreateClient();
+   using var client = application.CreateClient();
         var streamId = new StreamId(_defaultStreamsType);
         var sut = new HttpStreamsClient(client);
-        await Assert.ThrowsAsync< StreamNotFoundException >(async () => await sut.GetStreamInfoAsync(streamId));
+      await Assert.ThrowsAsync< StreamNotFoundException >(async () => await sut.GetStreamInfoAsync(streamId));
     }
 
     [Theory]
@@ -51,18 +52,18 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     {
         var streamId = new StreamId(_defaultStreamsType);
 
-        await using var application = new TestServerWebApplicationFactory();
+  await using var application = new TestServerWebApplicationFactory();
 
         using var client = application.CreateClient();
 
-        var eventsClient = new HttpEventsClient(client);
+      var eventsClient = new HttpEventsClient(client);
         await eventsClient.AppendAsync(streamId, TestUtils.BuildEvents(eventsCount));
 
         var sut = new HttpStreamsClient(client);
-        var result = await sut.GetStreamInfoAsync(streamId);
-        result.Should().NotBeNull();
-        result.Id.Should().Be(streamId);
-        result.EventsCount.Should().Be(eventsCount);
+  var result = await sut.GetStreamInfoAsync(streamId);
+  Assert.NotNull(result);
+        Assert.Equal(streamId, result.Id);
+   Assert.Equal(eventsCount, result.EventsCount);
     }
 
     [Fact]
@@ -74,12 +75,12 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
 
-        var eventsClient = new HttpEventsClient(client);
-        await eventsClient.AppendAsync(streamId, TestUtils.BuildEvents(42));
+   var eventsClient = new HttpEventsClient(client);
+  await eventsClient.AppendAsync(streamId, TestUtils.BuildEvents(42));
 
         var sut = new HttpStreamsClient(client);
 
-        await sut.DeleteStreamAsync(streamId);
+ await sut.DeleteStreamAsync(streamId);
 
         await Assert.ThrowsAsync<StreamNotFoundException>(async () => await sut.GetStreamInfoAsync(streamId));
     }
@@ -89,12 +90,12 @@ public class HttpStreamsClientTests : IClassFixture<ServerFixture>
     {
         var streamId = new StreamId(_defaultStreamsType);
 
-        await using var application = new TestServerWebApplicationFactory();
+   await using var application = new TestServerWebApplicationFactory();
 
-        using var client = application.CreateClient();
+  using var client = application.CreateClient();
 
         var sut = new HttpStreamsClient(client);
 
-        await Assert.ThrowsAsync<StreamNotFoundException>(async () => await sut.DeleteStreamAsync(streamId));
+    await Assert.ThrowsAsync<StreamNotFoundException>(async () => await sut.DeleteStreamAsync(streamId));
     }
 }

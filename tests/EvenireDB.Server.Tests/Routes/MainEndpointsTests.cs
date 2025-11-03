@@ -8,7 +8,7 @@ public class MainEndpointsTests
         await using var application = new WebApplicationFactory<Program>();
         using var client = application.CreateClient();
         var response = await client.GetAsync("/");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);            
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);            
     }
 
     [Fact]
@@ -17,6 +17,6 @@ public class MainEndpointsTests
         await using var application = new WebApplicationFactory<Program>();
         using var client = application.CreateClient();
         var response = await client.GetAsync("/healthz");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
     }
 }

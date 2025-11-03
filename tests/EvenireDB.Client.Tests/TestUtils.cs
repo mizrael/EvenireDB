@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Xunit;
 
 namespace EvenireDB.Client.Tests;
 
@@ -22,14 +23,14 @@ public static class TestUtils
 
     public static bool IsEquivalent(EventData[] src, EventData[] other) 
     {
-        src.Should().NotBeNull()
-            .And.HaveCount(other.Length);            
+        Assert.NotNull(src);
+        Assert.Equal(other.Length, src.Length);
 
         for (int i = 0; i < src.Length; i++)
-        {
-            src[i].Type.Should().Be(other[i].Type);
-            src[i].Data.ToArray().Should().BeEquivalentTo(other[i].Data.ToArray());
-        }
+   {
+    Assert.Equal(other[i].Type, src[i].Type);
+     Assert.Equal(other[i].Data.ToArray(), src[i].Data.ToArray());
+     }
 
         return true;
     }

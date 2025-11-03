@@ -28,7 +28,7 @@ public class GrpcTests : IClassFixture<ServerFixture>
         };
         var response = client.Read(req);
         var loadedEvents = await response.ResponseStream.ReadAllAsync().ToListAsync();
-        loadedEvents.Should().BeEmpty();
+        Assert.Empty(loadedEvents);
     }
 
     [Fact]
@@ -47,9 +47,9 @@ public class GrpcTests : IClassFixture<ServerFixture>
         };
         req.Events.AddRange(dtos);
         var response = await client.AppendAsync(req);
-        response.Should().NotBeNull();
-        response.Error.Should().NotBeNull();
-        response.Error.Code.Should().Be(ErrorCodes.BadRequest);
+        Assert.NotNull(response);
+        Assert.NotNull(response.Error);
+        Assert.Equal(ErrorCodes.BadRequest, response.Error.Code);
     }
 
     [Theory]
@@ -70,9 +70,9 @@ public class GrpcTests : IClassFixture<ServerFixture>
         };
         req.Events.AddRange(dtos);
         var response = await client.AppendAsync(req);
-        response.Should().NotBeNull();
-        response.Error.Should().NotBeNull();
-        response.Error.Code.Should().Be(ErrorCodes.BadRequest);
+        Assert.NotNull(response);
+        Assert.NotNull(response.Error);
+        Assert.Equal(ErrorCodes.BadRequest, response.Error.Code);
     }
 
     [Fact]
@@ -91,9 +91,9 @@ public class GrpcTests : IClassFixture<ServerFixture>
         };
         req.Events.AddRange(dtos);
         var response = await client.AppendAsync(req);
-        response.Should().NotBeNull();
-        response.Error.Should().NotBeNull();
-        response.Error.Code.Should().Be(ErrorCodes.BadRequest);
+        Assert.NotNull(response);
+        Assert.NotNull(response.Error);
+        Assert.Equal(ErrorCodes.BadRequest, response.Error.Code);
     }
 
     [Fact]
@@ -121,9 +121,9 @@ public class GrpcTests : IClassFixture<ServerFixture>
         };
         req2.Events.AddRange(dtos);
         var response = await client.AppendAsync(req2);
-        response.Should().NotBeNull();
-        response.Error.Should().NotBeNull();
-        response.Error.Code.Should().Be(ErrorCodes.VersionMismatch, because: $"stream version mismatch expected. Got: {response.Error.Message}");
+        Assert.NotNull(response);
+        Assert.NotNull(response.Error);
+        Assert.Equal(ErrorCodes.VersionMismatch, response.Error.Code);
     }
 
     [Fact(Skip = "TBD")]
@@ -142,13 +142,13 @@ public class GrpcTests : IClassFixture<ServerFixture>
         };
         req.Events.AddRange(dtos);
         var response = await client.AppendAsync(req);
-        response.Should().NotBeNull();
-        response.Error.Should().BeNull();
+        Assert.NotNull(response);
+        Assert.Null(response.Error);
 
         var errorResponse = await client.AppendAsync(req);
-        errorResponse.Should().NotBeNull();
-        errorResponse.Error.Should().NotBeNull();
-        errorResponse.Error.Code.Should().Be(ErrorCodes.DuplicateEvent);
+        Assert.NotNull(errorResponse);
+        Assert.NotNull(errorResponse.Error);
+        Assert.Equal(ErrorCodes.DuplicateEvent, errorResponse.Error.Code);
     }
 
     [Fact]
@@ -167,8 +167,8 @@ public class GrpcTests : IClassFixture<ServerFixture>
         };
         req.Events.AddRange(dtos);
         var response = await client.AppendAsync(req);
-        response.Should().NotBeNull();
-        response.Error.Should().BeNull();
+        Assert.NotNull(response);
+        Assert.Null(response.Error);
 
         var readReq = new ReadRequest()
         {
@@ -177,11 +177,11 @@ public class GrpcTests : IClassFixture<ServerFixture>
         };
         var readResponse = client.Read(readReq);
         var loadedEvents = await readResponse.ResponseStream.ReadAllAsync().ToListAsync();
-        loadedEvents.Should().HaveCount(dtos.Length);
+        Assert.Equal(dtos.Length, loadedEvents.Count);
         foreach(var loadedEvent in loadedEvents)
         {
-            loadedEvent.Type.Should().Be("lorem");
-            loadedEvent.Data.Memory.ToArray().Should().BeEquivalentTo(_defaultEventData);
+            Assert.Equal("lorem", loadedEvent.Type);
+            Assert.Equal(_defaultEventData, loadedEvent.Data.Memory.ToArray());
         }
     }
 
