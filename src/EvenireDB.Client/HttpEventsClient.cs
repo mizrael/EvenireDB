@@ -77,5 +77,4 @@ internal class HttpEventsClient : IEventsClient
             };
         }
     }
-
 }

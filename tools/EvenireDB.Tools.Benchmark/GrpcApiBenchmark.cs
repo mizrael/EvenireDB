@@ -2,24 +2,25 @@
 using BenchmarkDotNet.Jobs;
 using EvenireDB.Client;
 using EvenireDB.Common;
+using Grpc.Net.Client;
 
 namespace EvenireDB.Benchmark;
 
 [SimpleJob(RuntimeMoniker.Net90)]
 [MemoryDiagnoser]
 [ThreadingDiagnoser]
-public class RestApiBenchmark : IAsyncDisposable
+public class GrpcApiBenchmark : IAsyncDisposable
 {
     private readonly BenchmarkServerFixture _fixture;
 
     private BenchmarkServerFactory? _server;
-    private HttpClient? _httpClient;
+    private GrpcChannel? _grpcChannel;
     private IEventsClient? _eventsClient;
 
     private StreamId _streamId;
     private Client.EventData[] _events;
 
-    public RestApiBenchmark()
+    public GrpcApiBenchmark()
     {
         _fixture = new BenchmarkServerFixture();
     }
@@ -34,8 +35,9 @@ public class RestApiBenchmark : IAsyncDisposable
     {
         _server = new BenchmarkServerFactory();
 
-        _httpClient = _server.CreateClient();
-        _eventsClient = new HttpEventsClient(_httpClient);
+        _grpcChannel = _server.CreateGrpcChannel();
+        var client = new GrpcEvents.EventsGrpcService.EventsGrpcServiceClient(_grpcChannel);
+        _eventsClient = new GrpcEventsClient(client);
 
         _streamId = new StreamId($"benchmark-stream-{this.EventSize}");
         _events = Enumerable.Range(0, this.EventsCount)
@@ -46,7 +48,7 @@ public class RestApiBenchmark : IAsyncDisposable
     [GlobalCleanup]
     public async Task Cleanup()
     {
-        _httpClient?.Dispose();
+        _grpcChannel?.Dispose();
 
         if (_server != null)
             await _server.DisposeAsync();

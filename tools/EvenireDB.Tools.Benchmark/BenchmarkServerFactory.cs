@@ -1,4 +1,4 @@
-﻿using EvenireDB;
+﻿using Grpc.Net.Client;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -31,6 +31,18 @@ public class BenchmarkServerFactory : WebApplicationFactory<Program>
         });
 
         base.ConfigureWebHost(builder);
+    }
+
+    public GrpcChannel CreateGrpcChannel()
+    {
+        var handler = this.Server.CreateHandler();
+
+        var channel = GrpcChannel.ForAddress("http://localhost", new GrpcChannelOptions()
+        {
+            HttpHandler = handler,
+        });
+
+        return channel;
     }
 
     protected override void Dispose(bool disposing)
