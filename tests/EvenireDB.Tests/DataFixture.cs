@@ -43,9 +43,9 @@ public class DataFixture : IAsyncLifetime
     public Event[] BuildEvents(int count, byte[]? data = null)
         => Enumerable.Range(0, count).Select(i => new Event(new EventId(DateTime.UtcNow.Ticks, i), "lorem", data ?? GenerateRandomData())).ToArray();
 
-    private static byte[] GenerateRandomData()
+    public static byte[] GenerateRandomData(int minSize = 10, int maxSize = 1000)
     {
-        var length = Random.Shared.Next(10, 1000);
+        var length = Random.Shared.Next(minSize, maxSize);
         var data = new byte[length];
         Random.Shared.NextBytes(data);
         return data;

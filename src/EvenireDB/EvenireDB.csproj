@@ -16,6 +16,7 @@
 
 	<ItemGroup>
 		<InternalsVisibleTo Include="EvenireDB.Tests" />
+		<InternalsVisibleTo Include="EvenireDB.Tools.Benchmark" />
 
 		<!-- Required for NSubstitute to create mocks for internal classes (eg. ILogger<StreamInfoProvider> )-->
 		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />

@@ -12,11 +12,11 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         _fixture = fixture;
     }
 
-    private EventsProvider CreateSut(out IExtentsProvider extentInfoProvider)
+    private EventsProvider CreateSut(out IExtentsProvider extentInfoProvider, int bufferSize = 4096)
     {
         var config = _fixture.CreateExtentsConfig();
         extentInfoProvider = new ExtentsProvider(config);
-        var dataRepo = new DataRepository();
+        var dataRepo = new DataRepository(bufferSize);
         var headersRepo = new HeadersRepository();
         return new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
     }
@@ -142,5 +142,27 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var events = await sut.ReadAsync(streamId, 100, 10).ToArrayAsync();
         Assert.NotNull(events);
         Assert.Empty(events);
+    }
+
+    [Fact]
+    public async Task ReadAsync_should_read_events_bigger_Than_buffer_size()
+    {
+        var data = DataFixture.GenerateRandomData(8192, 16384);
+        var expectedEvents = _fixture.BuildEvents(10, data);
+
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
+
+        var sut = CreateSut(out var _, 4096);
+
+        await sut.AppendAsync(streamId, expectedEvents);
+
+        var events = await sut.ReadAsync(streamId).ToArrayAsync();
+        Assert.NotNull(events);
+        Assert.Equal(10, events.Length);
+
+        for (int i = 0; i != 10; i++)
+        {
+            Assert.Equal(expectedEvents[i].Id, events[i].Id);
+        }
     }
 }
