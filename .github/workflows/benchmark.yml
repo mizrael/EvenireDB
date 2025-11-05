@@ -7,7 +7,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-22.04
+    runs-on: windows-2022
     cancel-timeout-minutes: 360
     timeout-minutes: 360
 
