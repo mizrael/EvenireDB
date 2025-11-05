@@ -18,15 +18,10 @@ jobs:
       with:
         dotnet-version: 9.0.x
 
-    - name: Restore dependencies
-      run: |
-        cd ./src
-        dotnet restore
-
     - name: Build
       run: |
         cd ./src
-        dotnet build --no-restore -c Release
+        dotnet build -c Release
 
     - name: Run Benchmarks
       run: |
