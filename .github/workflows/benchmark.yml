@@ -31,5 +31,10 @@ jobs:
         dotnet run --no-build -c Release --project ./tools/EvenireDB.Tools.Benchmark/EvenireDB.Tools.Benchmark.csproj -- --exporters JSON --filter EvenireDB.Benchmark*
 
     - name: Upload Benchmark Results
-      run: |
-        cd ./BenchmarkDotNet.Artifacts/results/
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          cd ./BenchmarkDotNet.Artifacts/results/
+          az storage container create --name results --account-name saevenirebenchmarks --connection-string "${{ secrets.SA_CONN_STR }}" 
+          az storage blob upload-batch --account-name saevenirebenchmarks --destination results --destination-path "${{ github.run_id }}" --pattern *.json --source . --connection-string "${{ secrets.SA_CONN_STR }}"
