@@ -7,7 +7,9 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    cancel-timeout-minutes: 360
+    timeout-minutes: 360
 
     steps:
     - uses: actions/checkout@v4
