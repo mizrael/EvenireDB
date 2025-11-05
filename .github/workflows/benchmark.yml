@@ -29,3 +29,7 @@ jobs:
     - name: Run Benchmarks
       run: |
         dotnet run --no-build -c Release --project ./tools/EvenireDB.Tools.Benchmark/EvenireDB.Tools.Benchmark.csproj -- --exporters JSON --filter EvenireDB.Benchmark*
+
+    - name: Upload Benchmark Results
+      run: |
+        cd ./BenchmarkDotNet.Artifacts/results/

@@ -39,10 +39,8 @@ public class GrpcApiBenchmark : IAsyncDisposable
         var client = new GrpcEvents.EventsGrpcService.EventsGrpcServiceClient(_grpcChannel);
         _eventsClient = new GrpcEventsClient(client);
 
-        _streamId = new StreamId($"benchmark-stream-{this.EventSize}");
-        _events = Enumerable.Range(0, this.EventsCount)
-            .Select(i => Client.EventData.Create(new { id = i, data = new string('x', this.EventSize) }))
-            .ToArray();
+        _streamId = new StreamId($"benchmark-stream-{this.MaxEventSize}");
+        _events = Utils.CreateClientEvents(this.EventsCount, this.MaxEventSize / 2, this.MaxEventSize);
     }
 
     [GlobalCleanup]
@@ -55,9 +53,9 @@ public class GrpcApiBenchmark : IAsyncDisposable
     }
 
     [Params(10240)]
-    public int EventSize { get; set; }
+    public int MaxEventSize { get; set; }
 
-    [Params(100)]
+    [Params(10, 100, 1000)]
     public int EventsCount { get; set; }
 
     [Benchmark(Baseline = true)]
@@ -66,3 +64,4 @@ public class GrpcApiBenchmark : IAsyncDisposable
         await _eventsClient!.AppendAsync(_streamId, _events);
     }
 }
+

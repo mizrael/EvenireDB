@@ -2,7 +2,6 @@
 using BenchmarkDotNet.Jobs;
 using EvenireDB.Common;
 using EvenireDB.Persistence;
-using System.Text;
 
 namespace EvenireDB.Benchmark;
 
@@ -22,7 +21,7 @@ public class EventsProviderReadBenchmark
 
     [GlobalSetup]
     public async Task Setup()
-    { 
+    {
         _extentsBasePath = Path.Combine(Path.GetTempPath(), "EvenireDB", "Benchmark", nameof(EventsProviderReadBenchmark), DateTimeOffset.UtcNow.UtcTicks.ToString());
         _extentsProvider = new ExtentsProvider(new(_extentsBasePath));
         _headersRepository = new HeadersRepository();
@@ -31,10 +30,7 @@ public class EventsProviderReadBenchmark
 
         _streamId = new StreamId(nameof(EventsProviderReadBenchmark));
 
-        var events = Enumerable.Range(0, this.EventsCount)
-                                .Select(i => new Event(new EventId(i, 0), "test", 
-                                                       Encoding.UTF8.GetBytes(new string('x', Random.Shared.Next(131, this.MaxEventSize)))))
-                                .ToArray();
+        var events = Utils.CreateEvents(this.EventsCount, this.MaxEventSize / 2, this.MaxEventSize);
         await _eventsProvider.AppendAsync(_streamId, events);
     }
 
