@@ -27,7 +27,7 @@ public class GrpcTests : IClassFixture<ServerFixture>
             StreamType = "lorem"
         };
         var response = client.Read(req);
-        var loadedEvents = await response.ResponseStream.ReadAllAsync().ToListAsync();
+        var loadedEvents = await response.ResponseStream.ReadAllAsync().ToArrayAsync();
         Assert.Empty(loadedEvents);
     }
 
