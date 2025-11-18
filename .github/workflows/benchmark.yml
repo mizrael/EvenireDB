@@ -8,7 +8,6 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-    timeout-minutes: 360
 
     steps:
     - uses: actions/checkout@v4
@@ -28,6 +27,7 @@ jobs:
         dotnet build --no-restore -c Release
 
     - name: Run Benchmarks
+      timeout-minutes: 360
       run: |
         dotnet run --no-build -c Release --project ./tools/EvenireDB.Tools.Benchmark/EvenireDB.Tools.Benchmark.csproj -- --exporters JSON --filter EvenireDB.Benchmark*
 
