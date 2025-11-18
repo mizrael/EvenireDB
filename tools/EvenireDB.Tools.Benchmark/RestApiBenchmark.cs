@@ -5,7 +5,7 @@ using EvenireDB.Common;
 
 namespace EvenireDB.Benchmark;
 
-[SimpleJob(RuntimeMoniker.Net90)]
+[SimpleJob(RuntimeMoniker.Net10_0)]
 [MemoryDiagnoser]
 [ThreadingDiagnoser]
 public class RestApiBenchmark : IAsyncDisposable

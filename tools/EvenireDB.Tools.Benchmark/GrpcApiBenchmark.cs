@@ -6,7 +6,7 @@ using Grpc.Net.Client;
 
 namespace EvenireDB.Benchmark;
 
-[SimpleJob(RuntimeMoniker.Net90)]
+[SimpleJob(RuntimeMoniker.Net10_0)]
 [MemoryDiagnoser]
 [ThreadingDiagnoser]
 public class GrpcApiBenchmark : IAsyncDisposable
