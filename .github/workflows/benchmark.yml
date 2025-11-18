@@ -8,7 +8,6 @@ jobs:
   build:
 
     runs-on: windows-2022
-    cancel-timeout-minutes: 360
     timeout-minutes: 360
 
     steps:
@@ -16,12 +15,17 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 10.0.x
+
+    - name: Restore dependencies
+      run: |
+        cd ./src
+        dotnet restore
 
     - name: Build
       run: |
         cd ./src
-        dotnet build -c Release
+        dotnet build --no-restore -c Release
 
     - name: Run Benchmarks
       run: |
