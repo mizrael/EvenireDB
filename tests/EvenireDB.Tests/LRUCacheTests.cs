@@ -95,6 +95,7 @@ public class LRUCacheTests
         sut.AddOrUpdate("key", 2);
         var result = await sut.GetOrAddAsync("key", (_, _) => ValueTask.FromResult(1));
         Assert.Equal(1u, sut.Count);
+        Assert.Equal(2, result);
     }
 
     [Fact]

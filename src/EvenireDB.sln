@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EvenireDB.Client.Tests", ".
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{CDD60004-8C27-46E1-9235-9376B86E9003}"
 	ProjectSection(SolutionItems) = preProject
-		..\tests\tests.runsettings = ..\tests\tests.runsettings
+		..\tests.runsettings = ..\tests.runsettings
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{967C1ED1-EA6E-4C72-BB85-38D8D3057A5F}"

@@ -30,7 +30,7 @@ internal class HttpEventsClient : IEventsClient
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var endpoint = $"/api/v1/streams/{streamId.Type}/{streamId.Key}/events?pos={position}&dir={(int)direction}";
-        var response = await _httpClient.GetAsync(endpoint, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+        using var response = await _httpClient.GetAsync(endpoint, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
                                         .ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
@@ -64,7 +64,7 @@ internal class HttpEventsClient : IEventsClient
             }
         };
 
-        var response = await _httpClient.SendAsync(request, cancellationToken)
+        using var response = await _httpClient.SendAsync(request, cancellationToken)
                                         .ConfigureAwait(false);
 
         if (!response.IsSuccessStatusCode)

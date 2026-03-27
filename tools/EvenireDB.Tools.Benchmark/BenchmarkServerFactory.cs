@@ -59,5 +59,7 @@ public class BenchmarkServerFactory : WebApplicationFactory<Program>
                 // best effort
             }
         }
+
+        base.Dispose(disposing);
     }
 }

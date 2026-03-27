@@ -47,14 +47,14 @@ internal class HeadersRepository : IHeadersRepository
 
                 if (batchCount == _settings.AppendBatchCapacity)
                 {
-                    await WriteBatchAsync(stream, headerBatch.AsSpan(0, batchCount), cancellationToken).ConfigureAwait(false);
+                    await WriteBatchAsync(stream, headerBatch, batchCount, cancellationToken).ConfigureAwait(false);
                     batchCount = 0;
                 }
             }
 
             if (batchCount > 0)
             {
-                await WriteBatchAsync(stream, headerBatch.AsSpan(0, batchCount), cancellationToken).ConfigureAwait(false);
+                await WriteBatchAsync(stream, headerBatch, batchCount, cancellationToken).ConfigureAwait(false);
             }
 
             await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -100,7 +100,7 @@ internal class HeadersRepository : IHeadersRepository
                 stream.Seek(offset, SeekOrigin.Begin);
             }
 
-            var remaining = batchTarget;
+            var remaining = take ?? int.MaxValue;
 
             while (!cancellationToken.IsCancellationRequested && remaining > 0)
             {
@@ -138,18 +138,18 @@ internal class HeadersRepository : IHeadersRepository
         }
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ValueTask WriteBatchAsync(
+    private static async ValueTask WriteBatchAsync(
         FileStream stream,
-        ReadOnlySpan<RawHeader> headers,
+        RawHeader[] headers,
+        int count,
         CancellationToken ct)
     {
-        int byteLen = headers.Length * HeaderSize;
+        int byteLen = count * HeaderSize;
         byte[] rented = ArrayPool<byte>.Shared.Rent(byteLen);
         try
         {
-            MemoryMarshal.AsBytes(headers).CopyTo(rented.AsSpan(0, byteLen));
-            return stream.WriteAsync(rented.AsMemory(0, byteLen), ct);
+            MemoryMarshal.AsBytes(headers.AsSpan(0, count)).CopyTo(rented.AsSpan(0, byteLen));
+            await stream.WriteAsync(rented.AsMemory(0, byteLen), ct).ConfigureAwait(false);
         }
         finally
         {
