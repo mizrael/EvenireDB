@@ -21,23 +21,23 @@ internal class DataRepository : IDataRepository
         IAsyncEnumerable<RawHeader> headers,
         CancellationToken cancellationToken = default)
     {
-        using var stream = new FileStream(extentInfo.DataPath, FileMode.Open, FileAccess.Read, FileShare.Read,
+        using var dataStream = new FileStream(extentInfo.DataPath, FileMode.Open, FileAccess.Read, FileShare.Read,
                                           bufferSize: _bufferSize, useAsync: true);
         
         var typeBuffer = ArrayPool<byte>.Shared.Rent(Constants.MAX_EVENT_TYPE_LENGTH);
+        var typeMemory = typeBuffer.AsMemory(0, Constants.MAX_EVENT_TYPE_LENGTH);
 
         try
         {
             await foreach (var header in headers)
             {
-                stream.Position = header.DataOffset;
-
-                var typeMemory = typeBuffer.AsMemory(0, Constants.MAX_EVENT_TYPE_LENGTH);
-                await stream.ReadExactlyAsync(typeMemory, cancellationToken);
+                dataStream.Position = header.DataOffset;
+                
+                await dataStream.ReadExactlyAsync(typeMemory, cancellationToken);
                 var eventType = Encoding.UTF8.GetString(typeBuffer, 0, header.TypeLength);
 
                 var destEventData = new byte[header.DataLength];
-                await stream.ReadExactlyAsync(destEventData, 0, header.DataLength, cancellationToken);
+                await dataStream.ReadExactlyAsync(destEventData, 0, header.DataLength, cancellationToken);
 
                 var eventId = new EventId(header.IdTimestamp, header.IdSequence);
                 var @event = new Event(eventId, eventType, destEventData);

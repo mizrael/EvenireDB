@@ -4,34 +4,64 @@ using System.Runtime.InteropServices;
 
 namespace EvenireDB.Persistence;
 
+internal record HeadersRepositorySettings(
+    int AppendBatchCapacity = 512,
+    int MaxPageSize = 100);
+
 internal class HeadersRepository : IHeadersRepository
 {
-    private readonly int _headerSize = Marshal.SizeOf<RawHeader>();
+    private static readonly int HeaderSize = Unsafe.SizeOf<RawHeader>();
 
-    public async ValueTask AppendAsync(ExtentInfo extentInfo, IAsyncEnumerable<RawHeader> headers, CancellationToken cancellationToken = default)
+    private readonly HeadersRepositorySettings _settings;
+
+    public HeadersRepository(HeadersRepositorySettings settings)
     {
-        ArgumentNullException.ThrowIfNull(extentInfo, nameof(extentInfo));
-        
-        var headerSize = Marshal.SizeOf<RawHeader>();
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(headerSize);
+        _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+    }
 
-        var streamBufferSize = headerSize * 100;
+    public async ValueTask AppendAsync(
+        ExtentInfo extentInfo,
+        IAsyncEnumerable<RawHeader> headers,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(extentInfo);
+
+        var headerBatch = ArrayPool<RawHeader>.Shared.Rent(_settings.AppendBatchCapacity);
+        int batchCount = 0;
+
+        using var stream = new FileStream(
+            extentInfo.HeadersPath,
+            FileMode.Append,
+            FileAccess.Write,
+            FileShare.Read,
+            bufferSize: HeaderSize * _settings.AppendBatchCapacity,
+            options: FileOptions.Asynchronous | FileOptions.SequentialScan);
 
         try
         {
-            using var stream = new FileStream(extentInfo.HeadersPath, FileMode.Append, FileAccess.Write,
-                                             FileShare.Read, bufferSize: streamBufferSize, useAsync: true);
-
-            await foreach (var header in headers)
+            await foreach (var header in headers.WithCancellation(cancellationToken).ConfigureAwait(false))
             {
-                var tmpHeader = header;
-                MemoryMarshal.Write(buffer.AsSpan(0, headerSize), in tmpHeader);
-                await stream.WriteAsync(buffer, 0, headerSize, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+
+                headerBatch[batchCount++] = header;
+
+                if (batchCount == _settings.AppendBatchCapacity)
+                {
+                    await WriteBatchAsync(stream, headerBatch.AsSpan(0, batchCount), cancellationToken).ConfigureAwait(false);
+                    batchCount = 0;
+                }
             }
+
+            if (batchCount > 0)
+            {
+                await WriteBatchAsync(stream, headerBatch.AsSpan(0, batchCount), cancellationToken).ConfigureAwait(false);
+            }
+
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(buffer);
+            ArrayPool<RawHeader>.Shared.Return(headerBatch, clearArray: false);
         }
     }
 
@@ -41,37 +71,89 @@ internal class HeadersRepository : IHeadersRepository
         int? take = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var streamBufferSize = _headerSize * take.GetValueOrDefault(100);
+        ArgumentNullException.ThrowIfNull(extentInfo);
 
-        using var stream = new FileStream(extentInfo.HeadersPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: streamBufferSize, useAsync: true);
+        // Calculate how many headers we actually aim to read per batch.
+        int batchTarget = take.HasValue
+            ? Math.Min(_settings.MaxPageSize, Math.Max(1, take.Value))
+            : _settings.MaxPageSize;
 
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(_headerSize);
+        // Rent byte buffer sized for batch of headers.
+        int byteBatchSize = HeaderSize * batchTarget;
+        byte[] byteBuffer = ArrayPool<byte>.Shared.Rent(byteBatchSize);
+
+        using var stream = new FileStream(
+            extentInfo.HeadersPath,
+            FileMode.Open,
+            FileAccess.Read,
+            FileShare.Read,
+            bufferSize: byteBatchSize,
+            options: FileOptions.Asynchronous | FileOptions.SequentialScan);
 
         try
         {
-            if (skip.HasValue)
-                stream.Seek(skip.Value * _headerSize, SeekOrigin.Begin);
-
-            while (!cancellationToken.IsCancellationRequested)
+            if (skip.HasValue && skip.Value > 0)
             {
-                var bytesRead = await stream.ReadAsync(buffer, 0, _headerSize, cancellationToken);
-                if (bytesRead == 0)
-                    yield break;
+                long offset = (long)skip.Value * HeaderSize;
+                if (offset > stream.Length)
+                    yield break; // skip beyond end
+                stream.Seek(offset, SeekOrigin.Begin);
+            }
 
-                if (take.HasValue)
+            var remaining = batchTarget;
+
+            while (!cancellationToken.IsCancellationRequested && remaining > 0)
+            {
+                // Adjust last batch if we have a bounded remaining.
+                int headersToReadThisBatch = Math.Min(batchTarget, remaining);
+                int bytesToRead = headersToReadThisBatch * HeaderSize;
+
+                int totalRead = 0;
+                while (totalRead < bytesToRead)
                 {
-                    take--;
-                    if (take.Value < 0)
-                        yield break;
+                    int read = await stream.ReadAsync(byteBuffer, totalRead, bytesToRead - totalRead, cancellationToken).ConfigureAwait(false);
+                    if (read == 0)
+                    {
+                        remaining = 0;
+                        break;
+                    }
+
+                    totalRead += read;
                 }
 
-                var header = MemoryMarshal.Read<RawHeader>(buffer.AsSpan(0, _headerSize));
-                yield return header;
+                var bytes = byteBuffer.AsSpan(0, totalRead);
+                var actualHeadersRead = bytes.Length / HeaderSize;
+                var headersArray = new RawHeader[actualHeadersRead];
+                MemoryMarshal.Cast<byte, RawHeader>(bytes).CopyTo(headersArray);
+
+                for (int i = 0; i < headersArray.Length; i++)
+                    yield return headersArray[i];
+
+                remaining -= headersArray.Length;
             }
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(buffer);
+            ArrayPool<byte>.Shared.Return(byteBuffer, clearArray: false);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ValueTask WriteBatchAsync(
+        FileStream stream,
+        ReadOnlySpan<RawHeader> headers,
+        CancellationToken ct)
+    {
+        int byteLen = headers.Length * HeaderSize;
+        byte[] rented = ArrayPool<byte>.Shared.Rent(byteLen);
+        try
+        {
+            MemoryMarshal.AsBytes(headers).CopyTo(rented.AsSpan(0, byteLen));
+            return stream.WriteAsync(rented.AsMemory(0, byteLen), ct);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented, clearArray: false);
         }
     }
 }

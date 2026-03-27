@@ -8,16 +8,16 @@ internal class StreamInfoProvider : IStreamInfoProvider
 {
     private readonly int _headerSize = Marshal.SizeOf<RawHeader>();
     private readonly IExtentsProvider _extentInfoProvider;
-    private readonly IStreamsCache _cache;
+    private readonly IStreamsCache _streamsCache;
     private readonly ILogger<StreamInfoProvider> _logger;
 
     public StreamInfoProvider(
         IExtentsProvider extentInfoProvider,
-        IStreamsCache cache,
+        IStreamsCache streamsCache,
         ILogger<StreamInfoProvider> logger)
     {
         _extentInfoProvider = extentInfoProvider ?? throw new ArgumentNullException(nameof(extentInfoProvider));
-        _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+        _streamsCache = streamsCache ?? throw new ArgumentNullException(nameof(streamsCache));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -35,7 +35,7 @@ internal class StreamInfoProvider : IStreamInfoProvider
         return new StreamInfo(
             streamId,
             headersCount,
-            _cache.Contains(streamId),
+            _streamsCache.Contains(streamId),
             fileInfo.CreationTimeUtc,
             fileInfo.LastWriteTimeUtc);
     }
@@ -64,7 +64,7 @@ internal class StreamInfoProvider : IStreamInfoProvider
         {
             await _extentInfoProvider.DeleteExtentsAsync(streamId, cancellationToken);
 
-            _cache.Remove(streamId);
+            _streamsCache.Remove(streamId);
         }
         catch (Exception ex)
         {

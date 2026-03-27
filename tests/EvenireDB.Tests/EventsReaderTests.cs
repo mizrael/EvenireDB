@@ -19,7 +19,7 @@ public class EventsReaderTests
     }
 
     [Fact]
-    public async Task ReadAsync_should_pull_data_from_repo_on_cache_miss()
+    public async Task ReadAsync_should_return_first_page_when_reading_from_start()
     {
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
@@ -108,9 +108,9 @@ public class EventsReaderTests
 
         var sut = new EventsReader(EventsReaderConfig.Default, cache);
 
-        var startPosition = EventsReaderConfig.Default.MaxPageSize / 2;
+        StreamPosition startPosition = (uint)(EventsReaderConfig.Default.MaxPageSize / 2);
 
-        var expectedEvents = sourceEvents.Take((int)startPosition+1).Reverse();
+        var expectedEvents = sourceEvents.Take((int)(uint)startPosition+1).Reverse();
 
         var loadedEvents = await sut.ReadAsync(streamId, startPosition: startPosition, direction: Direction.Backward)
                                     .ToListAsync();

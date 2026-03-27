@@ -12,12 +12,12 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         _fixture = fixture;
     }
 
-    private EventsProvider CreateSut(out IExtentsProvider extentInfoProvider, int bufferSize = 4096)
+    private EventsProvider CreateSut(out IExtentsProvider extentInfoProvider, int bufferSize = 4096, int maxPageSize = 100)
     {
         var config = _fixture.CreateExtentsConfig();
         extentInfoProvider = new ExtentsProvider(config);
         var dataRepo = new DataRepository(bufferSize);
-        var headersRepo = new HeadersRepository();
+        var headersRepo = new HeadersRepository(new HeadersRepositorySettings(MaxPageSize: maxPageSize));
         return new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
     }
 
@@ -85,6 +85,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
     }
 
     [Theory]
+    [InlineData(1, 1)]
+    [InlineData(1, 10)]
+    [InlineData(42, 1)]
     [InlineData(42, 71)]
     public async Task ReadAsync_should_read_events_appended_in_batches(int batchesCount, int eventsPerBatch)
     {
@@ -94,7 +97,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
 
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
-        var sut = CreateSut(out var _);
+        var eventsCount = batchesCount * eventsPerBatch;
+
+        var sut = CreateSut(out var _, maxPageSize: eventsCount);
 
         foreach (var events in batches)
             await sut.AppendAsync(streamId, events);

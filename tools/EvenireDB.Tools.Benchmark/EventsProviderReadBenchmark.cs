@@ -24,7 +24,7 @@ public class EventsProviderReadBenchmark
     {
         _extentsBasePath = Path.Combine(Path.GetTempPath(), "EvenireDB", "Benchmark", nameof(EventsProviderReadBenchmark), DateTimeOffset.UtcNow.UtcTicks.ToString());
         _extentsProvider = new ExtentsProvider(new(_extentsBasePath));
-        _headersRepository = new HeadersRepository();
+        _headersRepository = new HeadersRepository(new HeadersRepositorySettings());
         _dataRepository = new DataRepository(this.BufferSize);
         _eventsProvider = new EventsProvider(_headersRepository, _dataRepository, _extentsProvider);
 

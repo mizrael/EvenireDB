@@ -5,12 +5,7 @@ public record EvenireServerSettings
     /// <summary>
     /// max page size returned to clients
     /// </summary>
-    public uint MaxPageSizeToClient { get; init; } = 100;
-
-    /// <summary>
-    /// max page size when parsing events from disk
-    /// </summary>
-    public uint MaxEventsPageSizeFromDisk { get; init; } = 100;
+    public int MaxPageSize { get; init; } = 100;
 
     /// <summary>
     /// max allowed event data size
