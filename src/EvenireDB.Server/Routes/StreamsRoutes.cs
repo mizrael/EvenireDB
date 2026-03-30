@@ -1,6 +1,5 @@
 ﻿using EvenireDB.Common;
 using EvenireDB.Server.DTO;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EvenireDB.Server.Routes;
@@ -65,6 +64,7 @@ public static class StreamsRoutes
         }       
     }
 
+    //TODO: add max page size
     private static async IAsyncEnumerable<EventDTO> GetEventsAsync(
         [FromServices] IEventsReader reader,
         string streamType, 

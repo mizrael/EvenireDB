@@ -22,45 +22,37 @@ internal class EventsReader : IEventsReader
         Direction direction = Direction.Forward,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {        
-        if (startPosition < 0)
-            throw new ArgumentOutOfRangeException(nameof(startPosition));
-
         CachedEvents entry = await _cache.GetEventsAsync(streamId, cancellationToken).ConfigureAwait(false);
 
         if (entry?.Events == null || entry.Events.Count == 0)
             yield break;
 
-        uint totalCount = (uint)entry.Events.Count;
-        uint pos = startPosition;
+        int totalCount = entry.Events.Count;
 
         if (direction == Direction.Forward)
         {
-            if (totalCount < startPosition)
+            if (totalCount < (uint)startPosition)
                 yield break;
 
-            uint j = 0, i = pos,
-                finalCount = Math.Min(_config.MaxPageSize, totalCount - i);
+            int i = (int)(uint)startPosition;
+            int finalCount = Math.Min(_config.MaxPageSize, totalCount - i);
 
-            while (j++ != finalCount)
-            {
-                yield return entry.Events[(int)i++];
-            }
+            for (int j = 0; j < finalCount; j++)
+                yield return entry.Events[i++];
         }
         else
         {
-            if (startPosition == StreamPosition.End)
-                pos = totalCount - 1;
+            int pos = startPosition == StreamPosition.End
+                ? totalCount - 1
+                : (int)(uint)startPosition;
 
             if (pos >= totalCount)
                 yield break;
 
-            uint j = 0, i = pos,
-                  finalCount = Math.Min(_config.MaxPageSize, i + 1);
+            int finalCount = Math.Min(_config.MaxPageSize, pos + 1);
 
-            while (j++ != finalCount)
-            {
-                yield return entry.Events[(int)i--];
-            }
+            for (int j = 0; j < finalCount; j++)
+                yield return entry.Events[pos--];
         }
     }
 }

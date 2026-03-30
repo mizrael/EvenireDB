@@ -12,12 +12,12 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         _fixture = fixture;
     }
 
-    private EventsProvider CreateSut(out IExtentsProvider extentInfoProvider)
+    private EventsProvider CreateSut(out IExtentsProvider extentInfoProvider, int bufferSize = 4096, int maxPageSize = 100)
     {
         var config = _fixture.CreateExtentsConfig();
         extentInfoProvider = new ExtentsProvider(config);
-        var dataRepo = new DataRepository();
-        var headersRepo = new HeadersRepository();
+        var dataRepo = new DataRepository(bufferSize);
+        var headersRepo = new HeadersRepository(new HeadersRepositorySettings(MaxPageSize: maxPageSize));
         return new EventsProvider(headersRepo, dataRepo, extentInfoProvider);
     }
 
@@ -35,7 +35,7 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         await sut.AppendAsync(streamId, events);
 
         var extentInfo = extentInfoProvider.GetExtentInfo(streamId);
-        var bytes = File.ReadAllBytes(extentInfo.DataPath);
+        var bytes = File.ReadAllBytes(extentInfo!.DataPath);
         Assert.Equal(expectedFileSize, bytes.Length);
     }
 
@@ -55,7 +55,7 @@ public class EventsProviderTests : IClassFixture<DataFixture>
             await sut.AppendAsync(streamId, events);
 
         var extentInfo = extentInfoProvider.GetExtentInfo(streamId);
-        var bytes = File.ReadAllBytes(extentInfo.DataPath);
+        var bytes = File.ReadAllBytes(extentInfo!.DataPath);
         Assert.Equal(expectedFileSize, bytes.Length);
     }
 
@@ -73,18 +73,21 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         await sut.AppendAsync(streamId, expectedEvents);
 
         var events = await sut.ReadAsync(streamId).ToArrayAsync();
-        events.Should().NotBeNullOrEmpty()
-                .And.HaveCount(eventsCount);
+        Assert.NotNull(events);
+        Assert.Equal(eventsCount, events.Length);
 
         for (int i = 0; i != eventsCount; i++)
         {
-            events[i].Id.Should().Be(expectedEvents[i].Id);
-            events[i].Type.Should().Be(expectedEvents[i].Type);
-            events[i].Data.ToArray().Should().BeEquivalentTo(expectedEvents[i].Data.ToArray());
+            Assert.Equal(expectedEvents[i].Id, events[i].Id);
+            Assert.Equal(expectedEvents[i].Type, events[i].Type);
+            Assert.Equal(expectedEvents[i].Data.ToArray(), events[i].Data.ToArray());
         }
     }
 
     [Theory]
+    [InlineData(1, 1)]
+    [InlineData(1, 10)]
+    [InlineData(42, 1)]
     [InlineData(42, 71)]
     public async Task ReadAsync_should_read_events_appended_in_batches(int batchesCount, int eventsPerBatch)
     {
@@ -94,7 +97,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
 
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
 
-        var sut = CreateSut(out var _);
+        var eventsCount = batchesCount * eventsPerBatch;
+
+        var sut = CreateSut(out var _, maxPageSize: eventsCount);
 
         foreach (var events in batches)
             await sut.AppendAsync(streamId, events);
@@ -102,8 +107,9 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         var expectedEvents = batches.SelectMany(e => e).ToArray();
 
         var loadedEvents = await sut.ReadAsync(streamId).ToListAsync();
-        loadedEvents.Should().NotBeNullOrEmpty()
-                     .And.HaveCount(batchesCount * eventsPerBatch);
+
+        Assert.NotNull(loadedEvents);
+        Assert.Equal(batchesCount * eventsPerBatch, loadedEvents.Count);
     }
 
     [Fact]
@@ -118,12 +124,12 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         await sut.AppendAsync(streamId, expectedEvents);
 
         var events = await sut.ReadAsync(streamId, 4, 10).ToArrayAsync();
-        events.Should().NotBeNullOrEmpty()
-                .And.HaveCount(10);
+        Assert.NotNull(events);
+        Assert.Equal(10, events.Length);
 
         for (int i = 0; i != 10; i++)
         {
-            events[i].Id.Sequence.Should().Be(4 + i);
+            Assert.Equal(expectedEvents[4 + i].Id, events[i].Id);
         }
     }
 
@@ -139,7 +145,29 @@ public class EventsProviderTests : IClassFixture<DataFixture>
         await sut.AppendAsync(streamId, expectedEvents);
 
         var events = await sut.ReadAsync(streamId, 100, 10).ToArrayAsync();
-        events.Should().NotBeNull()
-                .And.BeEmpty();
+        Assert.NotNull(events);
+        Assert.Empty(events);
+    }
+
+    [Fact]
+    public async Task ReadAsync_should_read_events_bigger_Than_buffer_size()
+    {
+        var data = DataFixture.GenerateRandomData(8192, 16384);
+        var expectedEvents = _fixture.BuildEvents(10, data);
+
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
+
+        var sut = CreateSut(out var _, 4096);
+
+        await sut.AppendAsync(streamId, expectedEvents);
+
+        var events = await sut.ReadAsync(streamId).ToArrayAsync();
+        Assert.NotNull(events);
+        Assert.Equal(10, events.Length);
+
+        for (int i = 0; i != 10; i++)
+        {
+            Assert.Equal(expectedEvents[i].Id, events[i].Id);
+        }
     }
 }

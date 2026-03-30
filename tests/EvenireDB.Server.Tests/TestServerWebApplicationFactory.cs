@@ -16,7 +16,7 @@ public class TestServerWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureAppConfiguration((ctx, configBuilder) =>
         {
-            configBuilder.AddInMemoryCollection(new Dictionary<string, string>
+            configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 { "Evenire:DataFolder", _dataFolder.FullName },
                 { "Evenire:HttpSettings:Port", Random.Shared.Next(8000, int.MaxValue).ToString() },

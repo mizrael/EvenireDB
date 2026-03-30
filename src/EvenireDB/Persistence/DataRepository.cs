@@ -9,35 +9,35 @@ namespace EvenireDB.Persistence;
 internal class DataRepository : IDataRepository
 {
     private readonly ConcurrentDictionary<string, byte[]> _eventTypes = new();
+    private readonly int _bufferSize;
+
+    public DataRepository(int bufferSize = 262144)
+    {
+        _bufferSize = bufferSize;
+    }
 
     public async IAsyncEnumerable<Event> ReadAsync(
         ExtentInfo extentInfo,
         IAsyncEnumerable<RawHeader> headers,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default)
     {
-        var bufferSize = 500_000;
-
-        using var stream = new FileStream(extentInfo.DataPath, FileMode.Open, FileAccess.Read, FileShare.Read,
-                                         bufferSize: bufferSize, useAsync: true);
-        var dataBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+        using var dataStream = new FileStream(extentInfo.DataPath, FileMode.Open, FileAccess.Read, FileShare.Read,
+                                          bufferSize: _bufferSize, useAsync: true);
+        
         var typeBuffer = ArrayPool<byte>.Shared.Rent(Constants.MAX_EVENT_TYPE_LENGTH);
+        var typeMemory = typeBuffer.AsMemory(0, Constants.MAX_EVENT_TYPE_LENGTH);
 
         try
         {
             await foreach (var header in headers)
             {
-                stream.Position = header.DataOffset;
-
-                var typeMemory = typeBuffer.AsMemory(0, Constants.MAX_EVENT_TYPE_LENGTH);
-                await stream.ReadAsync(typeMemory, cancellationToken);
-
-                var memory = dataBuffer.AsMemory(0, header.DataLength);
-                await stream.ReadAsync(memory, cancellationToken);
+                dataStream.Position = header.DataOffset;
+                
+                await dataStream.ReadExactlyAsync(typeMemory, cancellationToken);
+                var eventType = Encoding.UTF8.GetString(typeBuffer, 0, header.TypeLength);
 
                 var destEventData = new byte[header.DataLength];
-                memory.CopyTo(destEventData);
-
-                var eventType = Encoding.UTF8.GetString(typeBuffer, 0, header.TypeLength);
+                await dataStream.ReadExactlyAsync(destEventData, 0, header.DataLength, cancellationToken);
 
                 var eventId = new EventId(header.IdTimestamp, header.IdSequence);
                 var @event = new Event(eventId, eventType, destEventData);
@@ -46,7 +46,6 @@ internal class DataRepository : IDataRepository
         }
         finally
         {
-            ArrayPool<byte>.Shared.Return(dataBuffer);
             ArrayPool<byte>.Shared.Return(typeBuffer);
         }
     }
@@ -82,7 +81,7 @@ internal class DataRepository : IDataRepository
                     dataOffset: stream.Position,
                     dataLen: @event.Data.Length
                 );
-            
+
             await stream.WriteAsync(eventType, cancellationToken).ConfigureAwait(false);
             await stream.WriteAsync(@event.Data, cancellationToken).ConfigureAwait(false);
 

@@ -34,7 +34,12 @@ public static class IServiceCollectionExtensions
         .AddSingleton(ctx =>
         {
             var settings = ctx.GetServerSettings();
-            return new EventsReaderConfig(settings.MaxPageSizeToClient);
+            return new EventsReaderConfig(settings.MaxPageSize);
+        })
+        .AddSingleton(ctx =>
+        {
+            var settings = ctx.GetServerSettings();
+            return new HeadersRepositorySettings(MaxPageSize: settings.MaxPageSize);
         })
         .AddSingleton(TimeProvider.System)
         .AddSingleton<IEventIdGenerator, EventIdGenerator>()
@@ -46,11 +51,6 @@ public static class IServiceCollectionExtensions
         {
             var settings = ctx.GetServerSettings();
             return new EventDataValidator(settings.MaxEventDataSize);
-        })
-        .AddSingleton(ctx =>
-        {
-            var settings = ctx.GetServerSettings();
-            return new FileEventsRepositoryConfig(settings.MaxEventsPageSizeFromDisk);
         })
         .AddSingleton(ctx =>
         {

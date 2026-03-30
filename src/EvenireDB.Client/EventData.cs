@@ -3,6 +3,9 @@ using System.Text.Json;
 
 namespace EvenireDB.Client;
 
+/// <summary>
+/// The event data. Normally used when sending events to the server.
+/// </summary>
 public record EventData
 {
     public EventData(string type, ReadOnlyMemory<byte> data)

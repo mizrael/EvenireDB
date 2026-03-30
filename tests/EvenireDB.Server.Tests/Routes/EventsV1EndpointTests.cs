@@ -20,10 +20,11 @@ public class EventsV1EndpointTests : IClassFixture<ServerFixture>
 
         using var client = application.CreateClient();
         var response = await client.GetAsync($"/api/v1/streams/{_defaultStreamsType}/{Guid.NewGuid()}/events");
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.OK);
+        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
 
         var events = await response.Content.ReadFromJsonAsync<EventDTO[]>();
-        events.Should().NotBeNull().And.BeEmpty();
+        Assert.NotNull(events);
+        Assert.Empty(events);
     }
 
     [Fact]
@@ -33,8 +34,8 @@ public class EventsV1EndpointTests : IClassFixture<ServerFixture>
 
         await using var application = _serverFixture.CreateServer();
         using var client = application.CreateClient();
-        var nullPayloadResponse = await client.PostAsJsonAsync<EventDataDTO[]>($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", null);
-        nullPayloadResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        var nullPayloadResponse = await client.PostAsJsonAsync<EventDataDTO[]>($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", null!);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, nullPayloadResponse.StatusCode);
     }
 
     [Fact]
@@ -47,7 +48,7 @@ public class EventsV1EndpointTests : IClassFixture<ServerFixture>
 
         var dtos = HttpRoutesUtils.BuildEventsDTOs(10, null);
         var nullDataResponse = await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
-        nullDataResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, nullDataResponse.StatusCode);
     }
 
     [Fact]
@@ -59,7 +60,7 @@ public class EventsV1EndpointTests : IClassFixture<ServerFixture>
         using var client = application.CreateClient();
         var dtos = HttpRoutesUtils.BuildEventsDTOs(1, new byte[500_001]); //TODO: from config
         var response = await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact(Skip = "TBD")]
@@ -72,10 +73,10 @@ public class EventsV1EndpointTests : IClassFixture<ServerFixture>
 
         var dtos = HttpRoutesUtils.BuildEventsDTOs(10, HttpRoutesUtils.DefaultEventData);
         var firstResponse = await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
-        firstResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
+        Assert.Equal(System.Net.HttpStatusCode.Accepted, firstResponse.StatusCode);
 
         var errorResponse = await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
-        errorResponse.StatusCode.Should().Be(System.Net.HttpStatusCode.Conflict);
+        Assert.Equal(System.Net.HttpStatusCode.Conflict, errorResponse.StatusCode);
     }
 
     [Fact]
@@ -88,7 +89,7 @@ public class EventsV1EndpointTests : IClassFixture<ServerFixture>
         await using var application = _serverFixture.CreateServer();
         using var client = application.CreateClient();
         var response = await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
+        Assert.Equal(System.Net.HttpStatusCode.Accepted, response.StatusCode);
     }
 
     [Fact]
@@ -101,10 +102,10 @@ public class EventsV1EndpointTests : IClassFixture<ServerFixture>
         await using var application = _serverFixture.CreateServer();
         using var client = application.CreateClient();
         var response = await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events", dtos);
-        response.StatusCode.Should().Be(System.Net.HttpStatusCode.Accepted);
+        Assert.Equal(System.Net.HttpStatusCode.Accepted, response.StatusCode);
 
         var response2 = await client.PostAsJsonAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events?version=2", dtos);
-        response2.StatusCode.Should().Be(System.Net.HttpStatusCode.BadRequest);
+        Assert.Equal(System.Net.HttpStatusCode.BadRequest, response2.StatusCode);
     }
 
     [Fact]
@@ -123,14 +124,14 @@ public class EventsV1EndpointTests : IClassFixture<ServerFixture>
 
         var response = await client.GetAsync($"/api/v1/streams/{_defaultStreamsType}/{streamId}/events");
         var fetchedEvents = await response.Content.ReadFromJsonAsync<EventDTO[]>();
-        fetchedEvents.Should().NotBeNull()
-                     .And.HaveCount(dtos.Length);
+        Assert.NotNull(fetchedEvents);
+        Assert.Equal(dtos.Length, fetchedEvents.Length);
 
         for (int i = 0; i != fetchedEvents.Length; i++)
         {
-            fetchedEvents[i].Id.Should().NotBeNull();
-            fetchedEvents[i].Type.Should().Be(dtos[i].Type);
-            fetchedEvents[i].Data.ToArray().Should().BeEquivalentTo(dtos[i].Data.ToArray());
+            Assert.NotNull(fetchedEvents[i].Id);
+            Assert.Equal(dtos[i].Type, fetchedEvents[i].Type);
+            Assert.Equivalent(dtos[i].Data.ToArray(), fetchedEvents[i].Data.ToArray());
         }
     }
 

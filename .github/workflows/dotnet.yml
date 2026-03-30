@@ -16,7 +16,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: 10.0.x
     - name: Restore dependencies
       run: |
         cd ./src
@@ -28,7 +28,7 @@ jobs:
     - name: Test
       run: |
         cd ./src
-        dotnet test --no-build -m:1 -s ../tests/tests.runsettings \
+        dotnet test ./EvenireDb.Tests.slnf --no-build -m:1 -s ../tests.runsettings \
           /p:CollectCoverage=true \
           /p:CoverletOutput=../TestResults/ \
           /p:MergeWith="../TestResults/coverage.json" \

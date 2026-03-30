@@ -32,20 +32,21 @@ public class IncomingEventsPersistenceWorker : BackgroundService
     private async Task ExecuteAsyncCore(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
-            await _reader.ReadAllAsync(cancellationToken)
-               .ForEachAsync(async batch =>
-               {
-                   if (batch is null)
-                       return;
-                   try
-                   {
-                       await _repo.AppendAsync(batch.StreamId, batch.Events, cancellationToken)
-                                  .ConfigureAwait(false);
-                   }
-                   catch (Exception ex)
-                   {
-                       _logger.EventsGroupPersistenceError(batch.StreamId, ex.Message);
-                   }
-               }, cancellationToken);
+        {
+            await foreach(var batch in _reader.ReadAllAsync(cancellationToken))
+            {
+                if (batch is null)
+                    continue;
+                try
+                {
+                    await _repo.AppendAsync(batch.StreamId, batch.Events, cancellationToken)
+                               .ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    _logger.EventsGroupPersistenceError(batch.StreamId, ex.Message);
+                }
+            }
+        }
     }
 }

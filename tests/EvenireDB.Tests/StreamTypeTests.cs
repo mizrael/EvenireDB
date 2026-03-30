@@ -11,6 +11,6 @@ public class StreamTypeTests
     public void StreamType_should_throw_when_value_invalid(string value)
     {
         Action act = () => new StreamType(value);
-        act.Should().Throw<ArgumentException>();
+        Assert.ThrowsAny<ArgumentException>(act);
     }
 }

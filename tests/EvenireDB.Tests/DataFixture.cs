@@ -2,10 +2,13 @@
 
 public class DataFixture : IAsyncLifetime
 {
-    private DirectoryInfo _baseDataPath;
+    private DirectoryInfo? _baseDataPath;
 
     internal ExtentsProviderConfig CreateExtentsConfig()
     {        
+        if(_baseDataPath is null)
+            throw new InvalidOperationException("Fixture not initialized");
+
         var path = Path.Combine(_baseDataPath.FullName, Guid.NewGuid().ToString());
         Directory.CreateDirectory(path);
 
@@ -19,7 +22,7 @@ public class DataFixture : IAsyncLifetime
         {
             try
             {
-                if (_baseDataPath.Exists)
+                if (_baseDataPath?.Exists == true)
                     _baseDataPath.Delete(true);
             }
             catch
@@ -40,9 +43,9 @@ public class DataFixture : IAsyncLifetime
     public Event[] BuildEvents(int count, byte[]? data = null)
         => Enumerable.Range(0, count).Select(i => new Event(new EventId(DateTime.UtcNow.Ticks, i), "lorem", data ?? GenerateRandomData())).ToArray();
 
-    private static byte[] GenerateRandomData()
+    public static byte[] GenerateRandomData(int minSize = 10, int maxSize = 1000)
     {
-        var length = Random.Shared.Next(10, 1000);
+        var length = Random.Shared.Next(minSize, maxSize);
         var data = new byte[length];
         Random.Shared.NextBytes(data);
         return data;

@@ -8,8 +8,9 @@ public class EventValidatorTests
     public void Validate_should_fail_when_type_null()
     {
         var sut = new EventDataValidator(1024);
-        var ex = Assert.Throws<ArgumentException>(() => sut.Validate(null, new byte[] { 0x42 }));
-        ex.ParamName.Should().Be("type");
+        var ex = Assert.Throws<ArgumentException>(() => sut.Validate(null!, new byte[] { 0x42 }));
+
+        Assert.Equal("type", ex.ParamName);
     }
 
     [Fact]
@@ -19,7 +20,7 @@ public class EventValidatorTests
         var sut = new EventDataValidator(1024);
 
         var ex = Assert.Throws<ArgumentOutOfRangeException>(() => sut.Validate(type, new byte[] { 0x42 }));
-        ex.ParamName.Should().Be("type");
+        Assert.Equal("type", ex.ParamName);
     }
 
     [Fact]
@@ -41,6 +42,6 @@ public class EventValidatorTests
     {
         var sut = new EventDataValidator(1024);
         var ex = Assert.Throws<ArgumentOutOfRangeException>(() => sut.Validate("lorem", new byte[1025]));
-        ex.ParamName.Should().Be("data");
+        Assert.Equal("data", ex.ParamName);
     }
 }

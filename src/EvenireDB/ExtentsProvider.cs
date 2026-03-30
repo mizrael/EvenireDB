@@ -1,6 +1,5 @@
 using EvenireDB.Common;
 using EvenireDB.Utils;
-using System.IO;
 
 namespace EvenireDB;
 
