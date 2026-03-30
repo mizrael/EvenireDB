@@ -37,7 +37,7 @@ public class EventsWriter : IEventsWriter
         if (expectedVersion.HasValue && entry.Events.Count != expectedVersion)
             return FailureResult.VersionMismatch(streamId, expectedVersion.Value, entry.Events.Count);    
 
-        entry.Semaphore.Wait(cancellationToken);
+        await entry.Semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             // TODO: add a metadata field on the event data, use it to allow check for duplicate events
@@ -71,8 +71,7 @@ public class EventsWriter : IEventsWriter
             if (!_writer.TryWrite(group))
                 return FailureResult.CannotInitiateWrite(streamId);
 
-            entry.Events.AddRange(events);
-            _cache.Update(streamId, entry);
+            _cache.Remove(streamId);
         }
         finally
         {

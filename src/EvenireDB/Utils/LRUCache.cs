@@ -1,5 +1,7 @@
 namespace EvenireDB.Utils;
 
+using System.Collections.Concurrent;
+
 public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TKey : notnull
 {
     private class Node
@@ -15,11 +17,8 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
     private Node? _head;
     private Node? _tail;
 
-    private object _moveToHeadLock = new();
-    private object _dropLock = new();
-    private object _getSemaphoresLock = new();
-
-    private readonly Dictionary<TKey, SemaphoreSlim> _semaphores;
+    private readonly ReaderWriterLockSlim _rwLock = new(LockRecursionPolicy.NoRecursion);
+    private readonly ConcurrentDictionary<TKey, SemaphoreSlim> _factorySemaphores = new();
 
     private bool _disposed;
 
@@ -27,24 +26,23 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
     {
         _capacity = capacity;
         _cache = new Dictionary<TKey, Node>((int)capacity);
-        _semaphores = new Dictionary<TKey, SemaphoreSlim>((int)capacity);
     }
 
     public void DropOldest(uint maxCount)
     {
-        if (this.Count == 0)
-            return;
-
-        uint countToRemove = Math.Min(maxCount, this.Count);
-
-        lock (_dropLock)
+        _rwLock.EnterWriteLock();
+        try
         {
-            if (countToRemove == this.Count)
+            if (_cache.Count == 0)
+                return;
+
+            uint countToRemove = Math.Min(maxCount, (uint)_cache.Count);
+
+            if (countToRemove == (uint)_cache.Count)
             {
                 _head = null;
                 _tail = null;
                 _cache.Clear();
-                _semaphores.Clear();
                 return;
             }
 
@@ -52,27 +50,28 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
             while (countToRemove > 0 && curr != null)
             {
                 _cache.Remove(curr.Key);
-                _semaphores.Remove(curr.Key);
-
                 curr = curr.Previous;
                 countToRemove--;
             }
 
-            if (curr is not null)
-                curr.Next = null;
+            _tail = curr;
+            if (_tail is not null)
+                _tail.Next = null;
+        }
+        finally
+        {
+            _rwLock.ExitWriteLock();
         }
     }
 
     public void Remove(TKey key)
     {
-        if (!_cache.TryGetValue(key, out var node))
-            return;
-
-        SemaphoreSlim semaphore = GetSemaphore(key);
-        semaphore.Wait();
-
+        _rwLock.EnterWriteLock();
         try
         {
+            if (!_cache.TryGetValue(key, out var node))
+                return;
+
             if (_head == node)
                 _head = node.Next;
 
@@ -86,33 +85,45 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
                 node.Next.Previous = node.Previous;
 
             _cache.Remove(key);
-            _semaphores.Remove(key);
         }
         finally
         {
-            semaphore.Release();
+            _rwLock.ExitWriteLock();
         }
     }
 
     public bool ContainsKey(TKey key)
-    => _cache.ContainsKey(key);
+    {
+        _rwLock.EnterReadLock();
+        try
+        {
+            return _cache.ContainsKey(key);
+        }
+        finally
+        {
+            _rwLock.ExitReadLock();
+        }
+    }
 
     public void AddOrUpdate(TKey key, TValue value)
     {
-        SemaphoreSlim semaphore = GetSemaphore(key);
-        semaphore.Wait();
-
-        if (_cache.TryGetValue(key, out var node))
+        _rwLock.EnterWriteLock();
+        try
         {
-            node.Value = value;
-            MoveToHead(node);
+            if (_cache.TryGetValue(key, out var node))
+            {
+                node.Value = value;
+                MoveToHeadUnsafe(node);
+            }
+            else
+            {
+                AddUnsafe(key, value);
+            }
         }
-        else
+        finally
         {
-            Add(key, value);
+            _rwLock.ExitWriteLock();
         }
-
-        semaphore.Release();
     }
 
     public async ValueTask<TValue> GetOrAddAsync(
@@ -120,42 +131,98 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
         Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,
         CancellationToken cancellationToken = default)
     {
-        if (!_cache.TryGetValue(key, out var node))
+        // Fast path: check cache under read lock
+        _rwLock.EnterReadLock();
+        try
         {
-            SemaphoreSlim semaphore = GetSemaphore(key);
-            semaphore.Wait(cancellationToken);
+            if (_cache.TryGetValue(key, out var existingNode))
+            {
+                // Upgrade to write lock for MoveToHead — release read first
+                _rwLock.ExitReadLock();
+                _rwLock.EnterWriteLock();
+                try
+                {
+                    // Re-check: node could have been evicted between locks
+                    if (_cache.TryGetValue(key, out existingNode))
+                    {
+                        MoveToHeadUnsafe(existingNode);
+                        return existingNode.Value;
+                    }
+                    // Fall through to factory path
+                }
+                finally
+                {
+                    _rwLock.ExitWriteLock();
+                }
+                // Read lock was already exited above; fall through to factory path
+            }
+            else
+            {
+                _rwLock.ExitReadLock();
+            }
+        }
+        catch
+        {
+            if (_rwLock.IsReadLockHeld)
+                _rwLock.ExitReadLock();
+            throw;
+        }
 
-            if (!_cache.TryGetValue(key, out node))
-                node = await AddAsync(key, valueFactory, cancellationToken).ConfigureAwait(false);
+        // Slow path: cache miss — use per-key semaphore to deduplicate factory calls
+        var semaphore = _factorySemaphores.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            // Double-check under read lock after acquiring semaphore
+            _rwLock.EnterReadLock();
+            try
+            {
+                if (_cache.TryGetValue(key, out var node))
+                    return node.Value;
+            }
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
 
+            // Factory call (outside any lock)
+            var value = await valueFactory(key, cancellationToken).ConfigureAwait(false);
+
+            // Add under write lock
+            _rwLock.EnterWriteLock();
+            try
+            {
+                // Final check: another thread could have added between factory and write lock
+                if (_cache.TryGetValue(key, out var existingNode))
+                {
+                    existingNode.Value = value;
+                    MoveToHeadUnsafe(existingNode);
+                    return existingNode.Value;
+                }
+
+                var newNode = AddUnsafe(key, value);
+                return newNode.Value;
+            }
+            finally
+            {
+                _rwLock.ExitWriteLock();
+            }
+        }
+        finally
+        {
             semaphore.Release();
         }
-        else
-        {
-            MoveToHead(node);
-        }
-
-        return node.Value;
     }
 
-    private async ValueTask<Node> AddAsync(
-        TKey key,
-        Func<TKey, CancellationToken, ValueTask<TValue>> valueFactory,
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// Adds a node to head. Caller MUST hold write lock.
+    /// </summary>
+    private Node AddUnsafe(TKey key, TValue value)
     {
-        var value = await valueFactory(key, cancellationToken).ConfigureAwait(false);
-        return Add(key, value);
-    }
-
-    private Node Add(TKey key, TValue value)
-    {
-        if (_cache.Count == _capacity)
+        if (_cache.Count == _capacity && _tail != null)
         {
             _cache.Remove(_tail.Key);
-            _semaphores.Remove(_tail.Key);
-
             _tail = _tail.Previous;
-
             if (_tail != null)
                 _tail.Next = null;
         }
@@ -171,52 +238,63 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
         return node;
     }
 
-    private SemaphoreSlim GetSemaphore(TKey key)
+    /// <summary>
+    /// Moves node to head of linked list. Caller MUST hold write lock.
+    /// </summary>
+    private void MoveToHeadUnsafe(Node node)
     {
-        if (_semaphores.TryGetValue(key, out var semaphore))
-            return semaphore;
+        if (node == _head)
+            return;
 
-        lock (_getSemaphoresLock)
+        if (node.Previous != null)
+            node.Previous.Next = node.Next;
+
+        if (node.Next != null)
+            node.Next.Previous = node.Previous;
+
+        if (_tail == node)
+            _tail = node.Previous;
+
+        node.Previous = null;
+        node.Next = _head;
+
+        if (_head != null)
+            _head.Previous = node;
+
+        _head = node;
+    }
+
+    public uint Count
+    {
+        get
         {
-            if (!_semaphores.TryGetValue(key, out semaphore))
+            _rwLock.EnterReadLock();
+            try
             {
-                semaphore = new SemaphoreSlim(1, 1);
-                _semaphores.Add(key, semaphore);
+                return (uint)_cache.Count;
             }
-
-            return semaphore;
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
         }
     }
 
-    private void MoveToHead(Node node)
+    public IEnumerable<TKey> Keys
     {
-        lock (_moveToHeadLock)
+        get
         {
-            if (node == _head)
-                return;
-
-            if (node.Previous != null)
-                node.Previous.Next = node.Next;
-
-            if (node.Next != null)
-                node.Next.Previous = node.Previous;
-
-            if (_tail == node)
-                _tail = node.Previous;
-
-            node.Previous = null;
-            node.Next = _head;
-
-            if (_head != null)
-                _head.Previous = node;
-
-            _head = node;
+            _rwLock.EnterReadLock();
+            try
+            {
+                return _cache.Keys.ToArray();
+            }
+            finally
+            {
+                _rwLock.ExitReadLock();
+            }
         }
     }
-
-    public uint Count => (uint)_cache.Count;
-
-    public IEnumerable<TKey> Keys => _cache.Keys;
 
     protected virtual void Dispose(bool disposing)
     {
@@ -224,9 +302,18 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
         {
             if (disposing)
             {
-                foreach (var semaphore in _semaphores.Values)
-                    semaphore.Dispose();
-                _semaphores.Clear();
+                _rwLock.EnterWriteLock();
+                try
+                {
+                    foreach (var semaphore in _factorySemaphores.Values)
+                        semaphore.Dispose();
+                    _factorySemaphores.Clear();
+                }
+                finally
+                {
+                    _rwLock.ExitWriteLock();
+                }
+                _rwLock.Dispose();
             }
             _disposed = true;
         }
@@ -234,7 +321,6 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
 
     public void Dispose()
     {
-        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
         Dispose(disposing: true);
         GC.SuppressFinalize(this);
     }
