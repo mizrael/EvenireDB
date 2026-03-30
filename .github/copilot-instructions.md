@@ -108,3 +108,23 @@ Defined in `src/Protos/events.proto` with `EventsGrpcService` offering `Read` (s
 - `Dockerfile.server` / `Dockerfile.adminui` — Separate images for server and admin UI.
 - `docker-compose.yml` — Runs both services. Server on port 32154, Admin UI on 32160.
 - Build images via `scripts/dockerize.ps1 -version <version> -env local|dev`.
+
+### Benchmarking
+
+Run benchmarks and compare against committed baselines:
+
+```shell
+# Compare current branch against baseline
+./scripts/benchmark-compare.sh
+
+# Capture a new baseline (run on main before making changes)
+./scripts/benchmark-compare.sh --update-baseline
+
+# Run only a specific benchmark
+./scripts/benchmark-compare.sh --filter "*EventsProviderRead*"
+
+# Custom regression threshold (default: 10%)
+./scripts/benchmark-compare.sh --threshold 15
+```
+
+Baseline JSON files are committed in `benchmarks/baselines/`. Update them when merging perf improvements to main.
