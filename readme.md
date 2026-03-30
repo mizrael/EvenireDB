@@ -115,6 +115,28 @@ Evenire also has a rudimentary administration UI, written with Blazor. It allows
 ## Samples
 - [TemperatureSensors](https://github.com/mizrael/EvenireDB/tree/main/samples/EvenireDB.Samples.TemperatureSensors) shows how to use a Background worker to produce events and uses Minimal APIs to retrieve the latest events for a specific stream.
 
+## Benchmarks
+
+EvenireDB includes [BenchmarkDotNet](https://benchmarkdotnet.org/) benchmarks for disk I/O, HTTP, and gRPC performance. Results are compared against baselines committed in the repo.
+
+**Prerequisites:** [jq](https://jqlang.github.io/jq/download/) must be installed.
+
+```bash
+# Capture a new baseline (run this on main before making changes)
+./scripts/benchmark-compare.sh --update-baseline
+
+# Compare current branch against the baseline
+./scripts/benchmark-compare.sh
+
+# Run only a specific benchmark suite
+./scripts/benchmark-compare.sh --filter "*EventsProviderRead*"
+
+# Custom regression threshold (default: 10%)
+./scripts/benchmark-compare.sh --threshold 15
+```
+
+The script prints a diff table with baseline vs current timings, delta percentages, and regression flags. It exits with a non-zero code if any benchmark exceeds the threshold.
+
 ## TODO
 - snapshots
 - backup and replicas
