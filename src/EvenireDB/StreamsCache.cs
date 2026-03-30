@@ -34,6 +34,9 @@ internal class StreamsCache : IStreamsCache
     public ValueTask<CachedEvents> GetEventsAsync(StreamId streamId, CancellationToken cancellationToken = default)
     => _cache.GetOrAddAsync(streamId, (_,_) => this.Factory(streamId, cancellationToken), cancellationToken);
 
+    public void Update(StreamId streamId, CachedEvents entry)
+    => _cache.AddOrUpdate(streamId, entry);
+
     public bool Contains(StreamId streamId)
     => _cache.ContainsKey(streamId);
 

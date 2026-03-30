@@ -119,17 +119,17 @@ public class EventsWriterTests
     }
 
     [Fact]
-    public async Task AppendAsync_should_invalidate_cache_on_success()
+    public async Task AppendAsync_should_add_events_to_cache_on_success()
     {
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
-        var cachedEvents = new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1));
+        var cachedList = new List<Event>();
+        var cachedEvents = new CachedEvents(cachedList, new SemaphoreSlim(1, 1));
 
         var cache = Substitute.For<IStreamsCache>();
         cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(cachedEvents);
 
-        IncomingEventsBatch? capturedBatch = null;
         var channelWriter = Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
-        channelWriter.TryWrite(Arg.Do<IncomingEventsBatch>(b => capturedBatch = b)).Returns(true);
+        channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(true);
 
         var idGenerator = new EventIdGenerator(TimeProvider.System);
         var logger = Substitute.For<ILogger<EventsWriter>>();
@@ -144,12 +144,10 @@ public class EventsWriterTests
         var result = await sut.AppendAsync(streamId, inputEvents);
 
         Assert.IsType<SuccessResult>(result);
-        Assert.NotNull(capturedBatch);
-        var batchEvents = capturedBatch.Events.ToList();
-        Assert.Equal(2, batchEvents.Count);
-        Assert.Equal("typeA", batchEvents[0].Type);
-        Assert.Equal("typeB", batchEvents[1].Type);
-        cache.Received(1).Remove(streamId);
+        Assert.Equal(2, cachedList.Count);
+        Assert.Equal("typeA", cachedList[0].Type);
+        Assert.Equal("typeB", cachedList[1].Type);
+        cache.Received(1).Update(streamId, cachedEvents);
     }
 
     [Fact]

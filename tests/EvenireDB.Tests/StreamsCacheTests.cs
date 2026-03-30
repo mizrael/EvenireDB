@@ -125,4 +125,28 @@ public class StreamsCacheTests
         sut.Remove(streamId);
         Assert.False(sut.Contains(streamId));
     }
+
+    [Fact]
+    public async Task Update_should_replace_cached_entry()
+    {
+        var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
+
+        var repo = Substitute.For<IEventsProvider>();
+        repo.ReadAsync(streamId, cancellationToken: Arg.Any<CancellationToken>())
+            .Returns(EmptyAsyncEnumerable<Event>());
+
+        var cache = new LRUCache<StreamId, CachedEvents>(100);
+        var logger = Substitute.For<ILogger<StreamsCache>>();
+        var sut = new StreamsCache(logger, cache, repo);
+
+        await sut.GetEventsAsync(streamId);
+
+        var newEvents = new List<Event> { new Event(new EventId(999, 0), "lorem", _defaultData) };
+        var newEntry = new CachedEvents(newEvents, new SemaphoreSlim(1));
+        sut.Update(streamId, newEntry);
+
+        var result = await sut.GetEventsAsync(streamId);
+        Assert.Single(result.Events);
+        Assert.Equal(999, result.Events[0].Id.Timestamp);
+    }
 }

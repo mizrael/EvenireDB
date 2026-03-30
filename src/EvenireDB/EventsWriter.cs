@@ -71,7 +71,8 @@ public class EventsWriter : IEventsWriter
             if (!_writer.TryWrite(group))
                 return FailureResult.CannotInitiateWrite(streamId);
 
-            _cache.Remove(streamId);
+            entry.Events.AddRange(events);
+            _cache.Update(streamId, entry);
         }
         finally
         {

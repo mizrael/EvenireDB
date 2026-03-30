@@ -88,7 +88,7 @@ public class EventsWriterConcurrencyTests
     }
 
     [Fact]
-    public async Task AppendAsync_should_allow_concurrent_writes_with_same_expected_version()
+    public async Task AppendAsync_should_handle_version_check_correctly_under_concurrency()
     {
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
         var cachedEvents = new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1));
@@ -96,9 +96,8 @@ public class EventsWriterConcurrencyTests
         var cache = Substitute.For<IStreamsCache>();
         cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(cachedEvents);
 
-        var capturedBatches = new ConcurrentBag<IncomingEventsBatch>();
         var channelWriter = Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
-        channelWriter.TryWrite(Arg.Do<IncomingEventsBatch>(b => capturedBatches.Add(b))).Returns(true);
+        channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(true);
 
         var idGenerator = new EventIdGenerator(TimeProvider.System);
         var logger = Substitute.For<ILogger<EventsWriter>>();
@@ -106,13 +105,16 @@ public class EventsWriterConcurrencyTests
 
         var events = new[] { new EventData("lorem", _defaultData) };
 
+        // Two concurrent appends both expecting version 0 — only one should succeed
         var task1 = sut.AppendAsync(streamId, events, expectedVersion: 0).AsTask();
         var task2 = sut.AppendAsync(streamId, events, expectedVersion: 0).AsTask();
 
         var results = await Task.WhenAll(task1, task2);
 
-        // Both succeed since neither modifies the cached list — the persistence layer handles ordering
-        Assert.All(results, r => Assert.IsType<SuccessResult>(r));
-        Assert.Equal(2, capturedBatches.Count);
+        var successes = results.OfType<SuccessResult>().Count();
+        var failures = results.OfType<FailureResult>().Count();
+
+        Assert.Equal(1, successes);
+        Assert.Equal(1, failures);
     }
 }

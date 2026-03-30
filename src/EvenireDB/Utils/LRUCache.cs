@@ -43,6 +43,11 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
                 _head = null;
                 _tail = null;
                 _cache.Clear();
+                foreach (var key in _factorySemaphores.Keys)
+                {
+                    if (_factorySemaphores.TryRemove(key, out var sem))
+                        sem.Dispose();
+                }
                 return;
             }
 
@@ -50,6 +55,8 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
             while (countToRemove > 0 && curr != null)
             {
                 _cache.Remove(curr.Key);
+                if (_factorySemaphores.TryRemove(curr.Key, out var evictedSem))
+                    evictedSem.Dispose();
                 curr = curr.Previous;
                 countToRemove--;
             }
@@ -85,6 +92,8 @@ public class LRUCache<TKey, TValue> : IDisposable, ICache<TKey, TValue> where TK
                 node.Next.Previous = node.Previous;
 
             _cache.Remove(key);
+            if (_factorySemaphores.TryRemove(key, out var removedSem))
+                removedSem.Dispose();
         }
         finally
         {
