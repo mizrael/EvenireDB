@@ -130,7 +130,11 @@ echo "📊 Comparing against baseline (threshold: ${THRESHOLD}%)..."
 echo ""
 
 HAS_REGRESSION=false
+UPDATED_BASELINES=false
 TABLE_ROWS=""
+
+# Track which files need baseline updates: file -> list of FullNames that improved
+declare -A IMPROVED_BENCHMARKS
 
 for current_file in $RESULT_FILES; do
     filename=$(basename "$current_file")
@@ -185,6 +189,8 @@ for current_file in $RESULT_FILES; do
                 HAS_REGRESSION=true
             elif [ "$status" = "FASTER" ]; then
                 status="🟢 FASTER"
+                IMPROVED_BENCHMARKS["$filename"]+="$i "
+                UPDATED_BASELINES=true
             else
                 status="✅ OK"
             fi
@@ -211,6 +217,32 @@ echo -n "$TABLE_ROWS"
 
 # ── Exit code ────────────────────────────────
 echo ""
+if [ "$UPDATED_BASELINES" = true ]; then
+    echo ""
+    echo "📈 Updating baselines for improved benchmarks..."
+
+    for filename in "${!IMPROVED_BENCHMARKS[@]}"; do
+        current_file="$ARTIFACTS_DIR/$filename"
+        baseline_file="$BASELINES_DIR/$filename"
+        indices="${IMPROVED_BENCHMARKS[$filename]}"
+
+        for idx in $indices; do
+            full_name=$(jq -r ".Benchmarks[$idx].FullName" "$current_file")
+            current_benchmark=$(jq ".Benchmarks[$idx]" "$current_file")
+
+            # Replace the matching benchmark entry in the baseline
+            jq --arg fn "$full_name" --argjson new "$current_benchmark" \
+                '.Benchmarks = [.Benchmarks[] | if .FullName == $fn then $new else . end]' \
+                "$baseline_file" > "${baseline_file}.tmp" && mv "${baseline_file}.tmp" "$baseline_file"
+        done
+
+        echo "   ✅ Updated $filename"
+    done
+
+    echo ""
+    echo "   Commit the updated baselines to lock in the improvements."
+fi
+
 if [ "$HAS_REGRESSION" = true ]; then
     echo "❌ Performance regression detected (>${THRESHOLD}% slower)"
     exit 1
