@@ -1,4 +1,5 @@
 using EvenireDB.Common;
+using System.Collections.Concurrent;
 using System.Threading.Channels;
 
 namespace EvenireDB.Tests;
@@ -11,14 +12,14 @@ public class EventsWriterConcurrencyTests
     public async Task AppendAsync_should_not_lose_events_under_concurrent_writes()
     {
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
-        var cachedList = new List<Event>();
-        var cachedEvents = new CachedEvents(cachedList, new SemaphoreSlim(1, 1));
+        var cachedEvents = new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1));
 
         var cache = Substitute.For<IStreamsCache>();
         cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(cachedEvents);
 
+        var capturedBatches = new ConcurrentBag<IncomingEventsBatch>();
         var channelWriter = Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
-        channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(true);
+        channelWriter.TryWrite(Arg.Do<IncomingEventsBatch>(b => capturedBatches.Add(b))).Returns(true);
 
         var idGenerator = new EventIdGenerator(TimeProvider.System);
         var logger = Substitute.For<ILogger<EventsWriter>>();
@@ -38,21 +39,21 @@ public class EventsWriterConcurrencyTests
         var results = await Task.WhenAll(tasks);
 
         Assert.All(results, r => Assert.IsType<SuccessResult>(r));
-        Assert.Equal(writerCount * eventsPerWriter, cachedList.Count);
+        Assert.Equal(writerCount * eventsPerWriter, capturedBatches.Sum(b => b.Events.Count()));
     }
 
     [Fact]
     public async Task AppendAsync_should_maintain_id_ordering_under_concurrent_writes()
     {
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
-        var cachedList = new List<Event>();
-        var cachedEvents = new CachedEvents(cachedList, new SemaphoreSlim(1, 1));
+        var cachedEvents = new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1));
 
         var cache = Substitute.For<IStreamsCache>();
         cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(cachedEvents);
 
+        var capturedBatches = new ConcurrentBag<IncomingEventsBatch>();
         var channelWriter = Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
-        channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(true);
+        channelWriter.TryWrite(Arg.Do<IncomingEventsBatch>(b => capturedBatches.Add(b))).Returns(true);
 
         var idGenerator = new EventIdGenerator(TimeProvider.System);
         var logger = Substitute.For<ILogger<EventsWriter>>();
@@ -71,14 +72,18 @@ public class EventsWriterConcurrencyTests
 
         await Task.WhenAll(tasks);
 
-        for (int i = 1; i < cachedList.Count; i++)
+        foreach (var batch in capturedBatches)
         {
-            var prev = cachedList[i - 1].Id;
-            var curr = cachedList[i].Id;
-            bool isOrdered = curr.Timestamp > prev.Timestamp ||
-                (curr.Timestamp == prev.Timestamp && curr.Sequence > prev.Sequence);
-            Assert.True(isOrdered,
-                $"Event at index {i} breaks ordering: ({prev.Timestamp},{prev.Sequence}) -> ({curr.Timestamp},{curr.Sequence})");
+            var events = batch.Events.ToList();
+            for (int i = 1; i < events.Count; i++)
+            {
+                var prev = events[i - 1].Id;
+                var curr = events[i].Id;
+                bool isOrdered = curr.Timestamp > prev.Timestamp ||
+                    (curr.Timestamp == prev.Timestamp && curr.Sequence > prev.Sequence);
+                Assert.True(isOrdered,
+                    $"Event at index {i} breaks ordering: ({prev.Timestamp},{prev.Sequence}) -> ({curr.Timestamp},{curr.Sequence})");
+            }
         }
     }
 
@@ -86,8 +91,7 @@ public class EventsWriterConcurrencyTests
     public async Task AppendAsync_should_handle_version_check_correctly_under_concurrency()
     {
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
-        var cachedList = new List<Event>();
-        var cachedEvents = new CachedEvents(cachedList, new SemaphoreSlim(1, 1));
+        var cachedEvents = new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1));
 
         var cache = Substitute.For<IStreamsCache>();
         cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(cachedEvents);

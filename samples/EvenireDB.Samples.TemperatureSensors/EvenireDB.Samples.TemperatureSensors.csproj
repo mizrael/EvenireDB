@@ -7,8 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\..\src\EvenireDB.Common\EvenireDB.Common.csproj" />
+    <ProjectReference Include="..\..\src\EvenireDB\EvenireDB.csproj" />
+    <ProjectReference Include="..\..\src\EvenireDB.Common\EvenireDB.Common.csproj" />
     <ProjectReference Include="..\..\src\EvenireDB.Client\EvenireDB.Client.csproj" />
+    <ProjectReference Include="..\..\src\EvenireDB.Server\EvenireDB.Server.csproj" />
+    <ProjectReference Include="..\..\src\EvenireDB.Grpc\EvenireDB.Grpc.csproj" />
   </ItemGroup>
 
 </Project>

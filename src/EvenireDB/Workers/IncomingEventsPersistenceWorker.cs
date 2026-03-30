@@ -23,29 +23,18 @@ public class IncomingEventsPersistenceWorker : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        await Task.Run(async () =>
+        await foreach (var batch in _reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
-            await ExecuteAsyncCore(cancellationToken).ConfigureAwait(false);
-        }, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task ExecuteAsyncCore(CancellationToken cancellationToken)
-    {
-        while (!cancellationToken.IsCancellationRequested)
-        {
-            await foreach(var batch in _reader.ReadAllAsync(cancellationToken))
+            if (batch is null)
+                continue;
+            try
             {
-                if (batch is null)
-                    continue;
-                try
-                {
-                    await _repo.AppendAsync(batch.StreamId, batch.Events, cancellationToken)
-                               .ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _logger.EventsGroupPersistenceError(batch.StreamId, ex.Message);
-                }
+                await _repo.AppendAsync(batch.StreamId, batch.Events, cancellationToken)
+                           .ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger.EventsGroupPersistenceError(batch.StreamId, ex.Message);
             }
         }
     }

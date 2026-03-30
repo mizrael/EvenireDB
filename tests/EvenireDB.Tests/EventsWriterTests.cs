@@ -147,6 +147,7 @@ public class EventsWriterTests
         Assert.Equal(2, cachedList.Count);
         Assert.Equal("typeA", cachedList[0].Type);
         Assert.Equal("typeB", cachedList[1].Type);
+        cache.Received(1).Update(streamId, cachedEvents);
     }
 
     [Fact]
@@ -177,14 +178,14 @@ public class EventsWriterTests
     public async Task AppendAsync_should_generate_sequential_ids_for_events()
     {
         var streamId = new StreamId { Key = Guid.NewGuid(), Type = "lorem" };
-        var cachedList = new List<Event>();
-        var cachedEvents = new CachedEvents(cachedList, new SemaphoreSlim(1, 1));
+        var cachedEvents = new CachedEvents(new List<Event>(), new SemaphoreSlim(1, 1));
 
         var cache = Substitute.For<IStreamsCache>();
         cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(cachedEvents);
 
+        IncomingEventsBatch? capturedBatch = null;
         var channelWriter = Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
-        channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(true);
+        channelWriter.TryWrite(Arg.Do<IncomingEventsBatch>(b => capturedBatch = b)).Returns(true);
 
         var idGenerator = new EventIdGenerator(TimeProvider.System);
         var logger = Substitute.For<ILogger<EventsWriter>>();
@@ -196,10 +197,12 @@ public class EventsWriterTests
 
         await sut.AppendAsync(streamId, inputEvents);
 
-        for (int i = 1; i < cachedList.Count; i++)
+        Assert.NotNull(capturedBatch);
+        var events = capturedBatch.Events.ToList();
+        for (int i = 1; i < events.Count; i++)
         {
-            var prev = cachedList[i - 1].Id;
-            var curr = cachedList[i].Id;
+            var prev = events[i - 1].Id;
+            var curr = events[i].Id;
             bool isOrdered = curr.Timestamp > prev.Timestamp ||
                 (curr.Timestamp == prev.Timestamp && curr.Sequence > prev.Sequence);
             Assert.True(isOrdered, $"Event ID at index {i} is not ordered");
@@ -217,8 +220,9 @@ public class EventsWriterTests
         var cache = Substitute.For<IStreamsCache>();
         cache.GetEventsAsync(streamId, Arg.Any<CancellationToken>()).Returns(cachedEvents);
 
+        IncomingEventsBatch? capturedBatch = null;
         var channelWriter = Substitute.ForPartsOf<ChannelWriter<IncomingEventsBatch>>();
-        channelWriter.TryWrite(Arg.Any<IncomingEventsBatch>()).Returns(true);
+        channelWriter.TryWrite(Arg.Do<IncomingEventsBatch>(b => capturedBatch = b)).Returns(true);
 
         var fixedTime = new DateTimeOffset(2025, 1, 15, 10, 30, 0, TimeSpan.Zero);
         var timeProvider = Substitute.For<TimeProvider>();
@@ -232,8 +236,8 @@ public class EventsWriterTests
 
         await sut.AppendAsync(streamId, inputEvents);
 
-        Assert.Equal(2, cachedList.Count);
-        var newEvent = cachedList[1];
+        Assert.NotNull(capturedBatch);
+        var newEvent = capturedBatch.Events.First();
         bool isAfterExisting = newEvent.Id.Timestamp > existingEvent.Id.Timestamp ||
             (newEvent.Id.Timestamp == existingEvent.Id.Timestamp && newEvent.Id.Sequence > existingEvent.Id.Sequence);
         Assert.True(isAfterExisting);

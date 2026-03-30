@@ -208,4 +208,77 @@ public class LRUCacheTests
         Assert.Equal(2u, sut.Count);
         Assert.False(sut.ContainsKey("ipsum"));
     }
+
+    [Fact]
+    public async Task GetOrAddAsync_should_handle_concurrent_reads_on_different_keys()
+    {
+        var sut = new LRUCache<string, int>(100);
+
+        for (int i = 0; i < 50; i++)
+            await sut.GetOrAddAsync($"key-{i}", (_, _) => ValueTask.FromResult(i));
+
+        var tasks = Enumerable.Range(0, 50).Select(i =>
+            sut.GetOrAddAsync($"key-{i}", (_, _) => ValueTask.FromResult(-1)).AsTask()
+        ).ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        for (int i = 0; i < 50; i++)
+            Assert.Equal(i, results[i]);
+    }
+
+    [Fact]
+    public async Task AddOrUpdate_should_handle_concurrent_updates_to_same_key()
+    {
+        var sut = new LRUCache<string, int>(10);
+        await sut.GetOrAddAsync("key", (_, _) => ValueTask.FromResult(0));
+
+        var tasks = Enumerable.Range(1, 20).Select(i =>
+            Task.Run(() => sut.AddOrUpdate("key", i))
+        ).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        Assert.Equal(1u, sut.Count);
+        var result = await sut.GetOrAddAsync("key", (_, _) => ValueTask.FromResult(-1));
+        Assert.InRange(result, 1, 20);
+    }
+
+    [Fact]
+    public async Task Remove_should_handle_concurrent_removes()
+    {
+        var sut = new LRUCache<string, int>(100);
+
+        for (int i = 0; i < 50; i++)
+            await sut.GetOrAddAsync($"key-{i}", (_, _) => ValueTask.FromResult(i));
+
+        var tasks = Enumerable.Range(0, 50).Select(i =>
+            Task.Run(() => sut.Remove($"key-{i}"))
+        ).ToArray();
+
+        await Task.WhenAll(tasks);
+
+        Assert.Equal(0u, sut.Count);
+    }
+
+    [Fact]
+    public async Task GetOrAddAsync_should_not_invoke_factory_twice_for_same_key_concurrently()
+    {
+        var sut = new LRUCache<string, int>(10);
+        int factoryCallCount = 0;
+
+        var tasks = Enumerable.Range(0, 20).Select(_ =>
+            sut.GetOrAddAsync("key", async (_, _) =>
+            {
+                Interlocked.Increment(ref factoryCallCount);
+                await Task.Delay(50);
+                return 42;
+            }).AsTask()
+        ).ToArray();
+
+        var results = await Task.WhenAll(tasks);
+
+        Assert.Equal(1, factoryCallCount);
+        Assert.All(results, r => Assert.Equal(42, r));
+    }
 }
